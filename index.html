@@ -118,6 +118,30 @@ Source-routing over the MPLS dataplane.
 
   <section data-markdown>
   <textarea data-template>
+### Why ECMP applies naturally to prefix-SIDs
+
+A prefix-SID is a **destination identifier**, not a path instruction.
+SPF gives every node N equal-cost next-hops toward that destination → each transit installs the prefix-SID's label entry with N equal-cost outgoing entries → hash function (5-tuple / flow-label / entropy-label) picks per packet.
+
+**Every transit ECMPs independently.** Because the label has the same meaning everywhere (`label = SRGB.start + index`), pe1, p1, p2, p3 can each pick a different equal-cost next-hop without disturbing forwarding semantics. Packet still reaches the destination by shortest path.
+
+| Segment | ECMP behaviour |
+|---------|----------------|
+| **Prefix-SID (Node SID)** | Native ECMP across all equal-cost paths to that node |
+| **Adjacency-SID** | No ECMP — nails the specific link, by design. Use this when you want to *force* a path. |
+| **SR Policy candidate path** | ECMP within the candidate; weighted (UCMP) across multiple candidates |
+
+**Comparison points:**
+- **LDP** also supported ECMP, but with locally-allocated labels — each LSR has its own label per FEC, so the end-to-end reasoning that comes from consistent labels isn't there
+- **RSVP-TE** explicitly pins flows to LSPs. ECMP across parallel LSPs requires head-end `load-share` config
+- **SR prefix-SIDs** just inherit the IGP's ECMP semantics — no extra machinery
+
+→ See the ECMP/UCMP topic later in the deck for *why and how this breaks* and what UCMP does about it.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
 ### How SR differs from LDP — concept map
 
 | Aspect | LDP | SR-MPLS |
