@@ -118,6 +118,32 @@ Source-routing over the MPLS dataplane.
 
   <section data-markdown>
   <textarea data-template>
+### How SR differs from LDP — concept map
+
+| Aspect | LDP | SR-MPLS |
+|--------|-----|---------|
+| What's labelled | FEC (usually an IP prefix) | Segment — prefix or adjacency |
+| Label allocation | Locally per LSR, opaque values | Globally consistent: `label = SRGB.start + index` |
+| Distribution protocol | LDP (separate sessions, T-LDP for remote) | IGP sub-TLVs (no separate protocol) |
+| Label meaning | Local to allocating LSR | Global across SR domain |
+| Label space concept | Per-platform / per-interface | Single domain-wide SRGB |
+| Per-hop action | SWAP (in-label → next downstream's out-label) | POP (PHP) or SWAP-same — same label everywhere |
+| State per FEC in transit | One LIB entry per FEC per LSR | One entry per remote prefix-SID + one per local adj-SID |
+| TE LSPs | RSVP-TE state in every transit | None — head-end only |
+| What ingress thinks | "Push next downstream's label for this FEC" | "Push 16000+N to reach node N" |
+
+**No FEC binding messages on the wire.** SR's IGP advertises the *index*; every LSR computes the label. No `FEC X = label Y` announcement to lose, mistime, or debug.
+
+**No LSR-ID separate from IGP.** SR uses the IGP node identity (router-ID / system-ID) directly. No two namespaces to reconcile.
+
+**Adjacency-SID has no LDP equivalent.** LDP labels are per-FEC, never per-link. To force a specific outbound interface in LDP you needed RSVP-TE or static labels. Adj-SID is native to SR.
+
+**Operational debug delta:** "Label 16005 means pe1, everywhere, every traceroute" vs LDP's opaque locally-allocated labels. Per-platform vs per-interface label space — gone in SR.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
 ### SRGB — Segment Routing Global Block
 
 Reserved label range identical across the domain.
@@ -130,6 +156,35 @@ This is what makes traceroute readable and SR sane.
 
 <span class="tag warn">Pitfall</span>
 Cisco's default LDP range also starts at 16000 → must move one before lighting SR on a brownfield.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Why label consistency matters — operational delta
+
+**LDP world** — each LSR allocates its own label per FEC, opaque values:
+```
+Hop 1 (p):    in-label 17501, out-label 19022
+Hop 2 (pe2):  pop
+```
+To know what 17501 or 19022 means → `show mpls ldp bindings` on each LSR. Different label per hop for the same destination.
+
+**SR world** with SRGB 16000–23999 and pe2's node-SID = 5:
+```
+Hop 1 (p):    in-label 16005, out-label 16005 (or pop at PHP)
+Hop 2 (pe2):  destination
+```
+**Label 16005 = pe2, on every router in the domain.** Read the label, know the destination. No per-LSR query needed.
+
+Operational consequences:
+- **Automation/PCE** reads IGP database, knows every label without RPC to each LSR
+- **LSP ping target-FEC TLV** becomes deterministic — predict probe replies before sending
+- **Pre-compute / verify** labels before deployment
+- **Instant node onboarding** — assign node-SID 7, that node is now reachable at label 16007 everywhere, instantly
+- "What was the label stack, what should it have been?" troubleshooting becomes a much shorter conversation
+
+**Labels stop being opaque.**
   </textarea>
   </section>
 
@@ -539,6 +594,47 @@ Three patterns:
 Pattern 1 is dominant in production. Colour decouples *what service it is* from *which path it takes*.
 
 ASLA (RFC 9479) becomes important once flex-algo uses different link attributes than RSVP-TE — without ASLA, attributes are shared across applications and you can't tune per-app.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### What flex-algo replaces
+
+Legacy MPLS-TE constructs that flex-algo supersedes (or makes optional):
+
+| Legacy construct | Era | What flex-algo gives you instead |
+|------------------|-----|----------------------------------|
+| **RSVP-TE auto-route announce/exclude** | classical | Algo's prefix-SID is the routing destination — IGP installs via algo, no LSP |
+| **Per-class full-mesh RSVP-TE LSPs** (one mesh per traffic class) | classical | One algo per class — N nodes participate, no `N²` LSPs |
+| **CBTS / PBTS** (Class- / Policy-Based Tunnel Selection) | Cisco-era | Colour-extended community → SR Policy → algo SID |
+| **Multi-topology IS-IS / OSPF** (parallel SPTs via MT) | mid-2000s | Per-algo SPT, lighter, single topology DB |
+| **Two parallel IGP instances** | last-resort | Single IGP, multiple algos |
+| **PCE-managed per-class TE tunnels** | recent | PCE manages SR Policies that *use* algo SIDs — much less state |
+
+**Classic example (T-Mobile-style ~15 yrs ago):**
+RSVP-TE full mesh with auto-route-announce, one mesh for delay-sensitive (algo 128 equivalent), one for default (algo 0). Each mesh `N(N-1)` LSPs; head-end IGP installs destinations via tunnel interface. Operationally heavy — LSP state in every transit, auto-bandwidth recompute storms, RSVP refresh load.
+
+Flex-algo: same outcome, **zero LSPs**, one extra prefix-SID per node per algo.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### What flex-algo doesn't replace — and SR-world answers
+
+| Capability flex-algo can't do | RSVP-TE / classical answer | SR-world answer |
+|-------------------------------|----------------------------|-----------------|
+| **Strict explicit path** ("via PE1→R3→R5→PE2") | Explicit-path RSVP-TE LSP | **SR Policy with explicit SID list** — push Adj-SIDs to force each hop. No state in transit. |
+| **Per-flow bandwidth reservation / admission** | RSVP `bandwidth` + CAC, auto-bandwidth | No clean equivalent. Three partial answers: (1) PCE computes paths aware of BGP-LS link utilisation + streaming telemetry (*soft* admission); (2) SR Policy carries bandwidth attribute as planning input (RFC 9256), no dataplane reservation; (3) keep RSVP-TE only for genuinely hard reservation, rare now |
+| **Per-flow / per-class queueing** | DSCP-to-EXP marking + CBWFQ | **Same** — DSCP/EXP/Traffic-Class bits at dataplane, per-class queuing per box. Orthogonal to TE. |
+| **Per-flow steering** | PBR / BGP FlowSpec | **BGP FlowSpec** still works; or **SR Policy with colour matching FlowSpec-marked traffic** |
+| **Fast bandwidth-driven re-optimisation** | RSVP-TE auto-bandwidth | PCE recomputes SR Policies from utilisation telemetry (e.g. Cisco Crosswork SR-PCE, Nokia NSP) |
+
+**Big-picture rule:**
+- **Path** = flex-algo (per class) or SR Policy (per service/intent)
+- **Bandwidth** = controller-driven planning + monitoring, *not* dataplane reservation
+- **Queueing** = unchanged from classical QoS
   </textarea>
   </section>
 
