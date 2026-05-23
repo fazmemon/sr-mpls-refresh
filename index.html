@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0">
+  <title>SR-MPLS Refresh — Faz</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/black.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/monokai.css">
+  <style>
+    :root { --r-main-font-size: 32px; }
+    .reveal { font-size: 28px; }
+    .reveal h1 { font-size: 1.6em; color: #4ec9b0; }
+    .reveal h2 { font-size: 1.3em; color: #4ec9b0; }
+    .reveal h3 { font-size: 1.1em; color: #9cdcfe; }
+    .reveal h4 { color: #dcdcaa; }
+    .reveal section { text-align: left; }
+    .reveal section.center { text-align: center; }
+    .reveal ul { display: block; }
+    .reveal ul li { margin-bottom: 0.4em; line-height: 1.3; }
+    .reveal pre { font-size: 0.55em; box-shadow: none; }
+    .reveal pre code { padding: 12px; max-height: 500px; }
+    .reveal code { background: #1e1e1e; padding: 2px 6px; border-radius: 3px; color: #ce9178; }
+    .reveal table { font-size: 0.65em; margin: 0.5em 0; border-collapse: collapse; }
+    .reveal table th, .reveal table td { padding: 4px 8px; border: 1px solid #444; vertical-align: top; }
+    .reveal table th { background: #2d2d2d; color: #4ec9b0; }
+    .reveal strong { color: #dcdcaa; }
+    .reveal em { color: #9cdcfe; font-style: normal; }
+    .reveal a { color: #569cd6; }
+    .reveal blockquote { border-left: 4px solid #4ec9b0; padding-left: 12px; font-style: normal; }
+    .tag { display: inline-block; padding: 2px 8px; margin: 2px; background: #264f78; color: #9cdcfe; border-radius: 4px; font-size: 0.7em; }
+    .tag.warn { background: #6b3a1a; color: #ce9178; }
+    .tag.ok { background: #1e4620; color: #b5cea8; }
+    .footer { position: fixed; bottom: 8px; right: 16px; font-size: 14px; color: #666; }
+    @media (max-width: 900px) {
+      .reveal { font-size: 22px; }
+      .reveal h1 { font-size: 1.4em; }
+      .reveal h2 { font-size: 1.15em; }
+      .reveal pre { font-size: 0.5em; }
+      .reveal table { font-size: 0.55em; }
+    }
+  </style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ============ COVER ============ -->
+<section class="center">
+  <h1>SR-MPLS Refresh</h1>
+  <h3>State-of-the-art for an MPLS/TE designer</h3>
+  <p style="margin-top:2em; color:#888;">Target: 2026-05-31<br>Drill across protocol, TE, Inter-AS, DC, Cloud</p>
+  <p style="margin-top:2em; font-size:0.7em; color:#666;">Swipe right → next section &nbsp;|&nbsp; Swipe down ↓ for detail</p>
+</section>
+
+<!-- ============ CONTEXT ============ -->
+<section data-markdown>
+<textarea data-template>
+## Context
+
+Refresh for an experienced MPLS/TE designer + AWS architect.
+**Not** learning from scratch — covering the deltas.
+
+- SR-MPLS protocol + TE/QoS/Inter-AS deltas
+- ECMP/UCMP — with/without SR, intra & inter-AS
+- Egress Peer Engineering (SR's clearest inter-AS win)
+- Topology economics, line-card landscape (NCS 540, FP5, MX/PTX)
+- Hands-on netlab via Codespaces (ipspace SR workshop)
+- SRv6 — case-dependent, not blanket "no"
+- DC: CLOS+EVPN, HFT, AI training fabrics
+- Cloud: AWS / Azure / GCP transit & HPC
+
+Two reference cases run through everything: **MPLS shop** (Sky-style) and **IP-only network**.
+</textarea>
+</section>
+
+<!-- ============ SECTION 1 — SR-MPLS PROTOCOL ============ -->
+<section>
+  <section data-markdown>
+  <textarea data-template>
+## 1 · SR-MPLS — the protocol
+
+Source-routing over the MPLS dataplane.
+**Path encoded at ingress** as a list of segments (labels).
+**Transit nodes hold no per-flow state.**
+
+- LDP → gone (IGP carries labels)
+- RSVP-TE → gone (SR Policy at head-end, optionally PCE-driven)
+- BGP-LU → still useful inter-domain
+- TI-LFA → sub-50ms FRR, computed locally, no bypass state
+- Flex-Algo → multiple SPTs per topology, one per traffic class
+
+↓ for segment types
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Segment types
+
+**Prefix-SID (Node SID)**
+- Globally consistent label per node
+- Advertised in IGP, follows shortest path
+- ECMP applies naturally
+
+**Adjacency-SID**
+- Locally significant label per interface
+- Means "send out *this* link" — bypasses ECMP
+- Used by SR-TE and TI-LFA
+
+**Binding-SID**
+- Label that means "run this SR Policy"
+- Hides downstream SID list; key for inter-domain stitching
+
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### SRGB — Segment Routing Global Block
+
+Reserved label range identical across the domain.
+Default everywhere: **16000–23999** (8000 labels).
+
+`label = SRGB.start + prefix_SID_index`
+
+Node SID 5 → label **16005** on every node.
+This is what makes traceroute readable and SR sane.
+
+<span class="tag warn">Pitfall</span>
+Cisco's default LDP range also starts at 16000 → must move one before lighting SR on a brownfield.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Flex-Algo
+
+Multiple SPTs per topology — one per "algorithm."
+
+- Algo 0 = standard SPF (IGP metric)
+- Algo 1 = strict-SPF (no policy override)
+- Algo 128+ = operator-defined (delay, affinity, SRLG-avoid)
+
+Each node advertises **one prefix-SID per algo**.
+SPF is computed independently per algo.
+
+**Use case:** low-latency overlay rides algo 128 (min-delay),
+bulk traffic rides algo 0 (IGP metric). Same fibre, different paths.
+
+No per-tunnel state.
+  </textarea>
+  </section>
+</section>
+
+<!-- ============ SECTION 2 — IS-IS WIRE DETAIL ============ -->
+<section>
+  <section data-markdown>
+  <textarea data-template>
+## 2 · IS-IS — what's actually flooded
+
+Three pieces ride in standard LSPs (no new PDU types).
+You'll see all three in lab 1 (`show isis database detail`).
+
+- **SR Capability** — TLV 242, sub-TLV 2 (SRGB, algos)
+- **Prefix-SID** — sub-TLV 3 of TLV 135/236 (per-prefix)
+- **Adjacency-SID** — sub-TLV 31 of TLV 22 (per-link)
+
+<span class="tag warn">Required</span> `metric-style wide` everywhere.
+Narrow metrics (TLV 2/128) can't carry SR sub-TLVs.
+
+↓ for flags & semantics
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Prefix-SID flags that matter
+
+- **N (Node)** — this SID identifies a node (a loopback)
+- **P (No-PHP)** — disable PHP, egress wants the label visible
+- **E (Explicit-null)** — signal explicit-null instead of implicit-null at PHP
+- **R (Re-advertisement)** — flooded by a different node (Mapping Server)
+
+Adjacency-SID flags:
+- **B (Backup)** — eligible for TI-LFA protection
+- **L (Local)** — locally significant only (default for adj-SIDs)
+- **S (Set)** — part of an adjacency set (parallel-links case)
+
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### The FIB on a transit node
+
+3-node lab `pe1 ↔ p ↔ pe2`, SRGB 16000–23999, node SIDs pe1=1 / p=2 / pe2=3.
+
+On `p`:
+
+| In-label | Action | Out-iface |
+|----------|--------|-----------|
+| 16001 (pe1) | POP (PHP) | toward pe1 |
+| 16003 (pe2) | POP (PHP) | toward pe2 |
+| 24001 (adj→pe1) | POP-and-fwd | toward pe1 |
+| 24002 (adj→pe2) | POP-and-fwd | toward pe2 |
+
+That's it. No LDP session, no RSVP path state, no per-LSP entries.
+**Two entries per remote node + one per local adj.**
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### TE attributes also flooded
+
+These show up in IS-IS TLV 22 sub-TLVs — drive flex-algo & SR-TE:
+
+- **Sub-TLV 33** — TE default metric (separate from IGP)
+- **Sub-TLV 34** — min link delay (µs)
+- **Sub-TLV 35** — delay variation (jitter)
+- **Sub-TLV 36** — link loss
+- **Sub-TLV 9** — admin groups / affinities (32-bit bitmap)
+
+Without these in the LSP, flex-algo "min-delay" can't compute.
+PCE pulls all of it via **BGP-LS** from any node in the domain.
+  </textarea>
+  </section>
+</section>
+
+<!-- ============ SECTION 3 — ECMP / UCMP ============ -->
+<section>
+  <section data-markdown>
+  <textarea data-template>
+## 3 · Why ECMP breaks → UCMP
+
+**ECMP assumes all paths are equivalent.**
+
+Five failure modes:
+
+1. **Asymmetric capacity** — 400G + 100G, ECMP hashes 50/50 → 100G saturates first
+2. **Asymmetric post-failure paths** — surviving 1-hop vs 2-hop, want proportional split
+3. **Topology asymmetry by design** — irregular partial mesh
+4. **Hash polarisation / elephants** — large flows land on one member
+5. **Cost is one integer** — can't express bandwidth + latency + price together
+
+UCMP = weighted ECMP. FIB bucket table programmed proportional to weights.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### UCMP options — without SR
+
+- **IGP metric tuning** — binary include/exclude, no proportion
+- **EIGRP variance** — proper UCMP, but EIGRP dead in SP
+- **BGP DMZ-Link-Bandwidth** (RFC 7311 / 9206) — **the workhorse**
+  - Ext-community carries per-path bandwidth
+  - FIB programs weighted nexthops
+  - Used everywhere in DC fabrics & at IXPs since ~2010
+- **RSVP-TE auto-bandwidth + load-share tunnels** — manual, stateful, dead for new builds
+- **Static + weights** — doesn't scale
+
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### UCMP options — with SR
+
+- **SR-TE policy with weighted candidate paths** — clean answer
+  - N candidate paths, weight per path
+  - Head-end load-balances proportionally
+  - PCE recomputes weights from BGP-LS + telemetry
+- **Flex-Algo per traffic class** — separate the problem entirely
+- **IGP weighted ECMP extensions** (draft) — uneven vendor support
+- **BGP-LU + SR + link-bandwidth** — same DMZ-LB idea, SR transport underneath
+
+<span class="tag ok">Rule</span> Owned domain → SR-TE + PCE. Between two boxes you don't both own → BGP DMZ-LB.
+  </textarea>
+  </section>
+</section>
+
+<!-- ============ SECTION 4 — TOPOLOGY ============ -->
+<section>
+  <section data-markdown>
+  <textarea data-template>
+## 4 · Physical topology economics
+
+For N PoPs: wire links so capacity is well-used, you survive failure, you don't overbuild.
+
+**Triangle (3 nodes, 3 links)** — full mesh of 3
+- Failure: 2-hop path absorbs full load → provision ≤50% under normal
+- Economic at small N
+
+**Square (4 nodes, 4 links — ring)** — cheap, bad resilience
+- Failure: traffic goes 3 hops the long way
+- Avoid pure rings beyond 4 nodes
+
+**Square + diagonals (4 nodes, 6 links — full mesh of 4)**
+- Single failure barely moves utilisation
+- UCMP useful because surviving paths are 1-hop vs 2-hop
+
+↓ for design principles
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Design principles
+
+1. **Diversity > redundancy.** Two links in same conduit ≠ two links.
+2. **Failure budget first.** Define N-1 / N-2 before drawing topology.
+3. **Latency-weighted, not just hop-weighted.** Flex-Algo expresses this.
+4. **Asymmetric capacity is normal.** Subsea > terrestrial > metro. UCMP exists because of this.
+5. **No "all eggs in one router"** failure domains. Two chassis per PoP for any role that matters.
+
+Economic optimum is **never a regular polygon** — it's a partial mesh shaped by traffic matrix + fibre cost + failure budget.
+SR + flex-algo + UCMP is what lets you exploit irregular topologies efficiently.
+  </textarea>
+  </section>
+</section>
+
+<!-- ============ SECTION 5 — LINE CARDS ============ -->
+<section>
+  <section data-markdown>
+  <textarea data-template>
+## 5 · Line cards — Cisco / Nokia / Juniper
+
+Three things to compare across vendors:
+
+1. **ECMP/UCMP nexthop width** — how many weighted members per FIB entry
+2. **Max SID Depth (MSD)** — label stack push capacity
+3. **Buffer + scheduling** — deep HBM vs shallow on-chip
+
+Current-gen silicon: **J2c+ / FP5 / Express 5 / Trio 6** all do line-rate SR with ≥64 weighted members, MSD 10+.
+
+Old silicon caps at MSD 3–5 and equal-only ECMP. Check release notes per platform.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Cisco — NCS 540 / NCS 5500 / NCS 5700
+
+**NCS 540** is *fixed-form access/agg*, not core.
+- N540-24Z8Q2C — 24×10G + 8×25G + 2×100G (workhorse PE/agg)
+- N540X — temperature-hardened, outdoor cabinets
+- N540-FH — mobile fronthaul variant
+
+All run IOS-XR with SR-MPLS, TI-LFA, flex-algo, SR-PM.
+
+**For core**: NCS 5500 / 5700 — Jericho, Jericho2, Jericho2c+ silicon, modular chassis, real line cards.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Nokia — 7750 SR / 7250 IXR
+
+**7750 SR** — modular (SR-7, SR-14s, SR-1x family)
+- Line cards: **XMA-s** (FP4/FP5), IOM-s + MDA-s
+- FP5 is current — per-flow stats, deep buffer, full SR-TE + flex-algo + EVPN
+- Weighted ECMP with per-class hashing and explicit hash-seed control
+
+**7250 IXR** — fixed/semi-modular, Jericho-based
+- Cheaper, less feature-rich, fine for agg
+
+For UCMP/SR-TE at scale → **FP5 in 7750 SR**.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Juniper — MX / PTX
+
+**MX series** (edge/core, Trio silicon)
+- MX204, MX304 — small footprint PE
+- MX480/960, MX10003/10008 — chassis
+- Cards: **MPC10E / MPC11E** (Trio, 400G/slot)
+- **LC9600** on MX10008 — current high-density 400G
+
+**PTX series** (pure core, Express silicon)
+- PTX10001-36MR, PTX10008/10016
+- Cards: **LC1201 / LC1202** (Express 5)
+- Deep FIB, low jitter — Juniper's "do SR-MPLS core here" platform
+
+Both families: SR-MPLS, SR-TE, flex-algo, TI-LFA, BGP-LS to PCE.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Fit by role
+
+| Role | Cisco | Nokia | Juniper |
+|------|-------|-------|---------|
+| Access/agg PE, modest scale | NCS 540 | 7250 IXR | MX204 / MX304 |
+| Edge PE with services | NCS 5500 | 7750 SR (FP5) | MX480/960 (MPC10/11) |
+| SR-MPLS core / peering | NCS 5700 | 7750 SR (FP5) | PTX 10K (Express 5) |
+
+  </textarea>
+  </section>
+</section>
+
+<!-- ============ SECTION 6 — INTER-AS ============ -->
+<section>
+  <section data-markdown>
+  <textarea data-template>
+## 6 · Inter-AS
+
+You know A/B/C. **The delta is what SR changes and where BGP-LU still wins.**
+
+| Option | One-line |
+|--------|----------|
+| **A** Back-to-back VRF | Sub-iface per VRF, no MPLS between ASes, no UCMP across boundary |
+| **B** VPNv4 label swap at ASBR | Possible UCMP via multipath VPNv4 + DMZ-LB |
+| **C** Multi-hop eBGP VPNv4 + BGP-LU | Classical SP design — UCMP = BGP multipath + DMZ-LB |
+
+↓ for SR patterns
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### What SR-MPLS changes inter-AS
+
+SR doesn't replace inter-AS BGP. It changes what rides underneath.
+
+**Pattern 1 — SR domain per AS + BGP-LU at boundary** (Seamless-MPLS, SR flavour)
+- Each AS runs SR internally; ASBRs originate BGP-LU with SR-mapped labels
+- Control plane across boundary still BGP-LU
+- UCMP across boundary: BGP multipath + DMZ-LB (same as classical C)
+
+**Pattern 2 — BGP-LS + H-PCE + SR Policy**
+- Each AS exports topology via BGP-LS to a hierarchical PCE
+- PCE computes end-to-end SR Policy with binding-SID at ASBR
+- *Only* clean way to do engineered cross-domain UCMP
+
+**Pattern 3 — SRv6 inter-AS**
+- SID is routable IPv6 → ASBR is just another hop
+- Works if peer also runs SRv6 (rare)
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Do you need SR for inter-AS UCMP?
+
+**Often no.** The honest tree:
+
+- "Use both peering links proportional to bandwidth" → **BGP multipath + DMZ-LB**. Solved since 2010. No SR needed.
+- "Engineer per-service paths across ASes" → **SR-TE + binding-SIDs**. Cleanest answer.
+- "Post-failure rebalancing across boundary with weights" → **H-PCE + SR Policy**. Not solvable cleanly without SR.
+- "Enterprise WAN, two providers, unequal split" → **BGP local-pref + multipath**. SR overkill — provider won't honour your policies.
+
+Sky-style: SR internally, **Option C with BGP-LU at the boundary** (peer doesn't speak SR), UCMP across peers via DMZ-LB.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Egress Peer Engineering (EPE)
+
+**The one case where SR is non-debatable inter-AS.**
+
+Problem: ASBR picks one best path per prefix. Can't say "customer X out peer A, customer Y out peer B" without per-prefix policy hacks.
+
+SR EPE (RFC 9087):
+- ASBR allocates **PeerNode-SID** (per session), **PeerAdj-SID** (per link), **PeerSet-SID** (per group)
+- Exported via BGP-LS to controller alongside topology
+- Controller pushes SR Policy with EPE SID at the end
+- Packet rides SR transport to ASBR, EPE SID forces egress out chosen peer
+
+Used by Microsoft, Meta, hyperscalers for real-time peering optimisation.
+
+<span class="tag ok">When the brief is "selective peering, per-customer-class egress" — EPE is *the* answer.</span>
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Inter-AS UCMP knobs — reference card
+
+- `maximum-paths` + `bgp bestpath as-path multipath-relax` — prereq for ECMP
+- **DMZ-Link-Bandwidth** — ext-community carrying per-path BW, drives weighted install
+- **BGP-PIC Edge** — fast convergence on PE-CE / ASBR failure (orthogonal to UCMP)
+- **Add-Path** — UCMP across RR-clients without losing diversity to bestpath
+- **Per-VRF vs per-prefix label** — per-prefix = finer ECMP/UCMP spread, per-VRF = label-table savings
+
+  </textarea>
+  </section>
+</section>
+
+<!-- ============ SECTION 7 — COVERAGE MATRIX ============ -->
+<section>
+  <section data-markdown>
+  <textarea data-template>
+## 7 · Coverage matrix
+
+You'll be handed a topology, not a choice. Cover **both sides** of each axis.
+
+- Topology: greenfield vs brownfield
+- PCE: every strategy from "none" → controller-driven
+- Failure budget: N-1 vs N-2
+- UCMP trigger: full demand × tool matrix
+- Migration risk: going SR *or* staying classical
+
+↓ to drill each axis
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Topology — greenfield vs brownfield
+
+**Greenfield (you draw it)**
+- Traffic matrix → fibre availability → failure budget → topology. In that order.
+- Partial mesh with triangle clusters per region, hierarchical interconnect.
+- Provision ≤50% (N-1) or ≤33% (N-2) of capacity under normal load.
+- Pick SR-MPLS day one. No LDP. IS-IS over OSPF.
+- One SRGB across domain. Reserve algos 128/129/130.
+
+**Brownfield**
+- Discover before designing: IGP DB, BGP table, traffic matrix, fibre inventory, LSP set.
+- Map *actually-in-use* vs configured — RSVP-TE often outlives its purpose by years.
+- Identify operational pain first. That decides if SR migration is justified.
+- Migrate SR on existing fibre. Redesign topology only when adding/removing capacity.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### PCE — every strategy
+
+| Strategy | When |
+|----------|------|
+| **No PCE** — distributed CSPF at head-end | <50 PEs, single AS, simple TE |
+| **Stateless PCE** | Offline path computation tools |
+| **Stateful PCE, passive** | Visibility only, stepping stone |
+| **Stateful PCE, active** (PCInitiate) | 50–500 PEs, single AS, mixed TE — current SOTA |
+| **Hierarchical PCE (H-PCE)** | 500+ PEs *or* multi-AS engineered paths |
+| **Controller-driven (NB-API)** | Hyperscaler — you own both ends, bespoke automation |
+
+**Vendor**: Cisco Crosswork, Nokia NSP, Juniper Paragon Pathfinder. Open-source: Jalapeno + GoBGP.
+
+<span class="tag warn">Failure mode</span> PCE outage → installed SR Policies survive (stateless dataplane) but no recomputation. Always run a pair.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Failure budget — N-1 vs N-2
+
+**N-1 (single failure)**
+- Most common SLA target. Provision ≤50%.
+- TI-LFA covers ~all single-link/single-node cases, sub-50ms.
+- **SRLG breach** (two "diverse" links in same conduit) silently breaks N-1. Audit fibre or you don't actually have N-1.
+
+**N-2 (dual failure)**
+- Carrier/finance/government SLAs. Provision ≤33%.
+- Topology must have **≥3 disjoint paths** between any critical pair. Triangle ≠ N-2.
+- TI-LFA alone insufficient. Need pre-computed dual-failure backup policies (PCE) *or* fast re-optimisation.
+- Flex-Algo helps: separate algo for critical services that avoids fragile links.
+- SRLG modelling mandatory.
+
+**Mixed:** per-service failure budget via flex-algo + separate policy classes.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### UCMP trigger — full matrix
+
+| Trigger | Non-SR tool | SR tool |
+|---------|------------|---------|
+| Asymmetric link capacity (intra-AS) | DMZ-LB on labelled underlay | IGP weighted SPF *or* SR-TE weighted candidate paths |
+| Asymmetric capacity inter-AS | BGP multipath + DMZ-LB | Same — SR no help |
+| Post-failure rebalancing intra-AS | RSVP-TE auto-bandwidth | SR-TE recompute via PCE |
+| Post-failure rebalancing inter-AS | Hard — BGP-LB shifts but doesn't engineer | H-PCE + SR Policy |
+| Elephant flow polarisation | Hash seed tuning, entropy label | Hash + Flowspec-style steer to dedicated SR Policy |
+| Per-service / per-class engineering | RSVP-TE per service | SR-TE per colour, flex-algo per class |
+| Latency-sensitive vs cheapest mix | Parallel RSVP meshes | Flex-Algo (min-delay) + per-service colour |
+| DC fabric asymmetric uplinks | DMZ-LB on iBGP-to-host | Same — SR no help |
+| Enterprise multi-homing | BGP local-pref + multipath | SR overkill |
+
+**Heuristic 1:** between boxes you don't both own → BGP solves it.
+**Heuristic 2:** engineered behaviour in domain you control → SR-TE wins.
+  </textarea>
+  </section>
+</section>
+
+<!-- ============ SECTION 8 — TWO CASES ============ -->
+<section>
+  <section data-markdown>
+  <textarea data-template>
+## 8 · Two reference cases
+
+Run every design choice through both.
+
+**Case A — Sky-style brownfield MPLS shop**
+LDP + RSVP-TE core, hundreds of PEs. Migrate to SR-MPLS.
+
+**Case B — IP-only network**
+Plain IP, maybe LDP, two upstreams or peers with unequal capacity.
+"Do we need SR for UCMP?" — often no.
+
+↓ for each
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Case A — Sky-style migration
+
+1. **SR alongside LDP** via mapping-server (TLV 149). Same dataplane.
+2. **Migrate node-by-node**: SR-prefer on edge first, core last.
+3. **Decommission LDP** once labels drain.
+4. **Replace RSVP-TE** with SR Policies — big-bang phase.
+5. **Add TI-LFA**, retire IP/LDP FRR.
+6. **Introduce PCE** once SR-TE is the only TE in town.
+
+**Inter-AS:** kept Option C with BGP-LU (peer didn't move to SR). UCMP across peers via DMZ-LB.
+
+**Win:** no RSVP state, predictable FRR, flex-algo separates classes.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Case B — IP-only, UCMP question
+
+**Trap:** moving to SR "because UCMP" when BGP community fixes it.
+
+The honest assessment:
+- Only pain = "use both peers proportionally" → **DMZ-LB**. Days of work, no migration risk.
+- Want per-service TE across boundary, you own one side → **SR-TE + PCE** justified, but big cost.
+- You don't own the other AS → end-to-end SR is a fantasy.
+
+**SR is justified by *operational* benefits** (no LDP/RSVP, TI-LFA, flex-algo, controller story).
+**Not by inter-AS UCMP alone.**
+
+For Case B, SRv6 is a live option too (see SRv6 appendix).
+  </textarea>
+  </section>
+</section>
+
+<!-- ============ SECTION 9 — LABS ============ -->
+<section>
+  <section data-markdown>
+  <textarea data-template>
+## 9 · Labs — ipspace SR Workshop
+
+Repo: `ipspace/sr-workshop` — netlab topologies, runs in **GitHub Codespaces**.
+
+[![Open in Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/ipspace/sr-workshop)
+
+Default device: **Arista cEOS** (needs Arista login + image upload).
+Alternative: `export NETLAB_DEVICE=frr` — FRR pre-installed, free, fine for labs 1–5.
+
+Companion deck: **ITNOG10 Apr 2026 training** (slide companion).
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Workshop lab progression
+
+**1-intro** (start here):
+1. Starting a lab with containerlab
+2. Simple SR-MPLS with IS-IS *(3 nodes — pe1, p, pe2)*
+3. Dual-stack SR-MPLS
+4. IS-IS unnumbered interfaces
+5. SR-MPLS with OSPFv2
+6. Multivendor SR-MPLS *(needs cEOS)*
+
+**2-fun** (transport):
+1. BGP-free core
+2. MPLS/VPN over SR transport
+3. EVPN over SR transport
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Lab 1 walkthrough — pe1 ↔ p ↔ pe2
+
+```bash
+cd 1-intro/2-netlab
+netlab up
+netlab report devices
+netlab connect pe1
+```
+
+What to verify:
+```
+show isis database detail        # SR Capability TLV + prefix-SID sub-TLVs
+show isis segment-routing prefix-sids
+show mpls table                  # PHP entries on p, push at pe1
+traceroute <pe2-loopback>        # one label on first hop only
+```
+
+Expected: SRGB advertised, prefix-SIDs as indices, transit `p` does PHP, traceroute shows single label push at pe1.
+
+```bash
+netlab down                      # teardown
+```
+Stop the Codespace from github.com/codespaces to stop the meter.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Drill schedule — target 2026-05-31
+
+| Day | Topic |
+|-----|-------|
+| Sat 23 / Sun 24 | Codespace setup, run lab 1 |
+| Mon 25 | Protocol refresh + intro labs 2–3 |
+| Tue 26 | OSPFv2 + unnumbered (labs 4–5) |
+| Wed 27 | Multivendor lab (6) + UCMP deep-dive |
+| Thu 28 | BGP-free core + MPLS/VPN over SR |
+| Fri 29 | Inter-AS theory drill + EVPN-over-SR lab |
+| Sat 30 | PCE + SR Policy on top of workshop |
+| Sun 31 | Case study writeups, drift checks |
+
+QoS folds into per-class queuing on policy labs.
+  </textarea>
+  </section>
+</section>
+
+<!-- ============ SECTION 10 — DC ARCHITECTURE ============ -->
+<section>
+  <section data-markdown>
+  <textarea data-template>
+## 10 · DC architecture — 2026 state
+
+**Spine-Leaf CLOS + EVPN/VXLAN** is still the default.
+
+What's changed since you last designed:
+- 400G ubiquitous, **800G in spines** at hyperscale (Tomahawk 5 = 51.2 Tbps)
+- **DPUs/SmartNICs** (BlueField, Nitro, IPU) terminate overlay encap at the host
+- **eBGP unnumbered** (RFC 5549/8950) default in Cumulus/SONiC/Arista
+- **SONiC** is real — AWS, Microsoft, Alibaba, LinkedIn run it
+- **gNMI/OpenConfig** everywhere; SNMP is for museums
+- **FRR** is the de-facto BGP/IGP stack in disaggregated NOSes
+
+↓ for HFT + AI + hybrid
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### HFT / low-latency
+
+Different game entirely. Sits **parallel** to CLOS, not on it.
+
+- **Cut-through forwarding** — Arista 7130, Cisco 3550-F, Exablaze — sub-100ns port-to-port
+- **L1 switches** (Nexus 3550-T) — crossbar, ~5ns, no L2
+- **Tap-and-aggregate via FPGA** for market data multicast
+- **No oversubscription**, shallow buffer
+- **PTP boundary clocks** in every switch — sub-µs sync
+- **No STP, no overlay** — flat L2 or pure L3 with /31s
+- **Colo geography** dominates topology. 1m fibre = 5ns
+- **Kernel bypass** at host (Solarflare/Mellanox/DPDK/RDMA)
+- Feed handlers in **FPGA on the NIC** — switch is increasingly passive
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### AI training fabrics
+
+The new dominant DC workload type.
+
+- 24k-GPU cluster needs ~**3.2 PB/s** bisection (Meta numbers)
+- **Two networks per cluster**: frontend Ethernet (mgmt/storage), backend GPU-to-GPU
+- **Backend = RoCEv2 or InfiniBand**
+  - NVIDIA Quantum-2 IB → xAI, MS H100, most "use NVIDIA's stack" clusters
+  - RoCE → "we own the network" (Meta, AWS)
+- **Rail-aligned CLOS** — same NIC index across hosts goes to same leaf, all-reduce only crosses one leaf
+- **ECMP not enough** — elephants polarise. **Adaptive routing / packet spraying** (Broadcom DLB, NVIDIA SHARP)
+- **Lossless Ethernet** — PFC + ECN + DCQCN tuning. Misconfigure → PFC storms kill the cluster
+- **In-network compute** — SHARP on IB, Ultra Ethernet Consortium for Ethernet
+- Power & cooling drive topology — **130kW/rack** normal for H100/B200
+
+SR-MPLS doesn't live inside the cluster. May ride between clusters and inter-DC.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Hybrid — on-prem ↔ cloud
+
+The shape that wins:
+
+- **DCI between on-prem DCs**: SR-MPLS or EVPN-over-MPLS
+- **On-prem ↔ cloud**: dedicated interconnect (DX / ExpressRoute / Cloud Interconnect) into a transit VPC/VNet
+  - Cloud underlay is BGP-based transit (TGW / vWAN / NCC)
+  - **No MPLS in the cloud** — providers give you VRF-like constructs over their own underlay
+- **Overlay stitching**: EVPN can extend across boundaries, but in practice most shops terminate at DCI edge and use VRF + BGP handoff to cloud
+- **SD-WAN** (Viptela, Versa, Prisma, Megaport) for branch-to-cloud
+- **Service mesh** (Istio, Cilium ClusterMesh) does east-west at L7 inside Kubernetes — orthogonal to fabric
+  </textarea>
+  </section>
+</section>
+
+<!-- ============ SECTION 11 — CLOUD ============ -->
+<section>
+  <section data-markdown>
+  <textarea data-template>
+## 11 · Cloud networking primer
+
+AWS / Azure / GCP — the deltas you need.
+
+The same three concepts everywhere:
+1. Private network construct (VPC / VNet / VPC)
+2. Managed transit hub (TGW / vWAN / NCC)
+3. Dedicated interconnect (DX / ExpressRoute / Cloud Interconnect)
+
+Plus per-cloud HPC/AI variants.
+
+↓ for each
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### AWS
+
+- **VPC** — private network, CIDR per VPC, subnets per AZ
+- **Transit Gateway (TGW)** — managed BGP transit hub; connects VPCs + DX/VPN + cross-region (TGW peering)
+- **Cloud WAN** — newer intent-based wrap over TGW + DX + SD-WAN
+- **Direct Connect (DX)** — dedicated link, 802.1Q VIFs (private/public/transit)
+- **PrivateLink** — cross-VPC service exposure via ENIs
+- **Route 53 Resolver** — cross-VPC + on-prem DNS
+
+**AI/HPC**: **EFA (Elastic Fabric Adapter)** — AWS's RDMA NIC, libfabric + SRD protocol. Custom Nitro-managed network with adaptive routing + packet spraying. Trainium / H100 / H200 / B200 clusters.
+**UltraClusters** — co-located rail-aligned GPU pods.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Azure
+
+- **VNet** — VPC equivalent
+- **Virtual WAN (vWAN)** — TGW equivalent; managed hub-spoke with firewall + SD-WAN
+- **ExpressRoute** — DX equivalent
+  - **ExpressRoute Direct** — 10/100G port pair into peering location
+  - **ExpressRoute Circuit** — logical capacity on top
+  - **Global Reach** — circuits across regions over MS backbone
+- **Private Link** — same as AWS PrivateLink
+- **Azure Route Server** — managed BGP speaker inside VNet (for NVAs)
+
+**AI/HPC**: **InfiniBand backend** in NDv5 / ND-H100 / ND-MI300X SKUs. Quantum-2 NDR 400G per port, rail-aligned. Frontend is regular Azure Ethernet/SR-IOV.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### GCP
+
+- **VPC** — **global** (unlike AWS/Azure regional). Subnets are regional.
+- **Cloud Interconnect** — DX equivalent. Dedicated or Partner.
+- **Network Connectivity Center (NCC)** — TGW/vWAN equivalent
+- **Private Service Connect** — PrivateLink equivalent
+- **Andromeda** — GCP's underlying SDN dataplane. Explains live migration without packet loss.
+
+**AI/HPC**:
+- **TPU pods** — proprietary 3D-torus ICI (Inter-Chip Interconnect), not Ethernet/IB
+- **GPU (A3/A3 Mega/A4)** — GPUDirect RDMA over CX-7 NICs on dedicated network
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Cross-cloud realities
+
+- **No direct cloud-to-cloud IP** — Megaport / Equinix Cloud Exchange / Console Connect, or VPN over internet
+- **BGP everywhere** at interconnect boundary
+- **MTU traps**:
+  - TGW = 8500
+  - vWAN = 1500 default (configurable to 9000 some paths)
+  - GCP = 8896 max
+  - Path MTU discovery breaks regularly
+- **Egress cost** is the real architecture driver:
+  - East-West free within AZ/region
+  - Expensive across regions
+  - Brutal across clouds
+  - **Topology follows the price sheet**
+- **DDoS/WAF/firewall**: Shield+WAF / Front Door+Firewall / Cloud Armor+NGFW. Converging on managed L3-L7.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### What to refresh given HFT / AI focus
+
+- **AWS Local Zones, Wavelength, Outposts** — low-latency edge
+- **Equinix Metal / Equinix Fabric** — neutral colo layer between cloud and HFT cage
+- **AI HPC SKUs** across all three — *capacity matters more than features*
+  (you'll be told "use H100 SXM on Azure NDv5 in West US 3" because that's where the capacity is)
+- **GPUDirect / RDMA semantics** at host level — can't reason about latency without it
+- **Inter-region backbone characteristics** — each cloud's backbone has different latency/jitter; matters for distributed training across regions
+  </textarea>
+  </section>
+</section>
+
+<!-- ============ SECTION 12 — SRV6 APPENDIX ============ -->
+<section>
+  <section data-markdown>
+  <textarea data-template>
+## Appendix · SRv6, case-by-case
+
+SRv6 = Segment Routing over IPv6.
+- SIDs are 128-bit IPv6 addresses
+- Path encoded in **Segment Routing Header (SRH)**
+- Transit nodes do IPv6 forwarding on destination address (rotated as segments consume)
+- **uSID** = micro-SID compression (16/32-bit SIDs packed into 128-bit container)
+
+Why operators pick it:
+- No MPLS dataplane — just IPv6
+- **Network programming model** — SIDs encode behaviour (End.X, End.DT4 etc.)
+- Inter-AS naturally works (SIDs routable globally)
+- IPv6-native operators (Bell, SoftBank, LINE) get a single-AF deployment
+
+↓ for evaluation against each case
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Case A (MPLS shop) — SRv6 wrong
+
+- MPLS dataplane already exists, engineers know it, services ride it
+- SR-MPLS slots into same forwarding plane, no rip-out
+- SRv6 = parallel two SR variants for years, *or* forklift to v6-only
+- Neither justifiable by UCMP/EPE
+- SR-MPLS gets identical UCMP, EPE, flex-algo, TI-LFA
+
+<span class="tag ok">Verdict: SR-MPLS</span>
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Case B (IP-only) — SRv6 genuinely on the table
+
+No MPLS investment to protect → "don't disrupt the dataplane" cuts the other way.
+
+**SR-MPLS** would *add* MPLS as new operations burden.
+**SRv6** adds an IPv6 header — network already routes v6.
+
+Three-way choice:
+1. Stay IP + BGP-LB (fix UCMP only)
+2. Adopt SR-MPLS (full SR with MPLS dataplane)
+3. Adopt SRv6 (full SR with IPv6, no MPLS)
+
+**Pick (3) over (2)** when: IPv6-comfortable team, kit supports line-rate, no MPLS-dependent services, can absorb tooling immaturity.
+
+**Pick (2) over (3)** when: services need EVPN-over-MPLS, hardware older, team has MPLS muscle memory, vendor SRv6 patchy on chosen platform.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Trade-offs vs SR-MPLS (both cases)
+
+- **Header overhead**: native SRv6 SID = 16 bytes. 5-SID path = 80 bytes. SR-MPLS labels = 4 bytes each. uSID compresses but adds complexity.
+- **Hardware**: older silicon slow-paths SRv6. Current-gen does line-rate but uSID depth varies.
+- **Inter-AS SRv6** only works if peer also runs SRv6 — at boundary you're still doing BGP multipath + DMZ-LB.
+- **Operational tooling** (traceroute, OAM) lags MPLS by years.
+
+**Unambiguous SRv6 wins**:
+- Greenfield IPv6-only (5GC mobile backhaul — 3GPP designed around it)
+- Heavy intent-based service chaining (NFV-heavy)
+- Operator already running IPv6 underlay with no MPLS investment
+  </textarea>
+  </section>
+</section>
+
+<!-- ============ SECTION 13 — RESOURCES ============ -->
+<section>
+  <section data-markdown>
+  <textarea data-template>
+## Resources
+
+**Primary lab (priority 1)**:
+- [ipspace SR-MPLS workshop](https://blog.ipspace.net/2026/04/sr-mpls-workshop/) — Apr 2026
+- [Codespaces launcher](https://codespaces.new/ipspace/sr-workshop)
+- [Repo `ipspace/sr-workshop`](https://github.com/ipspace/sr-workshop)
+
+**Companion**:
+- [ITNOG10 SR training (Apr 2026)](https://www.itnog.it/itnog10/files/TRaining_Segment%20Routing%20ITNOG%202026%20april%2020_signed.pdf)
+- [routingcraft: Making SR User-Friendly](https://routingcraft.net/making-segment-routing-user-friendly/)
+- [ipspace: Egress Peer Engineering](https://blog.ipspace.net/2024/10/worth-reading-egress-peer-engineering/)
+
+**Tooling**:
+- [netlab install](https://netlab.tools/install/) · [netlab tutorials](https://netlab.tools/tutorials/)
+- [evpn.bgplabs.net Codespaces](https://evpn.bgplabs.net/4-codespaces/) — EVPN labs
+
+**Software downloads**:
+- [Arista cEOS](https://www.arista.com/en/login) — login → Support → Software Downloads
+  </textarea>
+  </section>
+</section>
+
+<!-- ============ END ============ -->
+<section class="center">
+  <h2>End</h2>
+  <p style="color:#888; margin-top:2em;">
+    Discuss any section — swipe up <code>Esc</code> to see the overview.
+  </p>
+  <p style="font-size:0.7em; color:#666; margin-top:3em;">
+    Source: <a href="https://github.com/ipspace/sr-workshop">ipspace/sr-workshop</a> &nbsp;·&nbsp;
+    netlab.tools &nbsp;·&nbsp; ipspace.net workshop &nbsp;·&nbsp; RFC 7311 / 8402 / 9087
+  </p>
+</section>
+
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/markdown/markdown.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    slideNumber: 'c/t',
+    controls: true,
+    progress: true,
+    transition: 'slide',
+    touch: true,
+    width: 1280,
+    height: 800,
+    margin: 0.06,
+    minScale: 0.2,
+    maxScale: 1.5,
+    plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ],
+  });
+</script>
+</body>
+</html>
