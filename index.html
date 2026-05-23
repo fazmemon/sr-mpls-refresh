@@ -676,11 +676,121 @@ Look for these in the workshop labs — lab 5 (flex-algo) is where it clicks.
   </section>
 </section>
 
-<!-- ============ SECTION 5 — ECMP / UCMP ============ -->
+<!-- ============ SECTION 5 — LOAD-BALANCING ============ -->
 <section>
   <section data-markdown>
   <textarea data-template>
-## 5 · Why ECMP breaks → UCMP
+## 5 · MPLS load-balancing — hashing, entropy labels, polarisation
+
+ECMP and UCMP both *assume* flows distribute reasonably across equal-cost paths. That distribution comes from the **hash function** at each LSR's forwarding engine — and it has limits worth understanding before we get into how ECMP/UCMP actually fail.
+
+Four slides:
+1. What LSRs hash on (and where it falls down)
+2. Entropy Label — the fix for deep stacks and non-IP payloads
+3. IPv6 flow label / SRv6 hashing
+4. Polarisation & mitigations
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Hash inputs — what the LSR actually has to work with
+
+At a transit LSR, forwarding sees a label stack + opaque payload. To spread flows across equal-cost next-hops it needs hash entropy *from somewhere*.
+
+**Typical hash inputs (modern silicon):**
+- 5-tuple of inner IP (src/dst IP, proto, src/dst port) — peek under the label stack until first IPv4/IPv6 header found
+- MPLS label values (limited entropy — same label per flow)
+- Source/destination MAC for L2VPN
+- Per-LSR hash seed (salt) to avoid downstream polarisation
+
+**Where peeking breaks down:**
+- Stack deeper than the silicon can probe (typically 3–5 labels, current-gen 10+)
+- Payload is L2 (Ethernet pseudowire, EoMPLS) — there's no IP header to find
+- Payload is GRE / IPsec / unknown — falls back to label-only hash → low entropy, all flows hash the same
+- MPLS-in-MPLS from SR Policy + EVPN + VPN labels → too deep
+
+**Result:** without explicit entropy, traffic across "ECMP" links is anything but balanced.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Entropy Label — concrete examples
+
+Standard MPLS without entropy label:
+```
+[Transport-Label][VPN-Label][IP/payload]
+```
+Transit hashes by peeking under labels for the IP header. Fragile when:
+- Labels are deeper than the hardware can probe (label stack > 3–5 deep)
+- Payload is L2 (Ethernet pseudowire, EoMPLS) — no IP header to find
+- Payload is GRE / IPsec / unknown protocol → falls back to label-only hash → poor entropy
+
+**With entropy label (RFC 6790, SR-MPLS profile RFC 8662):**
+```
+[Transport-Label][ELI=7][EL=0xA47F1][VPN-Label][L2-frame]
+```
+- **ELI (Entropy Label Indicator)** = reserved label value 7, signals "next label is entropy"
+- **EL (Entropy Label)** = 20-bit value the *ingress* computed from the original flow's identifying fields (5-tuple of inner IP, hashed MAC pair for L2VPN, or any flow descriptor)
+- Transit routers hash on the EL itself — no deep packet inspection needed, works regardless of payload type
+- Capability advertised in IGP (IS-IS / OSPF SR Capability sub-TLV) so head-end only inserts EL when downstream supports it
+
+**Real-world cases where EL is essential:**
+- **L2VPN over SR-MPLS** carrying Ethernet — no inner IP for transit to hash on
+- **MPLS-in-MPLS** with deep stacks from SR Policy + VPN + EVPN labels
+- **Mobile xhaul** carrying GTP-U — Cisco IOS-XR uses EL to spread per-subscriber-tunnel
+- **Inter-DC EoMPLS pseudowires** with millions of MAC pairs needing flow-level spread
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### IPv6 flow label / SRv6 hashing
+
+**IPv6 flow label (RFC 6437)** is the SRv6 analogue of the entropy label:
+- 20-bit field already in the IPv6 header
+- Set by source application (rare) or by stateful classifier at the edge
+- Routers may use as hash input alongside src/dst IPv6 addresses
+
+**SRv6 hashing**:
+- Outer SRv6 SID = IPv6 destination address → consistent per-flow if flow label is set
+- Most SRv6 implementations hash on (src IPv6 + dst IPv6 + flow label) → good entropy when flow label populated
+- Without flow label set, fall back to addresses only → polarisation if many flows share endpoints (typical of leaf-spine east-west)
+
+**Caveats**:
+- Many source stacks (Linux, Windows) default flow label = 0 → no entropy
+- Workaround: set flow label at the ingress PE based on the inner flow (similar to how EL is computed for SR-MPLS)
+- Per-platform variation on what's actually hashed — vendor docs needed before relying on it
+
+**Bottom line:** SR-MPLS has explicit EL machinery; SRv6 reuses a header field that often isn't populated. Operationally, SR-MPLS is more deterministic.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Polarisation & mitigations
+
+**Polarisation** = traffic that should spread across N paths collapses onto a subset because multiple ECMP stages all make the same decision.
+
+**Cause:** every LSR runs the same hash function on the same inputs → identical bucket assignment at every stage → flows that hash to bucket 0 at stage 1 also hash to bucket 0 at stage 2 → some links saturate, others stay empty.
+
+**Mitigations:**
+- **Per-LSR hash seed (salt)** — each router salts the hash with its router-ID or system-ID → independent bucket assignments per stage. Default on most modern silicon, but verify on older platforms.
+- **Resilient hashing** — when N changes (link up/down), only flows that need to move actually move. Without it, a single link flap can re-bucket every flow.
+- **Flowlet hashing** — detect inter-packet gap > threshold within a flow; treat as new flowlet for hash; allows rebalancing without breaking ordering. Used in Cisco, Arista, Broadcom DLB.
+- **Adaptive routing / packet spraying** — drops per-flow ordering entirely; only safe with lossless Ethernet + reordering-tolerant transport (RoCE, custom AI fabrics). See AI training section later.
+
+**Operational symptom of polarisation:** "we have 4× 100G ECMP but only 1 link is hot." Almost always salt-not-set or stage-1-and-stage-2-using-same-inputs.
+  </textarea>
+  </section>
+</section>
+
+<!-- ============ SECTION 6 — ECMP / UCMP ============ -->
+<section>
+  <section data-markdown>
+  <textarea data-template>
+## 6 · Why ECMP breaks → UCMP
 
 **ECMP assumes all paths are equivalent.**
 
@@ -733,7 +843,7 @@ UCMP = weighted ECMP. FIB bucket table programmed proportional to weights.
 <section>
   <section data-markdown>
   <textarea data-template>
-## 6 · Physical topology economics
+## 7 · Physical topology economics
 
 For N PoPs: wire links so capacity is well-used, you survive failure, you don't overbuild.
 
@@ -773,7 +883,7 @@ SR + flex-algo + UCMP is what lets you exploit irregular topologies efficiently.
 <section>
   <section data-markdown>
   <textarea data-template>
-## 7 · Line cards — Cisco / Nokia / Juniper
+## 8 · Line cards — Cisco / Nokia / Juniper
 
 Three things to compare across vendors:
 
@@ -855,7 +965,7 @@ Both families: SR-MPLS, SR-TE, flex-algo, TI-LFA, BGP-LS to PCE.
 <section>
   <section data-markdown>
   <textarea data-template>
-## 8 · Inter-AS
+## 9 · Inter-AS
 
 You know A/B/C. **The delta is what SR changes and where BGP-LU still wins.**
 
@@ -944,7 +1054,7 @@ Used by Microsoft, Meta, hyperscalers for real-time peering optimisation.
 <section>
   <section data-markdown>
   <textarea data-template>
-## 9 · Coverage matrix
+## 10 · Coverage matrix
 
 You'll be handed a topology, not a choice. Cover **both sides** of each axis.
 
@@ -1042,7 +1152,7 @@ You'll be handed a topology, not a choice. Cover **both sides** of each axis.
 <section>
   <section data-markdown>
   <textarea data-template>
-## 10 · Two reference cases
+## 11 · Two reference cases
 
 Run every design choice through both.
 
@@ -1097,7 +1207,7 @@ For Case B, SRv6 is a live option too (see SRv6 appendix).
 <section>
   <section data-markdown>
   <textarea data-template>
-## 11 · Labs — ipspace SR Workshop
+## 12 · Labs — ipspace SR Workshop
 
 Repo: `ipspace/sr-workshop` — netlab topologies, runs in **GitHub Codespaces**.
 
@@ -1181,7 +1291,7 @@ QoS folds into per-class queuing on policy labs.
 <section>
   <section data-markdown>
   <textarea data-template>
-## 12 · DC architecture — 2026 state
+## 13 · DC architecture — 2026 state
 
 **Spine-Leaf CLOS + EVPN/VXLAN** is still the default.
 
@@ -1257,7 +1367,7 @@ The shape that wins:
 <section>
   <section data-markdown>
   <textarea data-template>
-## 13 · Cloud networking primer
+## 14 · Cloud networking primer
 
 AWS / Azure / GCP — the deltas you need.
 
