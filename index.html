@@ -150,15 +150,35 @@ SPF is computed independently per algo.
 bulk traffic rides algo 0 (IGP metric). Same fibre, different paths.
 
 No per-tunnel state.
+
+→ Deep dive in §4 (FAD, ASLA, election, pitfalls)
   </textarea>
   </section>
 </section>
 
-<!-- ============ SECTION 2 — IS-IS WIRE DETAIL ============ -->
+<!-- ============ SECTION 2 — IGP + BGP EXTENSIONS ============ -->
 <section>
   <section data-markdown>
   <textarea data-template>
-## 2 · IS-IS — what's actually flooded
+## 2 · IGP + BGP extensions for SR
+
+SR reuses the existing MPLS dataplane but **extends the control plane** in four protocols:
+
+- **IS-IS** — RFC 8667 (SR), RFC 9479 (ASLA)
+- **OSPFv2** — RFC 8665
+- **OSPFv3** — RFC 8666
+- **BGP-LS** — RFC 9085 (feeds PCE/controller)
+- **BGP-LU** — RFC 8669 (Prefix-SID attribute for inter-AS SR)
+
+Same information in every case: **SRGB / SR algos / prefix-SIDs / adj-SIDs / TE attributes**. The encoding differs.
+
+↓ for each
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### IS-IS — what's actually flooded
 
 Three pieces ride in standard LSPs (no new PDU types).
 You'll see all three in lab 1 (`show isis database detail`).
@@ -225,15 +245,322 @@ These show up in IS-IS TLV 22 sub-TLVs — drive flex-algo & SR-TE:
 
 Without these in the LSP, flex-algo "min-delay" can't compute.
 PCE pulls all of it via **BGP-LS** from any node in the domain.
+
+<span class="tag warn">ASLA</span> RFC 9479 — Application-Specific Link Attributes. Lets a link advertise different attributes per app (RSVP-TE vs SR-TE vs flex-algo). Required for clean separation.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### OSPFv2 — SR extensions (RFC 8665)
+
+OSPF uses opaque LSAs (no new LSA types added):
+
+- **Router Information Opaque LSA** (type 4/10/11) — carries SR-Algorithm TLV + SR-SID/Label-Range TLV (the SRGB)
+- **Extended Prefix Opaque LSA** — Prefix-SID sub-TLV, prefix-attribute flags
+- **Extended Link Opaque LSA** — Adj-SID, LAN-Adj-SID, link admin-groups, TE metrics
+
+OSPFv3 (RFC 8666) — same idea, native v6 LSAs, no opaque hack.
+
+**Pick IS-IS if you can.** SR-related TLVs are more mature, multi-topology is cleaner, vendors have shipped IS-IS SR sooner than OSPF SR on every platform.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### BGP-LS — feeding the controller (RFC 9085)
+
+BGP-LS exports topology + SR state out of the IGP via BGP NLRI (SAFI 71).
+
+NLRI types:
+- **Node NLRI** — per-node SR Capability, SRGB, algos
+- **Link NLRI** — per-link IGP metric, TE attrs, Adj-SID
+- **Prefix NLRI (v4/v6)** — per-prefix Prefix-SID
+- **SR Policy NLRI** (RFC 9552) — installed SR Policies, candidate paths
+
+One BGP-LS speaker per IGP domain feeds the PCE/controller — it doesn't need to be every router.
+
+For multi-AS / multi-domain: **separate BGP-LS sessions per domain** stitched together at the controller (H-PCE picture).
+
+This is **how PCE knows your topology and current SR state** without speaking IGP.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### BGP-LU + SR — Prefix-SID attribute (RFC 8669)
+
+The lever for inter-AS SR-MPLS: BGP-LU carries an **SR index, not a label**.
+
+New BGP path attribute: **Prefix-SID (type 40)**.
+Two TLVs inside:
+- **Label-Index** — the SR-MPLS prefix-SID index
+- **SRv6 L3 Service** — for SRv6
+
+Receiver computes `label = its_own_SRGB.start + index` — same logic as IGP-flooded prefix-SIDs but carried across AS boundary by BGP.
+
+<span class="tag ok">Result</span> Inter-AS Option C with SR transport end-to-end. Stitching disappears — head-end PE pushes a single Node-SID for the egress PE, even across multiple ASes (if both speak SR + BGP-LU + Prefix-SID attribute).
+
+If peer doesn't speak SR — fall back to classical BGP-LU with normal labels at the boundary.
   </textarea>
   </section>
 </section>
 
-<!-- ============ SECTION 3 — ECMP / UCMP ============ -->
+<!-- ============ SECTION 3 — TI-LFA EVOLUTION ============ -->
 <section>
   <section data-markdown>
   <textarea data-template>
-## 3 · Why ECMP breaks → UCMP
+## 3 · TI-LFA — evolution from MPLS FRR
+
+Four generations of fast reroute:
+
+| Gen | Tech | Coverage | State in core |
+|-----|------|----------|---------------|
+| 1 | **RSVP-TE FRR** (RFC 4090) | ~100% | Heavy — bypass tunnels |
+| 2 | **IP LFA** (RFC 5286) | 50–80% | Zero |
+| 3 | **Remote LFA** (RFC 7490) | 90–99% | T-LDP tunnels |
+| 4 | **TI-LFA** (RFC 9490) | 100% | Zero — SR repair list |
+
+Each fixed the previous one's coverage or operational gap.
+↓ for the walk-through
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Gen 1 — RSVP-TE Fast Reroute
+
+PLR (point of local repair) pre-installs a bypass for every protected primary LSP.
+
+Two modes:
+- **Facility backup (1:N)** — one bypass tunnel protects many primaries sharing the same link/node. Most common.
+- **One-to-one backup** — per-LSP detour. Cleaner, doesn't scale.
+
+Sub-50ms switchover at the PLR. **State everywhere** — every transit holds bypass-LSP state.
+
+<span class="tag warn">Cost</span> RSVP-TE everywhere, bypass tunnels are themselves RSVP LSPs, complex op model.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Gen 2 — IP LFA (Loop-Free Alternate)
+
+Pure IP, no tunnels, no protocol additions to RSVP.
+
+For destination D from PLR P with primary nexthop N:
+> Neighbour A is an LFA iff `dist(A, D) < dist(A, P) + dist(P, D)`
+> (the inequality that says A won't loop the packet back via P)
+
+Each router precomputes LFAs from IGP TE-DB.
+
+<span class="tag warn">Problem</span> Ring topologies, square topologies, many partial meshes → no LFA exists. Coverage 50–80% in real networks.
+
+Operators wanted IP-FRR without RSVP, but topology often refused.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Gen 3 — Remote LFA (RLFA)
+
+When no neighbour qualifies, tunnel to a **PQ-node** that does.
+
+- **P-space** = nodes PLR reaches without using the failed link
+- **Q-space** = nodes from which destination is reachable without using the failed link
+- **PQ-node** = node in P ∩ Q
+
+PLR tunnels packet to the PQ-node (T-LDP session), PQ-node forwards natively to destination.
+
+Coverage 90–99% — most topologies have a PQ-node somewhere.
+
+<span class="tag warn">Cost</span> T-LDP signalling overhead, dynamic peer discovery, doesn't help when P ∩ Q is empty.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Gen 4 — TI-LFA (Topology-Independent LFA)
+
+SR's superpower for FRR. Always 100% coverage if any post-failure path exists.
+
+Three key properties:
+1. **Post-convergence path** — repair list matches what IGP will install *after* convergence. No micro-loops, no traffic moved twice.
+2. **No bypass state in transit nodes** — repair is encoded as a SID list pushed at the PLR.
+3. **Per-link / per-node / per-SRLG** protection independently selectable.
+
+Repair list = stack of SIDs that bypasses the failure and lands on the post-convergence next-hop.
+Typically **1–3 SIDs deep**.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### How TI-LFA computes a repair list
+
+1. Compute **P-space** of PLR (excluding failed resource)
+2. Compute **Q-space** of destination (excluding failed resource)
+3. If P ∩ Q ≠ ∅: PQ-node exists → repair = **[Node-SID(PQ)]**
+4. Else: find P-node P\* with adjacency to Q-node Q\* → repair = **[Node-SID(P\*), Adj-SID(P\*→Q\*)]**
+5. If even that fails: extend with another Node-SID hop. Repair stack grows.
+
+The **Adj-SID** is critical — it lets the PLR encode "go via *this specific link*" without disturbing the rest of the path.
+
+<span class="tag ok">Result</span> repair list pushed at PLR, transit nodes execute as ordinary SR forwarding. **No bypass tunnels anywhere.**
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### TI-LFA — what you'll see in the lab
+
+Lab 2 in the workshop enables TI-LFA on the 3-node topology.
+
+```
+show isis fast-reroute summary
+show isis fast-reroute topology
+show mpls ldp ipv4 binding   (LDP comparison — old)
+show segment-routing traffic-eng path-list
+```
+
+Expected output: per-prefix backup nexthop with **repair SID list** (one or more labels), backup interface, repair-path metric.
+
+Then pull a link mid-ping → measure loss. Target: **< 50ms**, often **< 20ms** with TI-LFA + good BFD timers.
+
+**MSD constraint**: PLR must be able to push the repair stack. Old silicon caps at 3–5 labels. Current-gen 10+.
+  </textarea>
+  </section>
+</section>
+
+<!-- ============ SECTION 4 — FLEX-ALGO DEEP DIVE ============ -->
+<section>
+  <section data-markdown>
+  <textarea data-template>
+## 4 · Flex-Algo deep dive
+
+**Multiple SPTs over the same physical topology**, one per algorithm number, with per-algo prefix-SIDs.
+
+Use cases:
+- Algo 128 = **min-delay** — low-latency overlay rides its own SPT
+- Algo 129 = **avoid affinity RED** — keep premium off untrusted transit
+- Algo 130 = **SRLG-disjoint** — critical services routed away from shared fate
+
+No per-service tunnels, no per-LSP state. The TE policy lives in the **algorithm definition**, not in head-end tunnel state.
+
+↓ for the mechanics
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Three pieces define a flex-algo
+
+**1. Flex-Algo Definition (FAD)** — flooded in IGP (sub-TLV in Router Capability TLV).
+- Algorithm number (128–255 operator range)
+- Metric type — IGP / min-delay / TE
+- Affinity include-any / include-all / exclude
+- SRLG exclude
+- Calculation type — SPF / strict-SPF
+
+**2. Participating routers** — each node advertises algos it supports.
+SPT computed only over the participating subgraph.
+
+**3. Per-algo prefix-SIDs** — node N advertises a separate prefix-SID per algo.
+- Algo 0: prefix-SID 5 → label 16005
+- Algo 128: prefix-SID 105 → label 16105
+- Algo 129: prefix-SID 205 → label 16205
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Metric types
+
+The FAD says **which metric drives this algo's SPF**:
+
+| Type | Source | Note |
+|------|--------|------|
+| **0** | IGP metric | Same as algo 0 |
+| **1** | Min link delay | Sub-TLV 34, RFC 8570 |
+| **2** | TE default metric | Sub-TLV 33 |
+
+For min-delay you need **accurate measurements**. TWAMP-Light or hardware timestamping into the IGP. Stale or estimated delay → traffic on the wrong path.
+
+For TE default metric — same idea as classical RSVP-TE metric: operator-set per link, independent of IGP cost.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Constraints — affinities and SRLG
+
+**Affinities (admin-groups)** — 32-bit bitmap per link (or 256-bit Extended Admin Groups).
+
+Three operations in the FAD:
+- `include-any` — link must have at least one bit
+- `include-all` — link must have all bits
+- `exclude` — link must have none of these bits
+
+**SRLG (Shared Risk Link Group)** — links sharing fate (same conduit, same amplifier, same submarine cable section).
+- FAD can `exclude-srlg` — skip any link tagged with that SRLG
+
+Use SRLG-aware flex-algo for **N-2 critical services**: separate algo whose SPT avoids any link sharing fate with the rest of the path.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### FAD election & participation pitfalls
+
+Multiple nodes may flood the same FAD. Election:
+1. Highest **priority** wins
+2. Tie → highest router-ID
+
+<span class="tag warn">Pitfall 1</span> Same algo number, different definitions on different nodes → silent disagreement. Losing nodes disable the algo locally.
+
+<span class="tag warn">Pitfall 2</span> Non-participating node on the SPT → broken path for that algo. Migration must stage participation carefully (enable on all nodes *before* relying on the algo).
+
+<span class="tag warn">Pitfall 3</span> Per-algo prefix-SIDs eat SRGB. Default 8000 labels. Many algos × many nodes → plan SRGB size or use sparse SID allocation.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Binding services to a flex-algo
+
+Three patterns:
+
+**1. SR Policy with colour** — service marked with BGP **colour-extended community**; head-end PE matches colour to an SR Policy that uses the flex-algo's prefix-SID.
+
+**2. Per-VRF or per-prefix policy** — operator config maps VRF → colour → algo.
+
+**3. Direct prefix-SID push** — if all you want is "use algo N for these prefixes," head-end pushes the algo-N Node-SID instead of the algo-0 one. No SR Policy needed.
+
+Pattern 1 is dominant in production. Colour decouples *what service it is* from *which path it takes*.
+
+ASLA (RFC 9479) becomes important once flex-algo uses different link attributes than RSVP-TE — without ASLA, attributes are shared across applications and you can't tune per-app.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Worth-knowing edge cases
+
+- **Strict-SPF** — `calculation-type 1` in the FAD. Means "follow this SPT *strictly*, even if a downstream node would prefer ECMP elsewhere." Used when you absolutely must enforce a path-class boundary.
+- **Flex-Algo + TI-LFA** — TI-LFA computes repair lists *per algo*. Each algo gets its own FRR coverage independently.
+- **Inter-AS flex-algo** — doesn't extend across AS boundaries natively. Need an SR Policy + binding-SID at the ASBR (or matching FADs both sides, which is rare).
+- **SRv6 flex-algo** — same protocol mechanism, different SID encoding.
+
+Look for these in the workshop labs — lab 5 (flex-algo) is where it clicks.
+  </textarea>
+  </section>
+</section>
+
+<!-- ============ SECTION 5 — ECMP / UCMP ============ -->
+<section>
+  <section data-markdown>
+  <textarea data-template>
+## 5 · Why ECMP breaks → UCMP
 
 **ECMP assumes all paths are equivalent.**
 
@@ -286,7 +613,7 @@ UCMP = weighted ECMP. FIB bucket table programmed proportional to weights.
 <section>
   <section data-markdown>
   <textarea data-template>
-## 4 · Physical topology economics
+## 6 · Physical topology economics
 
 For N PoPs: wire links so capacity is well-used, you survive failure, you don't overbuild.
 
@@ -326,7 +653,7 @@ SR + flex-algo + UCMP is what lets you exploit irregular topologies efficiently.
 <section>
   <section data-markdown>
   <textarea data-template>
-## 5 · Line cards — Cisco / Nokia / Juniper
+## 7 · Line cards — Cisco / Nokia / Juniper
 
 Three things to compare across vendors:
 
@@ -408,7 +735,7 @@ Both families: SR-MPLS, SR-TE, flex-algo, TI-LFA, BGP-LS to PCE.
 <section>
   <section data-markdown>
   <textarea data-template>
-## 6 · Inter-AS
+## 8 · Inter-AS
 
 You know A/B/C. **The delta is what SR changes and where BGP-LU still wins.**
 
@@ -497,7 +824,7 @@ Used by Microsoft, Meta, hyperscalers for real-time peering optimisation.
 <section>
   <section data-markdown>
   <textarea data-template>
-## 7 · Coverage matrix
+## 9 · Coverage matrix
 
 You'll be handed a topology, not a choice. Cover **both sides** of each axis.
 
@@ -595,7 +922,7 @@ You'll be handed a topology, not a choice. Cover **both sides** of each axis.
 <section>
   <section data-markdown>
   <textarea data-template>
-## 8 · Two reference cases
+## 10 · Two reference cases
 
 Run every design choice through both.
 
@@ -650,7 +977,7 @@ For Case B, SRv6 is a live option too (see SRv6 appendix).
 <section>
   <section data-markdown>
   <textarea data-template>
-## 9 · Labs — ipspace SR Workshop
+## 11 · Labs — ipspace SR Workshop
 
 Repo: `ipspace/sr-workshop` — netlab topologies, runs in **GitHub Codespaces**.
 
@@ -734,7 +1061,7 @@ QoS folds into per-class queuing on policy labs.
 <section>
   <section data-markdown>
   <textarea data-template>
-## 10 · DC architecture — 2026 state
+## 12 · DC architecture — 2026 state
 
 **Spine-Leaf CLOS + EVPN/VXLAN** is still the default.
 
@@ -810,7 +1137,7 @@ The shape that wins:
 <section>
   <section data-markdown>
   <textarea data-template>
-## 11 · Cloud networking primer
+## 13 · Cloud networking primer
 
 AWS / Azure / GCP — the deltas you need.
 
