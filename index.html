@@ -218,6 +218,27 @@ SR Policy from PE1 → PE2, colour 100 (low-latency), computed by PCE as `[Adj-S
   </textarea>
   </section>
 
+  <section>
+    <h3>Binding-SID expansion — sequence</h3>
+    <div class="mermaid">
+sequenceDiagram
+  participant App as Service / BGP
+  participant PE1 as PE1 (BSID owner)
+  participant R1 as R1 (P-node)
+  participant R3 as R3 (P-node)
+  participant PE2 as PE2 (egress)
+  App->>PE1: Route NH = pe2 colour:100
+  Note over PE1: Resolve colour:100 → BSID 24578
+  Note over PE1: BSID is local — expand now
+  PE1->>R1: Push [Adj-SID r1, Node-SID r3, Node-SID pe2]
+  R1->>R3: Pop top, forward via SID r3
+  R3->>PE2: Pop top, deliver via Node-SID pe2 (PHP)
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;">
+      Service simply says "colour 100 to PE2." BSID hides the actual path. Re-optimise the policy → BSID unchanged → service untouched.
+    </p>
+  </section>
+
   <section data-markdown>
   <textarea data-template>
 ### How SR differs from LDP — concept map (1/2)
@@ -291,11 +312,13 @@ Hop 2 (pe2):  destination
   <textarea data-template>
 ### Why label consistency matters — operational consequences (2/2)
 
-- **Automation/PCE** reads IGP database, knows every label without RPC to each LSR
-- **LSP ping target-FEC TLV** becomes deterministic — predict probe replies before sending
-- **Pre-compute / verify** labels before deployment
-- **Instant node onboarding** — assign node-SID 7, that node is now reachable at label 16007 everywhere, instantly
-- "What was the label stack, what should it have been?" troubleshooting becomes a much shorter conversation
+| Consequence | Concrete example |
+|-------------|------------------|
+| Automation/PCE reads IGP DB, knows every label | PCE computing `PE1→PE7` path reads BGP-LS feed → knows egress label = `16007` directly. No NETCONF/SNMP query per LSR. In LDP: query every LSR for its local swap label. |
+| LSP ping target-FEC TLV deterministic | `mpls ping prefix-sid label 16005` — predict the echo FEC TLV before sending; reply should come from node-SID 5. Dataplane vs control plane match in one command. |
+| Pre-compute / verify labels before deployment | Write expected stacks in YAML: `pe1→pe2 expect push 16002`. Automated test post-config compares actual vs expected. Impossible in LDP — labels only known after session up. |
+| Instant node onboarding | Add `pe10` with prefix-SID 10. IS-IS floods. Within seconds every node has `label 16010 → pe10` installed. No LDP session mesh — onboarding is O(1) not O(N). |
+| Troubleshooting | tcpdump shows top label `16007` → "that's pe7." Done. LDP: top label `19437` → telnet upstream → `show mpls ldp bindings` → find FEC → identify destination. 5 commands vs 1. |
 
 **Labels stop being opaque.**
   </textarea>
@@ -397,6 +420,26 @@ On `p`:
 That's it. No LDP session, no RSVP path state, no per-LSP entries.
 **Two entries per remote node + one per local adj.**
   </textarea>
+  </section>
+
+  <section>
+    <h3>SR-MPLS forwarding — sequence</h3>
+    <div class="mermaid">
+sequenceDiagram
+  participant PE1
+  participant P as P (transit)
+  participant PE2
+  Note over PE1: Want to reach pe2 (Node-SID = 2)
+  Note over PE1: label = SRGB.start + 2 = 16002
+  PE1->>P: push label 16002, send
+  Note over P: Lookup 16002 in MPLS FIB
+  Note over P: Action: POP (PHP for last hop)
+  P->>PE2: forward as IP (no label)
+  Note over PE2: Native IP delivery to local interface
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;">
+      One label pushed at PE1, popped at penultimate hop P (PHP). No per-LSP state in P — just one entry per remote prefix-SID.
+    </p>
   </section>
 
   <section data-markdown>
@@ -576,6 +619,27 @@ The **Adj-SID** is critical — it lets the PLR encode "go via *this specific li
 
 <span class="tag ok">Result</span> repair list pushed at PLR, transit nodes execute as ordinary SR forwarding. **No bypass tunnels anywhere.**
   </textarea>
+  </section>
+
+  <section>
+    <h3>TI-LFA P-space / Q-space — visual</h3>
+    <div class="mermaid">
+graph LR
+  PE1[PE1] --- R1[R1 / PLR]
+  R1 -.->|"✗ failed link"| R2[R2]
+  R2 --- R3
+  R1 ===|"alt path"| R3[R3 / PQ-node]
+  R3 --- PE2[PE2]
+  style R1 fill:#6b3a1a,color:#fff,stroke:#ce9178
+  style R3 fill:#1e4620,color:#fff,stroke:#b5cea8
+  style R2 fill:#333,color:#888,stroke-dasharray:5 5
+    </div>
+    <p style="font-size: 0.7em; color: #ccc; text-align: center; margin-top: 10px;">
+      <b style="color:#ce9178">PLR (R1)</b> loses R1-R2. Primary nexthop to PE2 was R2.<br/>
+      <b>P-space of R1</b> (excluding failure) = {R3, PE1} reachable directly without crossing R1-R2.<br/>
+      <b>Q-space of PE2</b> (excluding failure) = {R3, R1} can reach PE2 without crossing R1-R2.<br/>
+      <b style="color:#b5cea8">PQ-node = R3</b>. Repair list at R1 = <code>[Node-SID(R3)]</code> — packet tunnels to R3, then native to PE2.
+    </p>
   </section>
 
   <section data-markdown>
@@ -975,6 +1039,38 @@ For N PoPs: wire links so capacity is well-used, you survive failure, you don't 
   </textarea>
   </section>
 
+  <section>
+    <h3>Topology shapes — visual</h3>
+    <div class="mermaid" style="display: flex; gap: 20px; justify-content: space-around;">
+graph LR
+  subgraph Triangle
+    direction LR
+    TA((A)) --- TB((B))
+    TB --- TC((C))
+    TC --- TA
+  end
+  subgraph Square
+    direction LR
+    SA((A)) --- SB((B))
+    SB --- SC((C))
+    SC --- SD((D))
+    SD --- SA
+  end
+  subgraph SquareDiag[Square+diagonals]
+    direction LR
+    DA((A)) --- DB((B))
+    DB --- DC((C))
+    DC --- DD((D))
+    DD --- DA
+    DA --- DC
+    DB --- DD
+  end
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center; margin-top: 10px;">
+      Triangle = N-1 only · Square = brittle on failure · Square+diagonals = real N-1, possible N-2
+    </p>
+  </section>
+
   <section data-markdown>
   <textarea data-template>
 ### Design principles
@@ -1091,6 +1187,35 @@ You know A/B/C. **The delta is what SR changes and where BGP-LU still wins.**
   </textarea>
   </section>
 
+  <section>
+    <h3>Inter-AS Options A / B / C — visual</h3>
+    <div class="mermaid">
+graph LR
+  subgraph OptA[Option A — back-to-back VRF]
+    PEa1[PE-A] --- ASBR_A1[ASBR-A]
+    ASBR_A1 -.->|"sub-iface per VRF"| ASBR_B1[ASBR-B]
+    ASBR_B1 --- PEb1[PE-B]
+  end
+    </div>
+    <div class="mermaid">
+graph LR
+  subgraph OptB[Option B — VPNv4 swap at ASBR]
+    PEa2[PE-A] -->|"VPNv4"| ASBR_A2[ASBR-A]
+    ASBR_A2 -->|"VPNv4 + new label"| ASBR_B2[ASBR-B]
+    ASBR_B2 -->|"VPNv4"| PEb2[PE-B]
+  end
+    </div>
+    <div class="mermaid">
+graph LR
+  subgraph OptC[Option C — multi-hop eBGP VPNv4 + BGP-LU underlay]
+    PEa3[PE-A] -.->|"VPNv4 multi-hop"| PEb3[PE-B]
+    PEa3 --- ASBR_A3[ASBR-A]
+    ASBR_A3 ===|"BGP-LU"| ASBR_B3[ASBR-B]
+    ASBR_B3 --- PEb3
+  end
+    </div>
+  </section>
+
   <section data-markdown>
   <textarea data-template>
 ### What SR-MPLS changes inter-AS
@@ -1146,6 +1271,23 @@ Used by Microsoft, Meta, hyperscalers for real-time peering optimisation.
 
 <span class="tag ok">When the brief is "selective peering, per-customer-class egress" — EPE is *the* answer.</span>
   </textarea>
+  </section>
+
+  <section>
+    <h3>EPE — egress steering via PeerNode-SIDs</h3>
+    <div class="mermaid">
+graph LR
+  PE1[PE1<br/>head-end] -->|"BSID + EPE-SID"| ASBR[ASBR]
+  ASBR -->|"PeerNode-SID 24001"| PeerA[Peer A<br/>transit, expensive]
+  ASBR -->|"PeerAdj-SID 24002"| PeerB[Peer B<br/>private peering]
+  ASBR -->|"PeerSet-SID 24003<br/>(load-share)"| PeerC[Peer-Set: C1, C2]
+  style PeerA fill:#6b3a1a
+  style PeerB fill:#1e4620
+  style PeerC fill:#264f78
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center; margin-top: 10px;">
+      Controller picks the EPE SID per service / customer class. ASBR forwards out the chosen peer.
+    </p>
   </section>
 
   <section data-markdown>
@@ -1403,6 +1545,40 @@ Then stop the Codespace from github.com/codespaces to stop the meter (compute ti
 
   <section data-markdown>
   <textarea data-template>
+### Beyond the workshop — coverage gaps (1/2)
+
+The deck covers more topics than the workshop labs exercise. We'll need supplementary lab work for these.
+
+| Topic in deck | In workshop? | Effort |
+|---------------|-------------|--------|
+| SR-MPLS basics (IS-IS / OSPF / dual-stack / unnumbered / multivendor) | ✅ | — |
+| BGP-free core, MPLS/VPN over SR, EVPN over SR | ✅ | — |
+| TI-LFA verification (link pull, measure loss) | ❌ | Easy — extend lab 2 with link flap + iperf |
+| Adjacency-SID forcing explicit hop | ❌ | Easy — netlab + manual SR Policy YAML |
+| SR-TE weighted candidate paths (UCMP) | ❌ | Easy-medium — 2 candidate paths with weights |
+| Flex-Algo (min-delay algo 128) | ❌ | Medium — delay-metric advertisement + per-algo SIDs |
+| Entropy label observation | ❌ | Medium — packet capture inside container |
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Beyond the workshop — coverage gaps (2/2)
+
+| Topic in deck | In workshop? | Effort |
+|---------------|-------------|--------|
+| PCE-driven SR Policy (PCInitiate) | ❌ | Medium-hard — Jalapeno or Cisco CWP free tier + PCEP |
+| Inter-AS Option C with SR + BGP-LU | ❌ | Medium — netlab multi-AS topology |
+| EPE | ❌ | Hard — multi-AS + BGP-LS + controller |
+| H-PCE multi-domain | ❌ | Hard — mostly theoretical without real kit |
+| Hashing / polarisation inspection | ❌ | Easy-medium — netlab + iperf elephants, observe distribution |
+
+**Plan:** build 5-8 custom netlab topologies for the easy/medium items during the drill week. EPE and H-PCE stay theoretical unless we rent kit (Equinix Metal, GNS3 with vendor images, or build out a real PCE stack).
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
 ### Drill schedule — target 2026-05-31
 
 | Day | Topic |
@@ -1439,6 +1615,44 @@ What's changed since you last designed:
 
 ↓ for HFT + AI + hybrid
   </textarea>
+  </section>
+
+  <section>
+    <h3>Spine-Leaf CLOS — visual</h3>
+    <div class="mermaid">
+graph TB
+  S1[Spine 1]
+  S2[Spine 2]
+  S3[Spine 3]
+  S4[Spine 4]
+  L1[Leaf 1]
+  L2[Leaf 2]
+  L3[Leaf 3]
+  L4[Leaf 4]
+  L1 --- S1
+  L1 --- S2
+  L1 --- S3
+  L1 --- S4
+  L2 --- S1
+  L2 --- S2
+  L2 --- S3
+  L2 --- S4
+  L3 --- S1
+  L3 --- S2
+  L3 --- S3
+  L3 --- S4
+  L4 --- S1
+  L4 --- S2
+  L4 --- S3
+  L4 --- S4
+  H1[(Hosts)] --- L1
+  H2[(Hosts)] --- L2
+  H3[(Hosts)] --- L3
+  H4[(Hosts)] --- L4
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;">
+      Every leaf connects to every spine. ECMP across all spines for east-west. eBGP unnumbered underlay, EVPN/VXLAN overlay.
+    </p>
   </section>
 
   <section data-markdown>
@@ -1478,6 +1692,52 @@ The new dominant DC workload type.
 
 SR-MPLS doesn't live inside the cluster. May ride between clusters and inter-DC.
   </textarea>
+  </section>
+
+  <section>
+    <h3>Rail-aligned AI fabric — visual</h3>
+    <div class="mermaid">
+graph TB
+  subgraph Rails
+    L1[Leaf 1<br/>Rail 0]
+    L2[Leaf 2<br/>Rail 1]
+    L3[Leaf 3<br/>Rail 2]
+    L4[Leaf 4<br/>Rail 3]
+  end
+  subgraph H1[Host 1: 4 NICs]
+    H1N0((NIC 0))
+    H1N1((NIC 1))
+    H1N2((NIC 2))
+    H1N3((NIC 3))
+  end
+  subgraph H2[Host 2: 4 NICs]
+    H2N0((NIC 0))
+    H2N1((NIC 1))
+    H2N2((NIC 2))
+    H2N3((NIC 3))
+  end
+  subgraph H3[Host 3: 4 NICs]
+    H3N0((NIC 0))
+    H3N1((NIC 1))
+    H3N2((NIC 2))
+    H3N3((NIC 3))
+  end
+  H1N0 --- L1
+  H1N1 --- L2
+  H1N2 --- L3
+  H1N3 --- L4
+  H2N0 --- L1
+  H2N1 --- L2
+  H2N2 --- L3
+  H2N3 --- L4
+  H3N0 --- L1
+  H3N1 --- L2
+  H3N2 --- L3
+  H3N3 --- L4
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;">
+      Same NIC index on every host → same leaf. All-reduce ring traffic only crosses one leaf, not the spine. RoCE / IB transport.
+    </p>
   </section>
 
   <section data-markdown>
@@ -1717,7 +1977,23 @@ Three-way choice:
 <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/markdown/markdown.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js"></script>
 <script>
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'dark',
+    themeVariables: {
+      background: '#1e1e1e',
+      primaryColor: '#264f78',
+      primaryTextColor: '#dcdcaa',
+      primaryBorderColor: '#4ec9b0',
+      lineColor: '#9cdcfe',
+      secondaryColor: '#3a3a3a',
+      tertiaryColor: '#2d2d2d',
+    },
+    flowchart: { curve: 'basis' },
+    sequence: { actorMargin: 50 },
+  });
   Reveal.initialize({
     hash: true,
     slideNumber: 'c/t',
@@ -1732,6 +2008,20 @@ Three-way choice:
     maxScale: 1.5,
     plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ],
   });
+  // Render all mermaid diagrams once reveal is ready (markdown plugin processes async)
+  Reveal.on('ready', () => {
+    setTimeout(() => mermaid.run({ querySelector: '.mermaid' }), 200);
+  });
+  // Re-render on slide change in case a diagram is being seen first time
+  Reveal.on('slidechanged', () => {
+    document.querySelectorAll('.mermaid:not([data-processed])').forEach(el => {
+      try { mermaid.run({ nodes: [el] }); } catch (e) {}
+    });
+  });
 </script>
+<style>
+  .mermaid { background: #1e1e1e; padding: 8px; border-radius: 6px; text-align: center; }
+  .mermaid svg { max-height: 65vh; height: auto !important; }
+</style>
 </body>
 </html>
