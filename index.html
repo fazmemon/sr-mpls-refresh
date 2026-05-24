@@ -555,6 +555,42 @@ This is **how PCE knows your topology and current SR state** without speaking IG
 
   <section data-markdown>
   <textarea data-template>
+### BGP-LU — historical uses (pre-SR)
+
+BGP-LU (RFC 3107 → RFC 8277) is the "carry an MPLS label in BGP" mechanism. Wherever LDP/RSVP couldn't reach, BGP-LU did the job:
+
+| Use | What it solved |
+|-----|----------------|
+| **Inter-AS Option C** | Transport label across AS boundary so eBGP-VPNv4 PEs talk multi-hop |
+| **Seamless / Unified MPLS** | Multi-IGP-domain SP networks — stitches transport labels between domains. Vodafone / BT / NTT mobile-backhaul shapes. |
+| **Carrier's Carrier (CsC)** | Provider MPLS underneath customer MPLS — provider PE labels customer loopbacks into customer VRF |
+| **6PE / 6VPE** | IPv6 over IPv4 MPLS core — BGP carries (v6-prefix, label); transit nodes need no v6 dataplane |
+| **BGP-labelled Internet** | Label every Internet prefix so MPLS FRR / TE applies to public routing |
+| **Hub-spoke L3VPN to central services** | Where LDP wasn't end-to-end, BGP-LU gave transport to the hub |
+| **Pre-SR Egress Peer Engineering** | ASBR advertised "label per peer" via BGP-LU — clunky precursor to SR EPE |
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### What SR changes (and doesn't) for BGP-LU
+
+| Classical use | SR replaces it? | Why |
+|---------------|-----------------|-----|
+| **Inter-AS Option C** | ❌ no | Peer rarely runs SR. Classical BGP-LU still required at the boundary. |
+| **Seamless / Unified MPLS** | ✅ mostly | Single SR domain flooded via IGP often replaces multi-domain stitching. SR Mapping Server (TLV 149) for hierarchical designs. |
+| **Carrier's Carrier (CsC)** | ❌ no | BGP-family-with-label is still the natural fit |
+| **6PE / 6VPE** | ❌ no | Still used; SR doesn't change the v6-over-v4 mechanism |
+| **BGP-labelled Internet** | ⚠️ partly | Still relevant; SR Policy + colour-ext-community is the modern alternative for steering |
+| **Hub-spoke central services** | ✅ niche | SR removes the need where end-to-end SR is in place |
+| **Pre-SR EPE hack** | ✅ yes | Replaced cleanly by SR EPE PeerNode/PeerAdj/PeerSet-SIDs (RFC 9087) |
+
+**Bottom line:** BGP-LU stays as the "label inside BGP" workhorse. RFC 8669 (Prefix-SID attribute, next slide) is the SR enhancement that lets it carry an SR index across boundaries.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
 ### BGP-LU + SR — Prefix-SID attribute (RFC 8669)
 
 The lever for inter-AS SR-MPLS: BGP-LU carries an **SR index, not a label**.
