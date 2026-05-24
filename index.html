@@ -712,7 +712,7 @@ ASLA (RFC 9479) becomes important once flex-algo uses different link attributes 
 
   <section data-markdown>
   <textarea data-template>
-### What flex-algo replaces
+### What flex-algo replaces (1/2)
 
 Legacy MPLS-TE constructs that flex-algo supersedes (or makes optional):
 
@@ -724,23 +724,40 @@ Legacy MPLS-TE constructs that flex-algo supersedes (or makes optional):
 | **Multi-topology IS-IS / OSPF** (parallel SPTs via MT) | mid-2000s | Per-algo SPT, lighter, single topology DB |
 | **Two parallel IGP instances** | last-resort | Single IGP, multiple algos |
 | **PCE-managed per-class TE tunnels** | recent | PCE manages SR Policies that *use* algo SIDs — much less state |
-
-**Classic example (T-Mobile-style ~15 yrs ago):**
-RSVP-TE full mesh with auto-route-announce, one mesh for delay-sensitive (algo 128 equivalent), one for default (algo 0). Each mesh `N(N-1)` LSPs; head-end IGP installs destinations via tunnel interface. Operationally heavy — LSP state in every transit, auto-bandwidth recompute storms, RSVP refresh load.
-
-Flex-algo: same outcome, **zero LSPs**, one extra prefix-SID per node per algo.
   </textarea>
   </section>
 
   <section data-markdown>
   <textarea data-template>
-### What flex-algo doesn't replace — and SR-world answers
+### What flex-algo replaces — classic example (2/2)
+
+**T-Mobile-style ~15 yrs ago:**
+RSVP-TE full mesh with auto-route-announce, one mesh for delay-sensitive (algo 128 equivalent), one for default (algo 0). Each mesh `N(N-1)` LSPs; head-end IGP installs destinations via tunnel interface. Operationally heavy — LSP state in every transit, auto-bandwidth recompute storms, RSVP refresh load.
+
+Flex-algo: same outcome, **zero LSPs**, one extra prefix-SID per node per algo.
+
+The whole "two parallel meshes" pattern collapses to: each node advertises `prefix-SID(node, algo 0)` and `prefix-SID(node, algo 128)`. Two SPTs computed locally per node. Done.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### What flex-algo doesn't replace (1/2)
 
 | Capability flex-algo can't do | RSVP-TE / classical answer | SR-world answer |
 |-------------------------------|----------------------------|-----------------|
 | **Strict explicit path** ("via PE1→R3→R5→PE2") | Explicit-path RSVP-TE LSP | **SR Policy with explicit SID list** — push Adj-SIDs to force each hop. No state in transit. |
 | **Per-flow bandwidth reservation / admission** | RSVP `bandwidth` + CAC, auto-bandwidth | No clean equivalent. Three partial answers: (1) PCE computes paths aware of BGP-LS link utilisation + streaming telemetry (*soft* admission); (2) SR Policy carries bandwidth attribute as planning input (RFC 9256), no dataplane reservation; (3) keep RSVP-TE only for genuinely hard reservation, rare now |
 | **Per-flow / per-class queueing** | DSCP-to-EXP marking + CBWFQ | **Same** — DSCP/EXP/Traffic-Class bits at dataplane, per-class queuing per box. Orthogonal to TE. |
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### What flex-algo doesn't replace (2/2)
+
+| Capability | RSVP-TE / classical answer | SR-world answer |
+|------------|----------------------------|-----------------|
 | **Per-flow steering** | PBR / BGP FlowSpec | **BGP FlowSpec** still works; or **SR Policy with colour matching FlowSpec-marked traffic** |
 | **Fast bandwidth-driven re-optimisation** | RSVP-TE auto-bandwidth | PCE recomputes SR Policies from utilisation telemetry (e.g. Cisco Crosswork SR-PCE, Nokia NSP) |
 
@@ -805,7 +822,7 @@ At a transit LSR, forwarding sees a label stack + opaque payload. To spread flow
 
   <section data-markdown>
   <textarea data-template>
-### Entropy Label — concrete examples
+### Entropy Label — the problem (1/2)
 
 Standard MPLS without entropy label:
 ```
@@ -815,6 +832,12 @@ Transit hashes by peeking under labels for the IP header. Fragile when:
 - Labels are deeper than the hardware can probe (label stack > 3–5 deep)
 - Payload is L2 (Ethernet pseudowire, EoMPLS) — no IP header to find
 - Payload is GRE / IPsec / unknown protocol → falls back to label-only hash → poor entropy
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Entropy Label — the fix (2/2)
 
 **With entropy label (RFC 6790, SR-MPLS profile RFC 8662):**
 ```
@@ -1217,7 +1240,7 @@ You'll be handed a topology, not a choice. Cover **both sides** of each axis.
 
   <section data-markdown>
   <textarea data-template>
-### UCMP trigger — full matrix
+### UCMP trigger — full matrix (1/2)
 
 | Trigger | Non-SR tool | SR tool |
 |---------|------------|---------|
@@ -1226,6 +1249,15 @@ You'll be handed a topology, not a choice. Cover **both sides** of each axis.
 | Post-failure rebalancing intra-AS | RSVP-TE auto-bandwidth | SR-TE recompute via PCE |
 | Post-failure rebalancing inter-AS | Hard — BGP-LB shifts but doesn't engineer | H-PCE + SR Policy |
 | Elephant flow polarisation | Hash seed tuning, entropy label | Hash + Flowspec-style steer to dedicated SR Policy |
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### UCMP trigger — full matrix (2/2)
+
+| Trigger | Non-SR tool | SR tool |
+|---------|------------|---------|
 | Per-service / per-class engineering | RSVP-TE per service | SR-TE per colour, flex-algo per class |
 | Latency-sensitive vs cheapest mix | Parallel RSVP meshes | Flex-Algo (min-delay) + per-service colour |
 | DC fabric asymmetric uplinks | DMZ-LB on iBGP-to-host | Same — SR no help |
@@ -1330,7 +1362,9 @@ Companion deck: **ITNOG10 Apr 2026 training** (slide companion).
 
   <section data-markdown>
   <textarea data-template>
-### Lab 1 walkthrough — pe1 ↔ p ↔ pe2
+### Lab 1 walkthrough — bring up & verify (1/2)
+
+Topology: `pe1 ↔ p ↔ pe2` (3 cEOS nodes)
 
 ```bash
 cd 1-intro/2-netlab
@@ -1346,13 +1380,24 @@ show isis segment-routing prefix-sids
 show mpls table                  # PHP entries on p, push at pe1
 traceroute <pe2-loopback>        # one label on first hop only
 ```
+  </textarea>
+  </section>
 
-Expected: SRGB advertised, prefix-SIDs as indices, transit `p` does PHP, traceroute shows single label push at pe1.
+  <section data-markdown>
+  <textarea data-template>
+### Lab 1 walkthrough — expected output & teardown (2/2)
+
+Expected:
+- SRGB advertised in IS-IS LSPs (default 16000–23999)
+- Prefix-SIDs visible as indices on every node's loopback advertisement
+- Transit `p` does PHP (pops the label)
+- Traceroute from pe1 shows single label push at first hop only
 
 ```bash
 netlab down                      # teardown
 ```
-Stop the Codespace from github.com/codespaces to stop the meter.
+
+Then stop the Codespace from github.com/codespaces to stop the meter (compute time only ticks while active).
   </textarea>
   </section>
 
