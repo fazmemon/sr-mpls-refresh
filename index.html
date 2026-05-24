@@ -219,23 +219,27 @@ SR Policy from PE1 → PE2, colour 100 (low-latency), computed by PCE as `[Adj-S
   </section>
 
   <section>
-    <h3>Binding-SID expansion — sequence</h3>
+    <h3>Binding-SID expansion — end-to-end sequence</h3>
     <div class="mermaid">
 sequenceDiagram
-  participant App as Service / BGP
-  participant PE1 as PE1 (BSID owner)
+  participant CEa as CE-A
+  participant PE1 as PE1 (head-end / BSID owner)
   participant R1 as R1 (P-node)
   participant R3 as R3 (P-node)
-  participant PE2 as PE2 (egress)
-  App->>PE1: Route NH = pe2 colour:100
-  Note over PE1: Resolve colour:100 → BSID 24578
-  Note over PE1: BSID is local — expand now
-  PE1->>R1: Push [Adj-SID r1, Node-SID r3, Node-SID pe2]
-  R1->>R3: Pop top, forward via SID r3
+  participant PE2 as PE2 (egress PE)
+  participant CEb as CE-B
+  CEa->>PE1: Customer traffic (plain IP / Ethernet)
+  Note over PE1: VPN lookup matches a BGP route<br/>NH = pe2, colour-ext-community : 100
+  Note over PE1: Resolve colour 100 → SR Policy → BSID 24578
+  Note over PE1: BSID is local → expand to stored SID list now
+  PE1->>R1: Push [Adj-SID r1, Node-SID r3, Node-SID pe2, VPN label]
+  R1->>R3: Pop top, forward via Node-SID r3
   R3->>PE2: Pop top, deliver via Node-SID pe2 (PHP)
+  Note over PE2: VPN label lookup → egress to CE-B
+  PE2->>CEb: Customer traffic
     </div>
-    <p style="font-size: 0.7em; color: #888; text-align: center;">
-      Service simply says "colour 100 to PE2." BSID hides the actual path. Re-optimise the policy → BSID unchanged → service untouched.
+    <p style="font-size: 0.7em; color: #888; text-align: center; margin-top: 8px;">
+      The CE knows nothing about SR. The BGP service route (typically VPNv4) carries a colour-extended-community at PE1; that's what picks the SR Policy. BSID hides the policy's SID list — re-optimise the policy tomorrow, BSID stays 24578, service untouched.
     </p>
   </section>
 
@@ -290,7 +294,7 @@ Cisco's default LDP range also starts at 16000 → must move one before lighting
 
   <section data-markdown>
   <textarea data-template>
-### Why label consistency matters — LDP vs SR (1/2)
+### Why label consistency matters — LDP vs SR (1/6)
 
 **LDP world** — each LSR allocates its own label per FEC, opaque values:
 ```
@@ -310,15 +314,66 @@ Hop 2 (pe2):  destination
 
   <section data-markdown>
   <textarea data-template>
-### Why label consistency matters — operational consequences (2/2)
+### Consequence 1 — Automation / PCE reads the IGP directly (2/6)
 
-| Consequence | Concrete example |
-|-------------|------------------|
-| Automation/PCE reads IGP DB, knows every label | PCE computing `PE1→PE7` path reads BGP-LS feed → knows egress label = `16007` directly. No NETCONF/SNMP query per LSR. In LDP: query every LSR for its local swap label. |
-| LSP ping target-FEC TLV deterministic | `mpls ping prefix-sid label 16005` — predict the echo FEC TLV before sending; reply should come from node-SID 5. Dataplane vs control plane match in one command. |
-| Pre-compute / verify labels before deployment | Write expected stacks in YAML: `pe1→pe2 expect push 16002`. Automated test post-config compares actual vs expected. Impossible in LDP — labels only known after session up. |
-| Instant node onboarding | Add `pe10` with prefix-SID 10. IS-IS floods. Within seconds every node has `label 16010 → pe10` installed. No LDP session mesh — onboarding is O(1) not O(N). |
-| Troubleshooting | tcpdump shows top label `16007` → "that's pe7." Done. LDP: top label `19437` → telnet upstream → `show mpls ldp bindings` → find FEC → identify destination. 5 commands vs 1. |
+**Claim:** the PCE or any controller knows every label in the network without querying each LSR.
+
+**Example:** a PCE computing a path `PE1 → PE7` reads the BGP-LS feed (which carries the IGP DB). PE7's node-SID is 7. The PCE knows the egress label is `16007` directly. Zero NETCONF/SNMP gets.
+
+**In LDP:** computing a label stack across multiple hops requires querying every LSR in the path for its local swap label per FEC.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Consequence 2 — LSP ping is deterministic (3/6)
+
+**Claim:** the target-FEC TLV in MPLS echo (LSP ping / traceroute) becomes predictable.
+
+**Example:** run `mpls ping prefix-sid label 16005`. You can predict before sending that the echo request's target-FEC TLV will carry "prefix-SID 5" and the reply will come from the node owning that SID. Dataplane vs control plane match verified in one command.
+
+**In LDP:** target-FEC depends on each egress LSR's local label binding — different per LSR — so probe-side prediction isn't possible.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Consequence 3 — Pre-deployment label verification (4/6)
+
+**Claim:** label stacks can be specified in config and verified after deployment.
+
+**Example:** before turning on a new POP, write expected stacks in YAML:
+```yaml
+pe1_to_pe2:        expect_push [16002]
+pe1_to_pe7_via_r3: expect_push [16003, 16007]
+```
+Post-config automated test pulls the actual installed entries and diffs against expected. Drift detected automatically.
+
+**In LDP:** labels are only known after sessions come up. You cannot write expected values before deployment.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Consequence 4 — Instant node onboarding (5/6)
+
+**Claim:** adding a new node makes it reachable from everywhere immediately.
+
+**Example:** add `pe10` with prefix-SID 10 configured on its loopback. IS-IS LSPs flood the new prefix-SID sub-TLV. Within seconds, every other node in the SR domain has installed `in-label 16010 → forward to pe10` in its MPLS table.
+
+**In LDP:** every neighbour must establish an LDP session and exchange label bindings. Onboarding time scales with the LDP session mesh — O(N) not O(1).
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Consequence 5 — Troubleshooting is one command (6/6)
+
+**Claim:** identifying a packet's destination from a label stack is trivial.
+
+**Example:** tcpdump on a transit link shows top label = `16007`. You instantly know the packet is destined for `pe7`. Look at pe7's interface counters next.
+
+**In LDP:** tcpdump shows top label = `19437`. What's that? Telnet to the upstream LSR → `show mpls ldp bindings 19437` → find the FEC → identify the destination. 5 commands vs 1.
 
 **Labels stop being opaque.**
   </textarea>
