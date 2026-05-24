@@ -118,6 +118,43 @@ Source-routing over the MPLS dataplane.
 
   <section data-markdown>
   <textarea data-template>
+### Prefix-SID — operational depth
+
+The prefix-SID sub-TLV in IS-IS (sub-TLV 3 of TLV 135/236) and the equivalent in OSPF carry more than just an index. Flags that matter:
+
+| Flag | Meaning |
+|------|---------|
+| **N** | This prefix-SID identifies a *node* (i.e. attached to a loopback). Most prefix-SIDs you'll meet. |
+| **R** | Re-advertisement — flooded by a different node on someone else's behalf (Mapping Server, see below) |
+| **P** | No-PHP — egress wants the label kept on the stack; used for service-aware decap |
+| **E** | Explicit-null — at PHP, advertise label 0 (v4) / 2 (v6) instead of implicit-null (label 3) |
+| **V** | Value/Index — almost always *Index*; the rare *Value* case carries an absolute label |
+| **L** | Local — locally significant only, not from SRGB |
+
+**SRMS — Segment Routing Mapping Server:**
+- For brownfield migrations where some nodes are SR-capable, others still LDP-only
+- A designated mapping server node advertises prefix-SIDs *on behalf of* the non-SR nodes (R flag set)
+- SR-LDP interworking uses this to bridge old and new while you migrate node-by-node
+- Usually a small handful of mapping servers per domain, redundant
+
+**Algorithm-specific prefix-SIDs:**
+- Each node advertises one prefix-SID **per algorithm** it participates in (algo 0, 128, 129, ...)
+- Same loopback, different label per algo — different SPT, different paths
+- Foundation for flex-algo (deep dive in §4)
+
+**Anycast prefix-SID:**
+- Multiple nodes advertise the *same prefix and the same prefix-SID*
+- Receivers route by IGP shortest path to whichever advertiser is closest
+- Use cases: anycast services (DNS, GTP gateways), anycast ASBRs for inter-AS resilience, service-chain entry points
+
+**Non-loopback prefix-SIDs:**
+- Allowed for any prefix, not just loopbacks — but rare in practice
+- Useful for fixed anycast service prefixes
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
 ### Why ECMP applies naturally to prefix-SIDs
 
 A prefix-SID is a **destination identifier**, not a path instruction.
@@ -137,6 +174,35 @@ SPF gives every node N equal-cost next-hops toward that destination → each tra
 - **SR prefix-SIDs** just inherit the IGP's ECMP semantics — no extra machinery
 
 → See the ECMP/UCMP topic later in the deck for *why and how this breaks* and what UCMP does about it.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Binding-SID & the identifier-vs-instruction hierarchy
+
+Coming back to "destination identifier vs path instruction" from the previous slide — the full SR taxonomy:
+
+| SID type | Acts as | Example | ECMP? |
+|----------|---------|---------|-------|
+| **Prefix-SID** (Node SID) | Destination identifier | "Get me to node 5 by shortest path" | Yes, native |
+| **Adjacency-SID** | Link instruction | "Send out this specific interface" | No, by design |
+| **SR Policy SID list** | Full path instruction | `[Adj-SID p→r1, Node-SID r5, Node-SID pe2]` | Within each segment only |
+| **Binding-SID (BSID)** | Compressed path instruction | One label triggering a stored SR Policy | Inherits the policy's behaviour |
+
+**What a Binding-SID actually is:**
+- A label (SR-MPLS) or IPv6 address (SRv6) allocated locally on a PE per installed SR Policy
+- When a packet arrives with the BSID on top → router **pops it, pushes the policy's stored SID list, forwards**
+- The packet's originator doesn't need to know the path — just pushes "BSID X" and trusts the owner
+
+**Why it matters:**
+- **Compression** — one 4-byte label hides a 10-deep SID list
+- **Inter-domain stitching** — head-end PE in AS-A doesn't need AS-B's topology. AS-A pushes a BSID; ASBR expands it to AS-B's SID list. Hierarchical PCE makes this work.
+- **Service binding** — BGP next-hop can resolve to a BSID, mapping any service prefix to any SR Policy without per-flow config
+- **Stability** — re-optimise the policy without re-signalling head-ends; BSID stays the same
+
+**Operational example:**
+SR Policy from PE1 → PE2, colour 100 (low-latency), computed by PCE as `[Adj-SID p→r1, Adj-SID r1→r3, Node-SID pe2]` — installed at PE1, given BSID 24578. A BGP next-hop `pe2 colour:100` resolves to "push 24578." Path can be re-optimised tomorrow; BSID 24578 still means "the low-latency policy to PE2."
   </textarea>
   </section>
 
