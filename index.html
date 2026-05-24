@@ -10,20 +10,20 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/monokai.css">
   <style>
     :root { --r-main-font-size: 32px; }
-    .reveal { font-size: 28px; }
+    .reveal { font-size: 26px; }
     .reveal h1 { font-size: 1.6em; color: #4ec9b0; }
     .reveal h2 { font-size: 1.3em; color: #4ec9b0; }
     .reveal h3 { font-size: 1.1em; color: #9cdcfe; }
     .reveal h4 { color: #dcdcaa; }
-    .reveal section { text-align: left; }
+    .reveal section { text-align: left; padding-top: 0 !important; }
     .reveal section.center { text-align: center; }
     .reveal ul { display: block; }
-    .reveal ul li { margin-bottom: 0.4em; line-height: 1.3; }
+    .reveal ul li { margin-bottom: 0.25em; line-height: 1.25; }
     .reveal pre { font-size: 0.55em; box-shadow: none; }
     .reveal pre code { padding: 12px; max-height: 500px; }
     .reveal code { background: #1e1e1e; padding: 2px 6px; border-radius: 3px; color: #ce9178; }
     .reveal table { font-size: 0.65em; margin: 0.5em 0; border-collapse: collapse; }
-    .reveal table th, .reveal table td { padding: 4px 8px; border: 1px solid #444; vertical-align: top; }
+    .reveal table th, .reveal table td { padding: 3px 6px; border: 1px solid #444; vertical-align: top; }
     .reveal table th { background: #2d2d2d; color: #4ec9b0; }
     .reveal strong { color: #dcdcaa; }
     .reveal em { color: #9cdcfe; font-style: normal; }
@@ -118,7 +118,7 @@ Source-routing over the MPLS dataplane.
 
   <section data-markdown>
   <textarea data-template>
-### Prefix-SID — operational depth
+### Prefix-SID — operational depth (1/2)
 
 The prefix-SID sub-TLV in IS-IS (sub-TLV 3 of TLV 135/236) and the equivalent in OSPF carry more than just an index. Flags that matter:
 
@@ -136,6 +136,12 @@ The prefix-SID sub-TLV in IS-IS (sub-TLV 3 of TLV 135/236) and the equivalent in
 - A designated mapping server node advertises prefix-SIDs *on behalf of* the non-SR nodes (R flag set)
 - SR-LDP interworking uses this to bridge old and new while you migrate node-by-node
 - Usually a small handful of mapping servers per domain, redundant
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Prefix-SID — operational depth (2/2)
 
 **Algorithm-specific prefix-SIDs:**
 - Each node advertises one prefix-SID **per algorithm** it participates in (algo 0, 128, 129, ...)
@@ -179,7 +185,7 @@ SPF gives every node N equal-cost next-hops toward that destination → each tra
 
   <section data-markdown>
   <textarea data-template>
-### Binding-SID & the identifier-vs-instruction hierarchy
+### Binding-SID & the identifier-vs-instruction hierarchy (1/2)
 
 Coming back to "destination identifier vs path instruction" from the previous slide — the full SR taxonomy:
 
@@ -194,6 +200,12 @@ Coming back to "destination identifier vs path instruction" from the previous sl
 - A label (SR-MPLS) or IPv6 address (SRv6) allocated locally on a PE per installed SR Policy
 - When a packet arrives with the BSID on top → router **pops it, pushes the policy's stored SID list, forwards**
 - The packet's originator doesn't need to know the path — just pushes "BSID X" and trusts the owner
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Binding-SID — why it matters (2/2)
 
 **Why it matters:**
 - **Compression** — one 4-byte label hides a 10-deep SID list
@@ -208,7 +220,7 @@ SR Policy from PE1 → PE2, colour 100 (low-latency), computed by PCE as `[Adj-S
 
   <section data-markdown>
   <textarea data-template>
-### How SR differs from LDP — concept map
+### How SR differs from LDP — concept map (1/2)
 
 | Aspect | LDP | SR-MPLS |
 |--------|-----|---------|
@@ -221,6 +233,12 @@ SR Policy from PE1 → PE2, colour 100 (low-latency), computed by PCE as `[Adj-S
 | State per FEC in transit | One LIB entry per FEC per LSR | One entry per remote prefix-SID + one per local adj-SID |
 | TE LSPs | RSVP-TE state in every transit | None — head-end only |
 | What ingress thinks | "Push next downstream's label for this FEC" | "Push 16000+N to reach node N" |
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### How SR differs from LDP — key conceptual deltas (2/2)
 
 **No FEC binding messages on the wire.** SR's IGP advertises the *index*; every LSR computes the label. No `FEC X = label Y` announcement to lose, mistime, or debug.
 
@@ -251,7 +269,7 @@ Cisco's default LDP range also starts at 16000 → must move one before lighting
 
   <section data-markdown>
   <textarea data-template>
-### Why label consistency matters — operational delta
+### Why label consistency matters — LDP vs SR (1/2)
 
 **LDP world** — each LSR allocates its own label per FEC, opaque values:
 ```
@@ -266,8 +284,13 @@ Hop 1 (p):    in-label 16005, out-label 16005 (or pop at PHP)
 Hop 2 (pe2):  destination
 ```
 **Label 16005 = pe2, on every router in the domain.** Read the label, know the destination. No per-LSR query needed.
+  </textarea>
+  </section>
 
-Operational consequences:
+  <section data-markdown>
+  <textarea data-template>
+### Why label consistency matters — operational consequences (2/2)
+
 - **Automation/PCE** reads IGP database, knows every label without RPC to each LSR
 - **LSP ping target-FEC TLV** becomes deterministic — predict probe replies before sending
 - **Pre-compute / verify** labels before deployment
