@@ -240,6 +240,7 @@ sequenceDiagram
     </div>
     <p style="font-size: 0.7em; color: #888; text-align: center; margin-top: 8px;">
       The CE knows nothing about SR. The BGP service route (typically VPNv4) carries a colour-extended-community at PE1; that's what picks the SR Policy. BSID hides the policy's SID list — re-optimise the policy tomorrow, BSID stays 24578, service untouched.
+      <br/><span style="color:#4ec9b0;">→ Full control plane + vendor config in §5 (SR Policy — from intent to forwarding)</span>
     </p>
   </section>
 
@@ -901,11 +902,192 @@ Look for these in the workshop labs — lab 5 (flex-algo) is where it clicks.
   </section>
 </section>
 
-<!-- ============ SECTION 5 — LOAD-BALANCING ============ -->
+<!-- ============ SECTION 5 — SR POLICY ============ -->
 <section>
   <section data-markdown>
   <textarea data-template>
-## 5 · MPLS load-balancing — hashing, entropy labels, polarisation
+## 5 · SR Policy — from intent to forwarding
+
+The lifecycle the earlier BSID slide skipped: how a policy is created, how traffic finds it, how the dataplane executes it.
+
+This topic covers:
+- Policy structure & tuple identity
+- Creation paths (CLI / NETCONF / PCEP / BGP-SRTE)
+- Classification at head-end (colour, FlowSpec, static map, ACL)
+- Vendor config snippets (Cisco IOS-XR / Juniper Junos / Nokia SR OS)
+- End-to-end control plane + forwarding
+
+Builds on Flex-Algo (previous topic). Feeds into ECMP/UCMP, Inter-AS, EPE later.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### What an SR Policy is
+
+An SR Policy is identified by the tuple **(head-end, endpoint, colour)**.
+
+- **Head-end** — the PE that originates the policy. BSID is local to it.
+- **Endpoint** — destination (typically a remote PE loopback)
+- **Colour** — numeric intent tag (e.g. 100 = low-latency, 200 = avoid-affinity-RED, 300 = SRLG-disjoint)
+
+Inside the policy:
+- **Candidate paths** — N alternatives, each with a **preference** (higher wins, becomes active) and **weight** (UCMP across simultaneously-active candidates)
+- Each candidate is a **SID list** (explicit) *or* a dynamic computation result (CSPF / PCE)
+- **Binding-SID (BSID)** — local label allocated for the active policy; the handle the service plane uses
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### How an SR Policy is created
+
+Four creation paths, picked per operational model:
+
+| Path | When |
+|------|------|
+| **Local CLI / config** | Small networks, hand-crafted explicit paths |
+| **NETCONF / gNMI** | Automation-driven; network controller pushing via YANG |
+| **PCEP — PCInitiate** (RFC 8281) | PCE-driven; controller installs onto head-end, retains control |
+| **BGP-SRTE** (RFC 9012, SAFI 73) | Policy distributed as a BGP route — no separate controller channel |
+
+Production default in 2026: **PCEP + PCInitiate**, with the PCE fed by BGP-LS topology + streaming telemetry. Examples: Cisco Crosswork SR-PCE, Nokia NSP, Juniper Paragon Pathfinder.
+
+CLI persists for small networks and break-glass overrides.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Classification — how traffic actually hits an SR Policy
+
+An installed Policy does nothing on its own. Something steers traffic into it. Five patterns:
+
+1. **BGP colour-extended-community** (RFC 9256) — *dominant*. Service routes (VPNv4 / EVPN) carry a colour. PE matches `(next-hop, colour)` → resolves via that policy's BSID.
+2. **Static map at head-end** — operator config: VRF X → colour 100; interface Y → colour 200.
+3. **Per-prefix BGP policy** — route-policy / route-map sets colour-ext-community on import or origination.
+4. **BGP FlowSpec → colour** — per-flow steering, ACL-like granularity.
+5. **Direct BSID push** — service ingress directly pushes the BSID (rare; service chaining).
+
+Pattern 1 is the modern default — name colours by intent, let BGP carry them, decouple "what is this service" from "which path does it take."
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Vendor config — Cisco IOS-XR
+
+**Define the policy:**
+```
+segment-routing traffic-eng
+ policy POL-LOW-LAT-TO-PE2
+  color 100 end-point ipv4 10.0.0.2
+  candidate-paths
+   preference 200
+    explicit segment-list LIST-A
+   preference 100
+    dynamic
+     metric type latency
+```
+
+**Steer via BGP colour:**
+```
+extcommunity-set opaque CS-LOW-LAT
+ 100
+end-set
+route-policy SET-COLOR-LOW-LAT
+ set extcommunity color CS-LOW-LAT
+ pass
+end-policy
+```
+Apply on the relevant BGP neighbour's `import` or `export` to tag service routes.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Vendor config — Juniper Junos
+
+```
+protocols {
+  source-packet-routing {
+    source-routing-path POL-LOW-LAT-TO-PE2 {
+      to 10.0.0.2;
+      colour 100;
+      primary { segment-list LIST-A; }
+      compute { metric-type delay; }
+    }
+    segment-list LIST-A {
+      sid label 24001;
+      sid label 16003;
+      sid label 16002;
+    }
+  }
+}
+```
+
+Match colour-ext-community at BGP import (`policy-options community / policy-statement`) to steer service traffic onto the policy.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Vendor config — Nokia SR OS
+
+```
+configure router segment-routing
+  sr-policies
+    policy "POL-LOW-LAT-TO-PE2"
+      colour 100
+      endpoint 10.0.0.2
+      binding-sid 24578
+      candidate-path 200
+        segment-list 1
+          sid 24001
+          sid 16003
+          sid 16002
+        exit
+      exit
+    exit
+```
+
+Apply colour-ext-community via BGP route-policy at the head-end PE — same conceptual flow as IOS-XR and Junos, different syntax.
+
+**Across all three vendors**: the policy structure is identical (tuple + candidates + SID list); only the config grammar differs.
+  </textarea>
+  </section>
+
+  <section>
+    <h3>End-to-end — control plane sequence</h3>
+    <div class="mermaid">
+sequenceDiagram
+  participant Intent as Intent / Operator
+  participant PCE
+  participant PE1 as PE1 (head-end)
+  participant RR as Route Reflector
+  participant PE2 as PE2 (endpoint)
+  Intent->>PCE: Define policy (colour=100, endpoint=PE2, min-delay)
+  Note over PCE: Compute path from BGP-LS + telemetry
+  PCE->>PE1: PCEP PCInitiate — install policy + SID list
+  Note over PE1: Allocate BSID 24578
+  PE1->>RR: BGP-LS report — installed Policy + BSID
+  Note over PE2,RR: Service binding (parallel)
+  PE2->>RR: VPNv4 prefix X, colour-ext 100
+  RR->>PE1: Advertise prefix X
+  Note over PE1: Match colour 100 → resolve via SR Policy → BSID 24578
+  Note over PE1: Forwarding ready (see BSID diagram in §1 for dataplane)
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;">
+      Two concurrent flows: PCE installs the policy (top half), service prefix arrives with matching colour (bottom half). Forwarding starts once both have happened. Either side can change independently.
+    </p>
+  </section>
+</section>
+
+<!-- ============ SECTION 6 — LOAD-BALANCING ============ -->
+<section>
+  <section data-markdown>
+  <textarea data-template>
+## 6 · MPLS load-balancing — hashing, entropy labels, polarisation
 
 ECMP and UCMP both *assume* flows distribute reasonably across equal-cost paths. That distribution comes from the **hash function** at each LSR's forwarding engine — and it has limits worth understanding before we get into how ECMP/UCMP actually fail.
 
@@ -1021,7 +1203,7 @@ Transit hashes by peeking under labels for the IP header. Fragile when:
 <section>
   <section data-markdown>
   <textarea data-template>
-## 6 · Why ECMP breaks → UCMP
+## 7 · Why ECMP breaks → UCMP
 
 **ECMP assumes all paths are equivalent.**
 
@@ -1074,7 +1256,7 @@ UCMP = weighted ECMP. FIB bucket table programmed proportional to weights.
 <section>
   <section data-markdown>
   <textarea data-template>
-## 7 · Physical topology economics
+## 8 · Physical topology economics
 
 For N PoPs: wire links so capacity is well-used, you survive failure, you don't overbuild.
 
@@ -1146,7 +1328,7 @@ SR + flex-algo + UCMP is what lets you exploit irregular topologies efficiently.
 <section>
   <section data-markdown>
   <textarea data-template>
-## 8 · Line cards — Cisco / Nokia / Juniper
+## 9 · Line cards — Cisco / Nokia / Juniper
 
 Three things to compare across vendors:
 
@@ -1228,7 +1410,7 @@ Both families: SR-MPLS, SR-TE, flex-algo, TI-LFA, BGP-LS to PCE.
 <section>
   <section data-markdown>
   <textarea data-template>
-## 9 · Inter-AS
+## 10 · Inter-AS
 
 You know A/B/C. **The delta is what SR changes and where BGP-LU still wins.**
 
@@ -1363,7 +1545,7 @@ graph LR
 <section>
   <section data-markdown>
   <textarea data-template>
-## 10 · Coverage matrix
+## 11 · Coverage matrix
 
 You'll be handed a topology, not a choice. Cover **both sides** of each axis.
 
@@ -1470,7 +1652,7 @@ You'll be handed a topology, not a choice. Cover **both sides** of each axis.
 <section>
   <section data-markdown>
   <textarea data-template>
-## 11 · Two reference cases
+## 12 · Two reference cases
 
 Run every design choice through both.
 
@@ -1525,7 +1707,7 @@ For Case B, SRv6 is a live option too (see SRv6 appendix).
 <section>
   <section data-markdown>
   <textarea data-template>
-## 12 · Labs — ipspace SR Workshop
+## 13 · Labs — ipspace SR Workshop
 
 Repo: `ipspace/sr-workshop` — netlab topologies, runs in **GitHub Codespaces**.
 
@@ -1656,7 +1838,7 @@ QoS folds into per-class queuing on policy labs.
 <section>
   <section data-markdown>
   <textarea data-template>
-## 13 · DC architecture — 2026 state
+## 14 · DC architecture — 2026 state
 
 **Spine-Leaf CLOS + EVPN/VXLAN** is still the default.
 
@@ -1816,7 +1998,7 @@ The shape that wins:
 <section>
   <section data-markdown>
   <textarea data-template>
-## 14 · Cloud networking primer
+## 15 · Cloud networking primer
 
 AWS / Azure / GCP — the deltas you need.
 
