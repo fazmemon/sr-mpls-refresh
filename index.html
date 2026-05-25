@@ -1132,6 +1132,43 @@ Then pull a link mid-ping → measure loss. Target: **< 50ms**, often **< 20ms**
 **MSD constraint**: PLR must be able to push the repair stack. Old silicon caps at 3–5 labels. Current-gen 10+.
   </textarea>
   </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Lab walkthrough — TI-LFA repair list installed (1/2)
+
+**Custom 4-node square** (ipspace workshop has no TI-LFA lab; the 3-node line cannot demonstrate FRR — no disjoint alternate path).
+
+```
+       pe1 ──── p1 ──── pe2
+        │                │
+        └───── p2 ───────┘
+```
+
+Enabled with `fast-reroute ti-lfa mode link-protection` under `router isis / address-family ipv4 unicast` on each cEOS (netlab's `isis` module has no TI-LFA attribute — push it post-bringup).
+
+**Real cEOS 4.36.0.1F — `show isis segment-routing prefix-segments` on `p1`:**
+```
+   Prefix         SID  Label   Protection
+   10.0.0.1/32      1  900001  link         ← pe1
+*  10.0.0.2/32      2  900002  unprotected  ← self
+   10.0.0.3/32      3  900003  ECMP         ← p2 reached via two equal-cost paths
+   10.0.0.4/32      4  900004  link         ← pe2
+```
+
+**`show isis ti-lfa tunnel` on `p1`:**
+```
+Tunnel Index 0                                       (→ pe2 = 10.0.0.4)
+   via 10.1.0.6 Eth2          label stack 3                primary, PHP
+   backup via 10.1.0.2 Eth1   label stack 900003 900004    repair = [p2, pe2]
+Tunnel Index 1                                       (→ pe1 = 10.0.0.1)
+   via 10.1.0.2 Eth1          label stack 3                primary, PHP
+   backup via 10.1.0.6 Eth2   label stack 900003 900001    repair = [p2, pe1]
+```
+
+**Why a 2-SID stack, not 1?** The square has **no strict PQ-node** — p1's P-space ∩ pe2's Q-space is empty. TI-LFA falls to the `[Node-SID(P*), Node-SID(Q*)]` form via the pe2↔p2 adjacency — exactly the "Repair stack grows" branch of the algorithm. Consumes 2 of p1's MSD budget.
+  </textarea>
+  </section>
 </section>
 
 <!-- ============ SECTION 4 — FLEX-ALGO DEEP DIVE ============ -->
