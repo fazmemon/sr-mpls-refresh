@@ -1169,6 +1169,34 @@ Tunnel Index 1                                       (→ pe1 = 10.0.0.1)
 **Why a 2-SID stack, not 1?** The square has **no strict PQ-node** — p1's P-space ∩ pe2's Q-space is empty. TI-LFA falls to the `[Node-SID(P*), Node-SID(Q*)]` form via the pe2↔p2 adjacency — exactly the "Repair stack grows" branch of the algorithm. Consumes 2 of p1's MSD budget.
   </textarea>
   </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Lab walkthrough — link pull, measured outage (2/2)
+
+**Test:** 100 pps ping from `p1` (the PLR) to `pe2`'s loopback over the direct `p1—pe2` link. Admin-shutdown `Ethernet2` on `p1` mid-flight, restore 3 s later.
+
+```bash
+docker exec clab-tilfalab-p1 bash -c '
+  (ping -i 0.01 -c 800 -q 10.0.0.4 > /tmp/r.txt) &
+  sleep 1.5
+  printf "enable\nconfigure\ninterface Ethernet2\nshutdown\nend\n" | Cli   # PULL
+  sleep 3
+  printf "enable\nconfigure\ninterface Ethernet2\nno shutdown\nend\n" | Cli # RESTORE
+  wait; cat /tmp/r.txt'
+```
+
+**Real cEOS 4.36.0.1F result:**
+```
+800 packets transmitted, 706 received, 11.75% packet loss
+rtt min/avg/max/mdev = 0.021/0.440/14.699/0.721 ms
+```
+
+**Outage ≈ 940 ms** (94 packets × 10 ms interval).
+
+**Why not the < 50 ms the previous slide promises?** Repair list is correct (proved in `(1/2)`) and TI-LFA fires the moment the FIB sees Ethernet2 down — but **cEOS-lab is a software dataplane in a container**. Failure-detection → FIB swap is bounded by EOS process scheduling and IPC, not silicon. On production line cards: with BFD (50 ms × 3) → 10-30 ms outage; without BFD, link-state event alone → ~50 ms. **The lab demonstrates the mechanism; the latency belongs to the platform.**
+  </textarea>
+  </section>
 </section>
 
 <!-- ============ SECTION 4 — FLEX-ALGO DEEP DIVE ============ -->
