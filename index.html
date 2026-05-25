@@ -146,7 +146,7 @@ The prefix-SID sub-TLV in IS-IS (sub-TLV 3 of TLV 135/236) and the equivalent in
 **Algorithm-specific prefix-SIDs:**
 - Each node advertises one prefix-SID **per algorithm** it participates in (algo 0, 128, 129, ...)
 - Same loopback, different label per algo — different SPT, different paths
-- Foundation for flex-algo (deep dive in §4)
+- Foundation for flex-algo (deep dive in §5)
 
 **Anycast prefix-SID:**
 - Multiple nodes advertise the *same prefix and the same prefix-SID*
@@ -240,7 +240,7 @@ sequenceDiagram
     </div>
     <p style="font-size: 0.7em; color: #888; text-align: center; margin-top: 8px;">
       The CE knows nothing about SR. The BGP service route (typically VPNv4) carries a colour-extended-community at PE1; that's what picks the SR Policy. BSID hides the policy's SID list — re-optimise the policy tomorrow, BSID stays 24578, service untouched.
-      <br/><span style="color:#4ec9b0;">→ Full control plane + vendor config in §5 (SR Policy — from intent to forwarding)</span>
+      <br/><span style="color:#4ec9b0;">→ Full control plane + vendor config in §6 (SR Policy — from intent to forwarding)</span>
     </p>
   </section>
 
@@ -398,7 +398,7 @@ bulk traffic rides algo 0 (IGP metric). Same fibre, different paths.
 
 No per-tunnel state.
 
-→ Deep dive in §4 (FAD, ASLA, election, pitfalls)
+→ Deep dive in §5 (FAD, ASLA, election, pitfalls)
   </textarea>
   </section>
 </section>
@@ -517,6 +517,25 @@ PCE pulls all of it via **BGP-LS** from any node in the domain.
   </textarea>
   </section>
 
+  <section>
+    <h3>IS-IS flooding — how SR info reaches every node</h3>
+    <div class="mermaid">
+graph LR
+  PE1((PE1<br/>node-SID 1))
+  P((P<br/>node-SID 2))
+  PE2((PE2<br/>node-SID 3))
+  X((X<br/>node-SID 4))
+  PE1 ---|"LSP(PE1):<br/>SR Cap, prefix-SID 1, adj-SIDs"| P
+  P ---|"reflood"| PE2
+  P ---|"reflood"| X
+  PE2 -.->|"its own LSP:<br/>SR Cap, prefix-SID 3"| P
+  X -.->|"its own LSP"| P
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;">
+      Each node originates an LSP carrying its SR Capability TLV (242), prefix-SID sub-TLV (in 135/236), and adj-SID sub-TLV (in 22). LSPs flood hop-by-hop. Every node ends with a full LSDB containing every other node's SR info — no LDP sessions, no separate label-binding protocol.
+    </p>
+  </section>
+
   <section data-markdown>
   <textarea data-template>
 ### OSPFv2 — SR extensions (RFC 8665)
@@ -531,6 +550,21 @@ OSPFv3 (RFC 8666) — same idea, native v6 LSAs, no opaque hack.
 
 **Pick IS-IS if you can.** SR-related TLVs are more mature, multi-topology is cleaner, vendors have shipped IS-IS SR sooner than OSPF SR on every platform.
   </textarea>
+  </section>
+
+  <section>
+    <h3>OSPF flooding — opaque LSAs carry SR info</h3>
+    <div class="mermaid">
+graph LR
+  R1((R1)) ---|"Type-10 Opaque LSA<br/>(Router Info + Extended Prefix + Extended Link)"| R2((R2))
+  R2 ---|"flood within area"| R3((R3))
+  R2 ---|"flood within area"| R4((R4))
+  R3 -.->|"its own Type-10 LSAs"| R2
+  R4 -.->|"its own Type-10 LSAs"| R2
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;">
+      OSPF uses <b>opaque LSAs</b> (RFC 5250) to carry the SR sub-TLVs — no new LSA types added. Type-10 LSAs are area-scoped (most common); type-11 LSAs are AS-scoped. Same flooding mechanism as IS-IS, just different LSA encoding. Pick IS-IS if you can — SR-related TLVs are more mature and multi-topology is cleaner.
+    </p>
   </section>
 
   <section data-markdown>
@@ -551,6 +585,41 @@ For multi-AS / multi-domain: **separate BGP-LS sessions per domain** stitched to
 
 This is **how PCE knows your topology and current SR state** without speaking IGP.
   </textarea>
+  </section>
+
+  <section>
+    <h3>BGP-LS → PCE — single domain & multi-domain</h3>
+    <div class="mermaid">
+graph LR
+  subgraph SD[Single domain]
+    direction TB
+    SDr1((R1))
+    SDr2((R2))
+    SDr3((R3))
+    SDspeaker[BGP-LS speaker]
+    SDpce[PCE]
+    SDr1 --- SDr2
+    SDr2 --- SDr3
+    SDspeaker -.->|"BGP-LS NLRI:<br/>node/link/prefix/policy"| SDpce
+    SDr2 ===|"iBGP-LS session"| SDspeaker
+  end
+    </div>
+    <div class="mermaid">
+graph LR
+  subgraph MD[Multi-domain / multi-AS]
+    direction TB
+    A1[Domain A nodes] --> Aspk[BGP-LS speaker A]
+    B1[Domain B nodes] --> Bspk[BGP-LS speaker B]
+    Aspk -->|"BGP-LS"| cPCEa[Child PCE A]
+    Bspk -->|"BGP-LS"| cPCEb[Child PCE B]
+    cPCEa -->|"H-PCE (RFC 6805)"| hPCE[Parent PCE]
+    cPCEb -->|"H-PCE"| hPCE
+    hPCE -->|"compute inter-domain SR Policy<br/>with binding-SID at ASBR"| Head[Head-end PE]
+  end
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;">
+      One BGP-LS speaker per IGP domain is enough. Multi-domain composition happens at the controller, not in the network — H-PCE stitches domain paths via binding-SIDs.
+    </p>
   </section>
 
   <section data-markdown>
@@ -589,31 +658,321 @@ BGP-LU (RFC 3107 → RFC 8277) is the "carry an MPLS label in BGP" mechanism. Wh
   </textarea>
   </section>
 
+  <section>
+    <h3>Seamless MPLS — before SR</h3>
+    <div class="mermaid">
+graph LR
+  subgraph AccA[Access IGP]
+    A1((PE-A1))
+    A2((PE-A2))
+  end
+  subgraph Agg[Aggregation IGP]
+    G1((AGG1))
+    G2((AGG2))
+  end
+  subgraph Core[Core IGP]
+    C1((C1))
+    C2((C2))
+  end
+  subgraph AccB[Access IGP]
+    B1((PE-B1))
+  end
+  A1 --- G1
+  A2 --- G1
+  G1 ===|"BGP-LU stitch"| C1
+  C1 --- C2
+  C2 ===|"BGP-LU stitch"| G2
+  G2 --- B1
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;">
+      Three separate IGP domains (Access / Aggregation / Core). BGP-LU stitches transport labels between them at every boundary. Vodafone / BT / NTT mobile-backhaul shape. End-to-end LSP exists but is composed of locally-allocated labels stitched at each domain edge.
+    </p>
+  </section>
+
+  <section>
+    <h3>Seamless MPLS — after SR</h3>
+    <div class="mermaid">
+graph LR
+  subgraph SRDom[Single SR-MPLS domain — one IS-IS multi-level]
+    direction LR
+    A1((PE-A1<br/>SID 1)) --- G1((AGG1<br/>SID 11))
+    A2((PE-A2<br/>SID 2)) --- G1
+    G1 --- C1((C1<br/>SID 21))
+    C1 --- C2((C2<br/>SID 22))
+    C2 --- G2((AGG2<br/>SID 12))
+    G2 --- B1((PE-B1<br/>SID 3))
+  end
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;">
+      Same physical fibre. Single IS-IS domain (e.g. L1+L2 with route-leaking). Prefix-SIDs flood globally. Head-end pushes one label (Node-SID of egress) — `label = SRGB.start + 3 = 16003`. No stitching. No BGP-LU at internal boundaries. Mapping-server bridges any remaining LDP-only nodes during migration.
+    </p>
+  </section>
+
   <section data-markdown>
   <textarea data-template>
-### BGP-LU + SR — Prefix-SID attribute (RFC 8669)
+### BGP-LU + SR — Prefix-SID attribute mechanism (1/3)
 
 The lever for inter-AS SR-MPLS: BGP-LU carries an **SR index, not a label**.
 
-New BGP path attribute: **Prefix-SID (type 40)**.
-Two TLVs inside:
-- **Label-Index** — the SR-MPLS prefix-SID index
-- **SRv6 L3 Service** — for SRv6
+**RFC 8669 — new BGP path attribute: Prefix-SID (type 40).** Optional, transitive (must not be lost across AS hops). Two TLV types inside:
 
-Receiver computes `label = its_own_SRGB.start + index` — same logic as IGP-flooded prefix-SIDs but carried across AS boundary by BGP.
+| TLV | Carries | Used by |
+|-----|---------|---------|
+| **Label-Index TLV** (type 1) | 32-bit SR-MPLS prefix-SID index, plus flags (V/L same semantics as IGP Prefix-SID) | SR-MPLS |
+| **Originator SRGB TLV** (type 3) | Originator's SRGB range(s) — needed when SRGBs differ across the domain | SR-MPLS capability negotiation |
+| **SRv6 L3 Service TLV** (type 5) | SRv6 SID + behaviour | SRv6 |
 
-<span class="tag ok">Result</span> Inter-AS Option C with SR transport end-to-end. Stitching disappears — head-end PE pushes a single Node-SID for the egress PE, even across multiple ASes (if both speak SR + BGP-LU + Prefix-SID attribute).
+Update message carrying labelled-unicast (SAFI 4) now also carries Prefix-SID attribute alongside the BGP label.
+  </textarea>
+  </section>
 
-If peer doesn't speak SR — fall back to classical BGP-LU with normal labels at the boundary.
+  <section data-markdown>
+  <textarea data-template>
+### BGP-LU + SR — receive-side behaviour & fallback (2/3)
+
+**Receiver computes `label = own_SRGB.start + index`** — same logic as IGP-flooded prefix-SIDs but carried across AS boundary.
+
+**Mixed-deployment behaviour:**
+- **SR-aware peer sends Prefix-SID attribute** → receiver uses the index, computes its own label from local SRGB
+- **Legacy peer doesn't send attribute** → receiver uses the BGP-LU label directly (classical RFC 3107/8277 mode)
+- **Different SRGBs on each side** → boundary router does label conversion at the Inter-AS hand-off (Originator SRGB TLV tells it the source SRGB)
+
+**Result:** Inter-AS Option C with **SR transport end-to-end** — provided both ASes speak SR + BGP-LU + Prefix-SID attribute. Otherwise: classical BGP-LU labels at the boundary, SR labels within each AS.
+
+**Implication for design:** head-end PE in AS-A pushes a single Node-SID label for the egress PE in AS-B. No per-LSP signalling, no stitched labels visible at the head-end.
+  </textarea>
+  </section>
+
+  <section>
+    <h3>BGP-LU + SR — end-to-end label flow (3/3)</h3>
+    <div class="mermaid">
+sequenceDiagram
+  participant PEa as PE-A (AS 100)
+  participant ASBRa as ASBR-A
+  participant ASBRb as ASBR-B
+  participant PEb as PE-B (AS 200, node-SID 5)
+  Note over PEb: Originate BGP-LU for loopback<br/>Prefix-SID attr: Label-Index = 5
+  PEb->>ASBRb: BGP-LU (label X, Prefix-SID idx=5)
+  ASBRb->>ASBRa: eBGP-LU, NHS, Prefix-SID idx=5 preserved
+  ASBRa->>PEa: BGP-LU (label Y, Prefix-SID idx=5)
+  Note over PEa: SRGB.start = 16000<br/>label = 16000 + 5 = 16005
+  Note over PEa: Push 16005 for traffic to PE-B
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;">
+      The BGP-LU labels (X, Y) at each hop don't have to be consistent — what matters is the Prefix-SID *index* (5) is preserved end-to-end. Each receiver computes its own label from its own SRGB.
+    </p>
+  </section>
+</section>
+
+<!-- ============ SECTION 3 — MINIMUM SR CONFIG ============ -->
+<section>
+  <section data-markdown>
+  <textarea data-template>
+## 3 · Minimum SR config — your first deployable SR network
+
+**Checkpoint.** By the end of this section you can stand up a basic SR-MPLS network in the lab:
+
+- IS-IS up with wide metrics
+- SR-MPLS enabled, SRGB allocated
+- Prefix-SIDs assigned per loopback
+- Adj-SIDs auto-allocated by IS-IS
+- ECMP forwarding via prefix-SID labels
+- Verifiable via `show isis database`, `show isis segment-routing`, `show mpls`
+
+No TI-LFA, no flex-algo, no SR Policy yet — pure transport. Those layer on later sections.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Cisco IOS-XR — minimum SR config
+
+```
+router isis CORE
+ is-type level-2-only
+ net 49.0001.0000.0000.0001.00
+ nsf cisco
+ address-family ipv4 unicast
+  metric-style wide
+  segment-routing mpls
+ !
+ interface Loopback0
+  passive
+  address-family ipv4 unicast
+   prefix-sid index 1
+  !
+ !
+ interface GigabitEthernet0/0/0/0
+  point-to-point
+  address-family ipv4 unicast
+  !
+ !
+!
+segment-routing
+ global-block 16000 23999
+!
+mpls oam
+!
+```
+
+Per-node: change `prefix-sid index 1` to that node's globally-unique index. SRGB defaults to 16000-23999, change only if forced by LDP coexistence.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Juniper Junos — minimum SR config
+
+```
+protocols {
+    isis {
+        level 1 disable;
+        level 2 wide-metrics-only;
+        interface lo0.0 { passive; }
+        interface ge-0/0/0.0;
+        source-packet-routing {
+            srgb start-label 16000 index-range 8000;
+            node-segment ipv4-index 1;
+        }
+    }
+    mpls {
+        interface ge-0/0/0.0;
+    }
+}
+routing-options {
+    forwarding-table { export load-balance-pps; }
+}
+```
+
+`node-segment ipv4-index 1` is this node's prefix-SID index. `srgb` matches across the domain. Per-interface MPLS enable is required so the label-switching dataplane is up.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Nokia SR OS — minimum SR config
+
+```
+configure router
+  isis
+    level-capability 2
+    area-id 49.0001
+    ipv4-routing
+    segment-routing
+      prefix-sid-range global
+      no shutdown
+    exit
+    interface "system"
+      ipv4-node-sid index 1
+      no shutdown
+    exit
+    interface "to-P1"
+      interface-type point-to-point
+      no shutdown
+    exit
+    no shutdown
+  exit
+configure router mpls-labels
+  sr-labels start 16000 end 23999
+exit
+```
+
+`ipv4-node-sid index 1` per node. `sr-labels start/end` is the SRGB. `prefix-sid-range global` means use the configured SRGB.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Verification commands — what to check, what to expect
+
+| Check | Cisco IOS-XR | Juniper Junos | Nokia SR OS |
+|-------|--------------|---------------|-------------|
+| SR enabled in IS-IS | `show isis segment-routing prefix-sids` | `show isis overview` | `show router isis status` |
+| SRGB advertised | `show isis database verbose` | `show isis database detail` | `show router isis database detail` |
+| Prefix-SID per loopback | `show isis segment-routing prefix-sids` | `show isis source-packet-routing` | `show router segment-routing prefix-sids` |
+| Adj-SIDs allocated | `show isis adjacency detail` | `show isis adjacency detail` | `show router isis adjacency detail` |
+| MPLS LFIB has prefix-SID labels | `show mpls forwarding labels 16000-23999` | `show route table mpls.0` | `show router mpls-labels label-range` |
+| Traceroute shows label push | `traceroute mpls multipath ipv4 <loopback>` | `traceroute monitor mpls ipv4 <loopback>` | `oam lsp-trace prefix <loopback>` |
+
+**Expected pattern:** every other node's loopback appears in IS-IS DB with a prefix-SID sub-TLV; MPLS LFIB has one entry per remote prefix-SID label (pop at PHP); traceroute shows single label on first hop only.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Brownfield bonus — SR-LDP interworking via Mapping Server
+
+For migrations where some nodes are SR-capable but others still LDP-only.
+
+**Concept:** designate one or more SR-capable nodes as **Mapping Server (SRMS)**. They advertise prefix-SIDs *on behalf of* the LDP-only nodes (R flag set on the prefix-SID sub-TLV).
+
+**Cisco IOS-XR:**
+```
+segment-routing
+ mapping-server
+  prefix-sid-map
+   address-family ipv4
+    10.0.0.10/32 index 10 range 1
+    10.0.0.11/32 index 11 range 1
+   !
+  !
+ !
+!
+```
+
+**Juniper Junos:** `protocols isis source-packet-routing mapping-server-entry { ... }`
+**Nokia SR OS:** `configure router isis segment-routing mapping-server prefix-sid ...`
+
+**Operational rule:** run two mapping servers per IS-IS area for redundancy. Decommission once all nodes are SR-capable. Without SRMS, SR and LDP traffic don't interwork on the LDP-only nodes — packets dropped.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Lab walkthrough — verify it in the workshop
+
+**Codespace:** `ipspace/sr-workshop`, lab `1-intro/2-netlab` (3-node cEOS topology: pe1 ↔ p ↔ pe2)
+
+**Bring up & connect:**
+```bash
+cd /workspaces/SR-workshop/1-intro/2-netlab
+netlab up                     # ~2 min if cEOS image cached
+netlab connect p              # the transit node
+```
+
+**On `p`, generic expected output:**
+```
+p# show isis segment-routing prefix-sids
+  System Id              Lvl  Prefix          Type  SID         Algorithm
+  pe1.00-00              L2   10.0.0.1/32     N     1           SPF
+  pe2.00-00              L2   10.0.0.3/32     N     3           SPF
+  p.00-00                L2   10.0.0.2/32     N     2           SPF
+
+p# show mpls lfib route
+  16001          POP          Et1            pe1 (PHP for pe1)
+  16003          POP          Et2            pe2 (PHP for pe2)
+  100001         POP          Et1            adj→pe1
+  100002         POP          Et2            adj→pe2
+```
+
+**From pe1:**
+```
+pe1# traceroute 10.0.0.3 source 10.0.0.1
+ 1  10.0.12.2 [MPLS: Label 16003 Exp 0]  4 ms
+ 2  10.0.0.3  6 ms
+```
+Single label push at first hop, popped at PHP. SR transport confirmed.
+
+→ See §14 (Labs) for the full workshop walkthrough across all 9 labs.
   </textarea>
   </section>
 </section>
 
-<!-- ============ SECTION 3 — TI-LFA EVOLUTION ============ -->
+<!-- ============ SECTION 4 — TI-LFA EVOLUTION ============ -->
 <section>
   <section data-markdown>
   <textarea data-template>
-## 3 · TI-LFA — evolution from MPLS FRR
+## 4 · TI-LFA — evolution from MPLS FRR
 
 Four generations of fast reroute:
 
@@ -760,7 +1119,7 @@ Then pull a link mid-ping → measure loss. Target: **< 50ms**, often **< 20ms**
 <section>
   <section data-markdown>
   <textarea data-template>
-## 4 · Flex-Algo deep dive
+## 5 · Flex-Algo deep dive
 
 **Multiple SPTs over the same physical topology**, one per algorithm number, with per-algo prefix-SIDs.
 
@@ -942,7 +1301,7 @@ Look for these in the workshop labs — lab 5 (flex-algo) is where it clicks.
 <section>
   <section data-markdown>
   <textarea data-template>
-## 5 · SR Policy — from intent to forwarding
+## 6 · SR Policy — from intent to forwarding
 
 The lifecycle the earlier BSID slide skipped: how a policy is created, how traffic finds it, how the dataplane executes it.
 
@@ -1123,7 +1482,7 @@ sequenceDiagram
 <section>
   <section data-markdown>
   <textarea data-template>
-## 6 · MPLS load-balancing — hashing, entropy labels, polarisation
+## 7 · MPLS load-balancing — hashing, entropy labels, polarisation
 
 ECMP and UCMP both *assume* flows distribute reasonably across equal-cost paths. That distribution comes from the **hash function** at each LSR's forwarding engine — and it has limits worth understanding before we get into how ECMP/UCMP actually fail.
 
@@ -1239,7 +1598,7 @@ Transit hashes by peeking under labels for the IP header. Fragile when:
 <section>
   <section data-markdown>
   <textarea data-template>
-## 7 · Why ECMP breaks → UCMP
+## 8 · Why ECMP breaks → UCMP
 
 **ECMP assumes all paths are equivalent.**
 
@@ -1292,7 +1651,7 @@ UCMP = weighted ECMP. FIB bucket table programmed proportional to weights.
 <section>
   <section data-markdown>
   <textarea data-template>
-## 8 · Physical topology economics
+## 9 · Physical topology economics
 
 For N PoPs: wire links so capacity is well-used, you survive failure, you don't overbuild.
 
@@ -1364,7 +1723,7 @@ SR + flex-algo + UCMP is what lets you exploit irregular topologies efficiently.
 <section>
   <section data-markdown>
   <textarea data-template>
-## 9 · Line cards — Cisco / Nokia / Juniper
+## 10 · Line cards — Cisco / Nokia / Juniper
 
 Three things to compare across vendors:
 
@@ -1446,7 +1805,7 @@ Both families: SR-MPLS, SR-TE, flex-algo, TI-LFA, BGP-LS to PCE.
 <section>
   <section data-markdown>
   <textarea data-template>
-## 10 · Inter-AS
+## 11 · Inter-AS
 
 You know A/B/C. **The delta is what SR changes and where BGP-LU still wins.**
 
@@ -1581,7 +1940,7 @@ graph LR
 <section>
   <section data-markdown>
   <textarea data-template>
-## 11 · Coverage matrix
+## 12 · Coverage matrix
 
 You'll be handed a topology, not a choice. Cover **both sides** of each axis.
 
@@ -1688,7 +2047,7 @@ You'll be handed a topology, not a choice. Cover **both sides** of each axis.
 <section>
   <section data-markdown>
   <textarea data-template>
-## 12 · Two reference cases
+## 13 · Two reference cases
 
 Run every design choice through both.
 
@@ -1743,7 +2102,7 @@ For Case B, SRv6 is a live option too (see SRv6 appendix).
 <section>
   <section data-markdown>
   <textarea data-template>
-## 13 · Labs — ipspace SR Workshop
+## 14 · Labs — ipspace SR Workshop
 
 Repo: `ipspace/sr-workshop` — netlab topologies, runs in **GitHub Codespaces**.
 
@@ -1874,7 +2233,7 @@ QoS folds into per-class queuing on policy labs.
 <section>
   <section data-markdown>
   <textarea data-template>
-## 14 · DC architecture — 2026 state
+## 15 · DC architecture — 2026 state
 
 **Spine-Leaf CLOS + EVPN/VXLAN** is still the default.
 
@@ -2034,7 +2393,7 @@ The shape that wins:
 <section>
   <section data-markdown>
   <textarea data-template>
-## 15 · Cloud networking primer
+## 16 · Cloud networking primer
 
 AWS / Azure / GCP — the deltas you need.
 
