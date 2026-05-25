@@ -929,41 +929,60 @@ segment-routing
 
   <section data-markdown>
   <textarea data-template>
-### Lab walkthrough — verify it in the workshop
+### Lab walkthrough — bring up & SR check (1/2)
 
 **Codespace:** `ipspace/sr-workshop`, lab `1-intro/2-netlab` (3-node cEOS topology: pe1 ↔ p ↔ pe2)
 
-**Bring up & connect:**
 ```bash
 cd /workspaces/SR-workshop/1-intro/2-netlab
-netlab up                     # ~2 min if cEOS image cached
-netlab connect p              # the transit node
+netlab up                                              # ~2 min, image cached
+netlab connect p show isis segment-routing prefix-segments
 ```
 
-**On `p`, generic expected output:**
+**Real cEOS 4.36.0.1F output on `p`:**
 ```
-p# show isis segment-routing prefix-sids
-  System Id              Lvl  Prefix          Type  SID         Algorithm
-  pe1.00-00              L2   10.0.0.1/32     N     1           SPF
-  pe2.00-00              L2   10.0.0.3/32     N     3           SPF
-  p.00-00                L2   10.0.0.2/32     N     2           SPF
+System ID: p   Instance: 'Gandalf'   SR Router ID: 10.0.0.2
 
-p# show mpls lfib route
-  16001          POP          Et1            pe1 (PHP for pe1)
-  16003          POP          Et2            pe2 (PHP for pe2)
-  100001         POP          Et1            adj→pe1
-  100002         POP          Et2            adj→pe2
+   Prefix          SID   Label   Type   Flags                  System ID
+   --------------- ----- ------- ------ ---------------------- ---------
+   10.0.0.1/32         1  900001 Node   R:0 N:1 P:0 E:0 V:0 L:0 pe1
+*  10.0.0.2/32         2  900002 Node   R:0 N:1 P:0 E:0 V:0 L:0 p
+   10.0.0.3/32         3  900003 Node   R:0 N:1 P:0 E:0 V:0 L:0 pe2
 ```
 
-**From pe1:**
-```
-pe1# traceroute 10.0.0.3 source 10.0.0.1
- 1  10.0.12.2 [MPLS: Label 16003 Exp 0]  4 ms
- 2  10.0.0.3  6 ms
-```
-Single label push at first hop, popped at PHP. SR transport confirmed.
+Three nodes, three prefix-SIDs. SRGB starts at **900000** in this netlab default (not the 16000 we used in examples) — labels are 900001/2/3. `*` marks self. `N:1` flag = node SID. **SR is operational.**
+  </textarea>
+  </section>
 
-→ See §14 (Labs) for the full workshop walkthrough across all 9 labs.
+  <section data-markdown>
+  <textarea data-template>
+### Lab walkthrough — LFIB + LSP detail (2/2)
+
+**MPLS LFIB on `p`:**
+```
+netlab connect p show mpls lfib route
+
+ IA 100000     via M, 10.1.0.2, pop          -- adj-SID toward pe1
+ IA 100001     via M, 10.1.0.6, pop          -- adj-SID toward pe2
+ IP 900001     via M, 10.1.0.2, pop  10.0.0.1/32  -- pe1 prefix-SID (PHP)
+ IP 900003     via M, 10.1.0.6, pop  10.0.0.3/32  -- pe2 prefix-SID (PHP)
+```
+**Two prefix-SIDs (PHP) + two adj-SIDs — exactly as theory predicts.**
+
+**LSP detail — pe2's LSP carries SR sub-TLVs:**
+```
+netlab connect p show isis database detail pe2.00-00
+
+ Adj-sid: 100000 flags: [L V] weight: 0x0
+ SR Prefix-SID: 3 Flags: [N] Algorithm: 0
+ SR Capability: Flags: [I]
+   SRGB Base: 900000 Range: 65536
+ Maximum SID depth:
+   Base MPLS imposition (MSD type 1):  6
+```
+SR Capability TLV ✓ (SRGB advertised), prefix-SID sub-TLV ✓ (index 3, N flag), adj-SID sub-TLV ✓. MSD = 6 labels push capacity.
+
+→ See §14 (Labs) for the full workshop progression across all 9 labs.
   </textarea>
   </section>
 </section>
