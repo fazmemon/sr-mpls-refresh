@@ -2108,21 +2108,18 @@ graph LR
 
   <section data-markdown>
   <textarea data-template>
-### Lab walkthrough — Inter-AS labs (all deferred)
+### Lab walkthrough — EPE + H-PCE (deferred: cEOS-lab + controller scope)
 
-**Inter-AS Option C with SR + BGP-LU — not attempted this session.** Theoretically buildable in cEOS-lab (control plane: BGP + IS-IS + SR + BGP-LU label exchange — no advanced feature gap). 4-node netlab (`pe1 + asbr1` in AS 100, `asbr2 + pe2` in AS 200) with eBGP-LU between ASBRs and multi-hop VPNv4 between PEs. Skipped after the cumulative cEOS-lab dataplane limits (no ECMP fan-out, no MPLS multi-path) made the time investment vs probability of clean data-plane proof unattractive. **Genuinely worth labbing later** in SR Linux or XRd where the dataplane delivers.
+**EPE — not labbed in cEOS-lab 4.36.** EPE has two halves: (a) ASBR allocates per-peer SIDs and advertises them via BGP-LS, (b) head-end PE pushes an SR Policy whose SID list ends with the chosen EPE SID. cEOS-lab supports the BGP/IS-IS pieces but **lacks SR-TE Policy** (see SR Policy section's gap), so the head-end half can't be exercised. Partial demo is possible — `show isis segment-routing peer ...` on the ASBR — but without the policy push, there's no end-to-end forwarding proof.
 
-**EPE — not labbed in cEOS-lab 4.36.** EPE has two halves: (a) ASBR allocates per-peer SIDs and advertises them via BGP-LS, (b) head-end PE pushes an SR Policy whose SID list ends with the chosen EPE SID. cEOS-lab supports the BGP/IS-IS pieces but **lacks SR-TE Policy** (see SR Policy section's gap), so the head-end half can't be exercised. Partial demo possible — `show isis segment-routing peer ...` on the ASBR — but without the policy push, no end-to-end forwarding proof.
+**To lab EPE properly:** SR Linux or XRd as the head-end PE, cEOS or SR Linux as the ASBR with EPE SID allocation enabled (`bgp / address-family link-state / advertise peer-node-sid`).
 
-**H-PCE multi-domain — not lab-able in this scope.** Genuinely needs two real PCEs coordinating across an inter-domain channel (RFC 6805) — a separate protocol on top of PCEP. Without two distinct controllers (e.g. Cisco SR-PCE + Jalapeno, or two Jalapeno instances), there's nothing to inspect. The deck's coverage of the H-PCE flow above is the level you'd discuss in interview.
-
-**To lab any of these properly:** SR Linux, Cisco XRd, or Juniper cRPD. SR Linux is the easiest free option — needs `ghcr.io/nokia/srlinux` image pulled (initial attempt this session hit a `connection reset by peer` from ghcr.io; retry-able).
+**H-PCE multi-domain — not lab-able in this scope.** Genuinely needs two real PCEs that speak to each other across an inter-domain channel — H-PCE coordination (RFC 6805) is a separate protocol on top of PCEP. Without two distinct controllers (Cisco SR-PCE + another, or two Jalapeno instances), there's nothing to inspect. The deck's coverage of the H-PCE flow above is the level you'd discuss in interview.
 
 **What the labs would prove (already covered conceptually):**
 - ASBR allocates PeerNode-SID per eBGP session, PeerAdj-SID per peer link, PeerSet-SID per peer group
-- BGP-LS feed to controller carries EPE SIDs alongside topology
+- BGP-LS feed to controller carries the EPE SIDs alongside topology
 - Head-end PE pushes SR Policy with SID list `[Node-SID(asbr), EPE-SID(peer)]` → traceroute exits via the chosen peer
-- Inter-AS Option C: end-to-end label-switched path across two ASes, VPNv4 multi-hop PE↔PE, BGP-LU stitches transport at ASBR
 - H-PCE parent coordinates child PCEs per AS to compute cross-domain SR Policy with BSID stitching at each ASBR
   </textarea>
   </section>
