@@ -1379,27 +1379,6 @@ The whole "two parallel meshes" pattern collapses to: each node advertises `pref
 Look for these in the workshop labs — lab 5 (flex-algo) is where it clicks.
   </textarea>
   </section>
-
-  <section data-markdown>
-  <textarea data-template>
-### Lab walkthrough — Flex-Algo (deferred: cEOS-lab gap)
-
-**Not labbed in cEOS-lab 4.36.** Verified `% Invalid input` on every common path: `router isis MAIN / flex-algo`, `segment-routing flex-algo definition`, `address-family ipv4 unicast / application`. cEOS-lab strips the advanced SR feature set that real Arista hardware (7280R3, 7800R) ships with.
-
-**To lab it properly, switch vendor:**
-- **SR Linux** — free image `ghcr.io/nokia/srlinux`, mature Flex-Algo support
-- **Juniper cRPD** — `crpd:24.4R1.9`, free with token
-- **Cisco XRd** — netlab supports it, needs CCO login + EULA
-
-**What the lab would prove (already covered conceptually above):**
-- FAD advertised in IS-IS LSDB, election picks one definition per algo
-- Per-algo prefix-SIDs allocated per node — `show isis flex-algo` shows the table
-- Different SPT per algo on the same physical topology — `traceroute` via algo-128 prefix-SID takes the low-delay path, via algo-0 prefix-SID takes shortest-cost
-- TI-LFA repair lists computed independently per algo
-
-**Conceptual coverage in this section is sufficient for the interview drill** — skip the lab unless vendor-switching is justified for other reasons too.
-  </textarea>
-  </section>
 </section>
 
 <!-- ============ SECTION 5 — SR POLICY ============ -->
@@ -1581,27 +1560,6 @@ sequenceDiagram
       Two concurrent flows: PCE installs the policy (top half), service prefix arrives with matching colour (bottom half). Forwarding starts once both have happened. Either side can change independently.
     </p>
   </section>
-
-  <section data-markdown>
-  <textarea data-template>
-### Lab walkthrough — SR Policy + Adj-SID forcing + PCE (deferred: cEOS-lab gap)
-
-**Not labbed in cEOS-lab 4.36.** Verified `% Invalid input` on `segment-routing traffic-engineering` and every variant — the **entire SR-TE Policy stack is absent from cEOS-lab**. This cascades: Adj-SID forcing via explicit SID list, PCInitiate via PCE, BGP-SRTE distribution, BSID allocation — none of it can be exercised.
-
-**To lab it, switch vendor:**
-- **SR Linux** (free) — `srl> info from running / network-instance default / segment-routing / te-policy` shows the full SR Policy hierarchy
-- **Cisco XRd** — `segment-routing traffic-eng / policy NAME` is the canonical CLI, well-documented
-- **Juniper cRPD** — `set protocols source-packet-routing source-routing-path NAME`
-
-**PCE-driven specifically:** to fake PCInitiate without standing up Jalapeno/CWP, point a small open-source PCC at the head-end (e.g. `pcep-tools`, `pyaspath`). Captures the PCEP TCP exchange and the resulting installed policy.
-
-**What the labs would prove (covered conceptually above):**
-- Manual SR Policy with explicit SID list including an Adj-SID → traceroute proves the forced hop
-- Two candidate paths with `preference 200 / 100`, lower preference becomes backup, swap on failure
-- Two candidate paths same preference with weights → UCMP bucket split observed via per-link counters
-- PCInitiate message in tcpdump → policy installed in `show segment-routing traffic-eng policy`
-  </textarea>
-  </section>
 </section>
 
 <!-- ============ SECTION 6 — LOAD-BALANCING ============ -->
@@ -1769,24 +1727,6 @@ UCMP = weighted ECMP. FIB bucket table programmed proportional to weights.
 - **BGP-LU + SR + link-bandwidth** — same DMZ-LB idea, SR transport underneath
 
 <span class="tag ok">Rule</span> Owned domain → SR-TE + PCE. Between two boxes you don't both own → BGP DMZ-LB.
-  </textarea>
-  </section>
-
-  <section data-markdown>
-  <textarea data-template>
-### Lab walkthrough — UCMP weighted candidate paths (deferred: cEOS-lab gap)
-
-**Not labbed in cEOS-lab 4.36.** SR-TE Policy support is absent (see SR Policy section's deferred slide for the gap evidence). Weighted candidate paths are an SR Policy feature — no policy support, no weighted UCMP demo.
-
-**For UCMP without SR**, the equivalent demo IS feasible in cEOS — BGP DMZ-Link-Bandwidth on a multi-homed eBGP scenario. Worth pairing with the Inter-AS lab if you want to see weighted install in action.
-
-**To lab SR-TE UCMP, switch vendor:** SR Linux or XRd. Define a policy with two candidate paths at the same preference, weights e.g. 70/30:
-- Generate flows with varied 5-tuples (`iperf3` with multiple parallel streams, or `pktgen`)
-- Read per-link byte counters before/during/after
-- Confirm ~70/30 ratio matches the weight configuration
-- Flap a link, watch the head-end re-weight if PCE is driving recomputation
-
-The deck's UCMP coverage above is the substance for the interview — the lab is verification, not new content.
   </textarea>
   </section>
 </section>
@@ -2076,24 +2016,6 @@ graph LR
 - **Add-Path** — UCMP across RR-clients without losing diversity to bestpath
 - **Per-VRF vs per-prefix label** — per-prefix = finer ECMP/UCMP spread, per-VRF = label-table savings
 
-  </textarea>
-  </section>
-
-  <section data-markdown>
-  <textarea data-template>
-### Lab walkthrough — EPE + H-PCE (deferred: cEOS-lab + controller scope)
-
-**EPE — not labbed in cEOS-lab 4.36.** EPE has two halves: (a) ASBR allocates per-peer SIDs and advertises them via BGP-LS, (b) head-end PE pushes an SR Policy whose SID list ends with the chosen EPE SID. cEOS-lab supports the BGP/IS-IS pieces but **lacks SR-TE Policy** (see SR Policy section's gap), so the head-end half can't be exercised. Partial demo is possible — `show isis segment-routing peer ...` on the ASBR — but without the policy push, there's no end-to-end forwarding proof.
-
-**To lab EPE properly:** SR Linux or XRd as the head-end PE, cEOS or SR Linux as the ASBR with EPE SID allocation enabled (`bgp / address-family link-state / advertise peer-node-sid`).
-
-**H-PCE multi-domain — not lab-able in this scope.** Genuinely needs two real PCEs that speak to each other across an inter-domain channel — H-PCE coordination (RFC 6805) is a separate protocol on top of PCEP. Without two distinct controllers (Cisco SR-PCE + another, or two Jalapeno instances), there's nothing to inspect. The deck's coverage of the H-PCE flow above is the level you'd discuss in interview.
-
-**What the labs would prove (already covered conceptually):**
-- ASBR allocates PeerNode-SID per eBGP session, PeerAdj-SID per peer link, PeerSet-SID per peer group
-- BGP-LS feed to controller carries the EPE SIDs alongside topology
-- Head-end PE pushes SR Policy with SID list `[Node-SID(asbr), EPE-SID(peer)]` → traceroute exits via the chosen peer
-- H-PCE parent coordinates child PCEs per AS to compute cross-domain SR Policy with BSID stitching at each ASBR
   </textarea>
   </section>
 </section>
