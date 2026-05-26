@@ -1718,6 +1718,33 @@ Transit hashes by peeking under labels for the IP header. Fragile when:
 **Operational symptom of polarisation:** "we have 4× 100G ECMP but only 1 link is hot." Almost always salt-not-set or stage-1-and-stage-2-using-same-inputs.
   </textarea>
   </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Lab walkthrough — hashing & entropy label (deferred: cEOS-lab dataplane gap)
+
+**Tried, didn't distribute.** On the 4-node square with pe1→pe2 ECMP confirmed in the RIB (`show ip route 10.0.0.4` shows two nexthops via Et1 and Et2), I generated 300 distinct UDP flows from pe1 (varying source + dest ports) and read input counters on p1 and p2:
+
+```
+p1 Et1 InUcastPkts:  201 → 501   (Δ +300)   ← all flows took this path
+p2 Et1 InUcastPkts:    0 →   0   (Δ   0)   ← zero distribution
+```
+
+`show ip hardware fib summary` on pe1 confirms: **`Max Ale ECMP: 0`** — the cEOS-lab software dataplane doesn't program multipath into the FIB. The RIB knows about ECMP; the forwarding engine ignores it.
+
+**Same root cause as the SR-TE / Flex-Algo gaps** — cEOS-lab is a control-plane simulator. The advanced/multipath forwarding behaviours belong to the Strata/Jericho silicon that ships in real Arista boxes.
+
+**To lab hashing distribution + entropy label observation, switch vendor:**
+- **SR Linux** (Broadcom Tomahawk-style data plane simulation) — actual ECMP distribution
+- **Cisco XRd** — full ECMP + entropy label semantics
+
+**What the lab would prove (covered conceptually above):**
+- Symmetric distribution across ECMP nexthops with varied 5-tuples
+- Polarisation when per-LSR hash seed not set (every stage hashes identically)
+- Entropy label (EL+ELI) shifting distribution when present vs absent
+- Pure-MPLS hash limitations: most silicon hashes on label stack only, blind to inner IP unless EL is in stack
+  </textarea>
+  </section>
 </section>
 
 <!-- ============ SECTION 6 — ECMP / UCMP ============ -->
