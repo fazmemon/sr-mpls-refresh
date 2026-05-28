@@ -592,7 +592,6 @@ This is **how PCE knows your topology and current SR state** without speaking IG
     <div class="mermaid">
 graph LR
   subgraph SD[Single domain]
-    direction TB
     SDr1((R1))
     SDr2((R2))
     SDr3((R3))
@@ -600,21 +599,20 @@ graph LR
     SDpce[PCE]
     SDr1 --- SDr2
     SDr2 --- SDr3
-    SDspeaker -.->|"BGP-LS NLRI:<br/>node/link/prefix/policy"| SDpce
-    SDr2 ===|"iBGP-LS session"| SDspeaker
+    SDspeaker -.->|"BGP-LS NLRI"| SDpce
+    SDr2 ==>|"iBGP-LS session"| SDspeaker
   end
     </div>
     <div class="mermaid">
 graph LR
   subgraph MD[Multi-domain / multi-AS]
-    direction TB
     A1[Domain A nodes] --> Aspk[BGP-LS speaker A]
     B1[Domain B nodes] --> Bspk[BGP-LS speaker B]
     Aspk -->|"BGP-LS"| cPCEa[Child PCE A]
     Bspk -->|"BGP-LS"| cPCEb[Child PCE B]
     cPCEa -->|"H-PCE (RFC 6805)"| hPCE[Parent PCE]
     cPCEb -->|"H-PCE"| hPCE
-    hPCE -->|"compute inter-domain SR Policy<br/>with binding-SID at ASBR"| Head[Head-end PE]
+    hPCE -->|"inter-domain SR Policy via BSID at ASBR"| Head[Head-end PE]
   end
     </div>
     <p style="font-size: 0.7em; color: #888; text-align: center;">
@@ -679,9 +677,9 @@ graph LR
   end
   A1 --- G1
   A2 --- G1
-  G1 ===|"BGP-LU stitch"| C1
+  G1 ==>|"BGP-LU stitch"| C1
   C1 --- C2
-  C2 ===|"BGP-LU stitch"| G2
+  C2 ==>|"BGP-LU stitch"| G2
   G2 --- B1
     </div>
     <p style="font-size: 0.7em; color: #888; text-align: center;">
@@ -1926,7 +1924,7 @@ graph LR
   subgraph OptC[Option C — multi-hop eBGP VPNv4 + BGP-LU underlay]
     PEa3[PE-A] -.->|"VPNv4 multi-hop"| PEb3[PE-B]
     PEa3 --- ASBR_A3[ASBR-A]
-    ASBR_A3 ===|"BGP-LU"| ASBR_B3[ASBR-B]
+    ASBR_A3 ==>|"BGP-LU"| ASBR_B3[ASBR-B]
     ASBR_B3 --- PEb3
   end
     </div>
