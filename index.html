@@ -880,6 +880,28 @@ exit
 
   <section data-markdown>
   <textarea data-template>
+### SRGB collision with LDP — check before lighting SR
+
+Cisco IOS-XR's **default dynamic label range** is **16000–1048575**, overlapping the standard SRGB (16000–23999). Light SR on a node already running LDP and the SRGB block can't be reserved — SR fails to come up.
+
+**Vendor-specific fixes:**
+
+- **Cisco IOS-XR** — move LDP's dynamic range up first:
+  ```
+  mpls label range table 0 24000 1048575
+  ```
+  Reserves 16000–23999 for SR, 24000+ for everything else.
+
+- **Juniper Junos** — LDP uses a separate label-block by default; no collision unless `protocols mpls label-switched-path` explicitly set a static range overlapping the SRGB. Verify with `show route table mpls.0 | match label-range`.
+
+- **Nokia SR OS** — `configure router mpls-labels` already partitions `sr-labels` and `static-labels-range` / `reserved-label-block`. Default partition prevents collision; verify with `show router label-range`.
+
+<span class="tag warn">Order of operations</span> Move LDP/dynamic label range *first*, then enable SR. Reverse the order and SR refuses to start, or LDP grabs labels SR can't later reclaim without a reload.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
 ### Verification commands — what to check, what to expect
 
 | Check | Cisco IOS-XR | Juniper Junos | Nokia SR OS |
@@ -892,6 +914,35 @@ exit
 | Traceroute shows label push | `traceroute mpls multipath ipv4 <loopback>` | `traceroute monitor mpls ipv4 <loopback>` | `oam lsp-trace prefix <loopback>` |
 
 **Expected pattern:** every other node's loopback appears in IS-IS DB with a prefix-SID sub-TLV; MPLS LFIB has one entry per remote prefix-SID label (pop at PHP); traceroute shows single label on first hop only.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Verification output — annotated (Cisco IOS-XR)
+
+`show isis segment-routing prefix-sids` on a 4-node SR domain:
+```
+   SID    Prefix             Algo  Source   Flags                MT-ID
+   1      10.0.0.1/32         0    Local    N:1 P:0 E:0          IPv4 Unicast
+   2      10.0.0.2/32         0    Remote   N:1 P:0 E:0          IPv4 Unicast
+   3      10.0.0.3/32         0    Remote   N:1 P:0 E:0          IPv4 Unicast
+   4      10.0.0.4/32         0    Remote   N:1 P:0 E:0          IPv4 Unicast
+```
+
+| Field | Meaning |
+|-------|---------|
+| **SID** | Index. Label = SRGB.start + SID. With default SRGB 16000–23999, SID 3 → label 16003. |
+| **Algo** | 0 = standard SPF. Per-algo SIDs appear once flex-algo is enabled (§5). |
+| **Source** | `Local` (you advertise it) or `Remote` (learnt via IGP). |
+| **N:1** | Node SID flag. 1 for loopback prefix-SIDs. N:0 on a loopback = misconfigured. |
+| **P:0** | No-PHP off. P:1 means egress wants the label kept (rare; service-aware decap). |
+| **E:0** | Explicit-null off. E:1 advertises label 0/2 at PHP instead of implicit-null. |
+
+**Common pitfalls in this output:**
+- SID showing **`Remote / N:0`** on a loopback → originating router missing the `n` flag. Fix on the source.
+- SID **missing entirely** for a node → its LSP isn't being received. Check IS-IS adjacency, `metric-style wide`, LSP flooding.
+- Two nodes advertising the **same SID** → duplicate index. Last LSP wins; intermittent forwarding. Audit with `show isis database verbose | i Prefix-SID`.
   </textarea>
   </section>
 
@@ -921,6 +972,49 @@ segment-routing
 **Nokia SR OS:** `configure router isis segment-routing mapping-server prefix-sid ...`
 
 **Operational rule:** run two mapping servers per IS-IS area for redundancy. Decommission once all nodes are SR-capable. Without SRMS, SR and LDP traffic don't interwork on the LDP-only nodes — packets dropped.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### SR-LDP interworking — label translation at the boundary
+
+Mapping Server gives the *control plane* a SID for LDP-only nodes. The **dataplane** still has to translate between SR labels and LDP labels at the SR↔LDP boundary.
+
+**Direction 1 — SR-capable PE → LDP-only PE:**
+- PE1 (SR) pushes label 16005 (SRGB + SID 5 for the LDP-only PE2).
+- Packet hits a boundary node (SR-capable and also speaks LDP).
+- Boundary's MPLS LFIB has 16005 → swap to LDP's label-for-PE2 (some opaque value, e.g. 100177), forward.
+- PE2 receives the LDP label, pops normally.
+
+**Direction 2 — LDP-only PE → SR-capable PE:**
+- PE2 (LDP) pushes LDP's label-for-PE1.
+- Boundary's LFIB: in-label = LDP-label-for-PE1, action = swap to 16001 (SR label for PE1), forward.
+- Transit nodes carry 16001; PE1 pops.
+
+**Operational verify (Cisco IOS-XR):** `show mpls forwarding labels 16001 detail` on the boundary should list both the SR-side entry and the LDP-stitched entry.
+
+**`sr-prefer` flag:** on the boundary node, `segment-routing mpls / sr-prefer` makes SR labels win where both SR and LDP advertise reachability for the same prefix. Without it, LDP wins by default — defeats the migration.
+
+<span class="tag warn">Mapping-server alone isn't enough</span> The SID tells SR-capable nodes *how to label*, but the LDP-only node can't pop a label it doesn't know. Boundary node has to swap. **Mapping server + boundary swap = both halves.**
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Per-platform vs per-interface label space — the SR delta
+
+**LDP heritage**: most platforms allocated labels from a **per-platform** label space (global to the box). In-label X meant the same thing regardless of which interface it arrived on. Older Juniper supported **per-interface** label space — same in-label X arriving on if-A vs if-B could resolve to different FECs.
+
+**SR mandates per-platform.** Prefix-SIDs and adjacency-SIDs come from the SRGB; SRGB is platform-wide by definition. There's no per-interface variant for SR labels.
+
+**Why it matters:**
+
+- **Mixed LDP/SR transit nodes**: LDP labels coming in on if-A vs if-B can be different; SR labels can't. Boundary LFIB has to handle both modes simultaneously without confusion.
+- **TI-LFA repair lists** (§4) push multiple SR labels onto the stack. Mid-stack swaps are platform-wide; nothing per-interface — keeps repair deterministic.
+- **L2VPN/EVPN service labels** stacked above the SR transport label can still be per-interface on some platforms; the *transport* SR label below is always platform-wide. Service-label scoping is a separate question from SR.
+
+**Verify**: Junos `show route forwarding-table family mpls table default` shows label scope. IOS-XR is per-platform by default. Nokia SR OS `show router mpls-labels label-range` shows the platform-wide partition.
   </textarea>
   </section>
 
@@ -980,6 +1074,34 @@ netlab connect p show isis database detail pe2.00-00
 SR Capability TLV ✓ (SRGB advertised), prefix-SID sub-TLV ✓ (index 3, N flag), adj-SID sub-TLV ✓. MSD = 6 labels push capacity.
 
 → See §14 (Labs) for the full workshop progression across all 9 labs.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Operational onboarding — adding a new SR node end-to-end
+
+Five-step flow to bring a new SR-capable node into a running domain.
+
+**1. Pick a unique prefix-SID index.** Reserve the next free SID — grep current LSPs across the domain: `show isis database verbose | i Prefix-SID`. Pick the next integer above the highest in use.
+
+**2. Configure base IS-IS + SR.** Loopback, NET, `metric-style wide`, `segment-routing mpls`, `prefix-sid index N` on the loopback.
+
+**3. Verify IS-IS adjacency.** `show isis adjacency` — both sides UP. **Common failure:** a neighbour has `metric-style narrow` — adjacency forms but the new node's prefix-SID sub-TLV gets dropped in flight.
+
+**4. Verify LSP propagation.** From any other node: `show isis database <new-node-id>.00-00 detail` — should include SR Capability TLV + Prefix-SID sub-TLV with the new index.
+
+**5. Verify dataplane.** From any other node: traceroute the new node's loopback. Should show one label push at the first hop, label = SRGB.start + new-node's-SID. MPLS LFIB on transits should have one new entry per the new prefix-SID label.
+
+**Failure modes worth memorising:**
+
+| Symptom | Cause |
+|---------|-------|
+| New node invisible from elsewhere | Narrow metric on a neighbour; LSP sub-TLVs silently truncated |
+| Prefix-SID advertised but not installed | New node itself missing `metric-style wide` |
+| Traceroute reaches *wrong* node | SID collision — index already in use elsewhere |
+| Traceroute uses wrong labels across domain | SRGB mismatch on the new node |
+| SR labels not used on mixed-deployment paths | `sr-prefer` not set on a boundary node |
   </textarea>
   </section>
 </section>
