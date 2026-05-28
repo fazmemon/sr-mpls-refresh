@@ -525,10 +525,10 @@ graph LR
   P((P<br/>node-SID 2))
   PE2((PE2<br/>node-SID 3))
   X((X<br/>node-SID 4))
-  PE1 ---|"LSP(PE1):<br/>SR Cap, prefix-SID 1, adj-SIDs"| P
+  PE1 ---|"LSP(PE1): SR Cap, prefix-SID, adj-SIDs"| P
   P ---|"reflood"| PE2
   P ---|"reflood"| X
-  PE2 -.->|"its own LSP:<br/>SR Cap, prefix-SID 3"| P
+  PE2 -.->|"its own LSP: SR Cap + prefix-SID"| P
   X -.->|"its own LSP"| P
     </div>
     <p style="font-size: 0.7em; color: #888; text-align: center;">
@@ -556,7 +556,7 @@ OSPFv3 (RFC 8666) — same idea, native v6 LSAs, no opaque hack.
     <h3>OSPF flooding — opaque LSAs carry SR info</h3>
     <div class="mermaid">
 graph LR
-  R1((R1)) ---|"Type-10 Opaque LSA<br/>(Router Info + Extended Prefix + Extended Link)"| R2((R2))
+  R1((R1)) ---|"Type-10 Opaque LSA (Router Info + Ext Prefix + Ext Link)"| R2((R2))
   R2 ---|"flood within area"| R3((R3))
   R2 ---|"flood within area"| R4((R4))
   R3 -.->|"its own Type-10 LSAs"| R2
@@ -692,7 +692,6 @@ graph LR
     <div class="mermaid">
 graph LR
   subgraph SRDom[Single SR-MPLS domain — one IS-IS multi-level]
-    direction LR
     A1((PE-A1<br/>SID 1)) --- G1((AGG1<br/>SID 11))
     A2((PE-A2<br/>SID 2)) --- G1
     G1 --- C1((C1<br/>SID 21))
@@ -1758,20 +1757,17 @@ For N PoPs: wire links so capacity is well-used, you survive failure, you don't 
     <div class="mermaid" style="display: flex; gap: 20px; justify-content: space-around;">
 graph LR
   subgraph Triangle
-    direction LR
     TA((A)) --- TB((B))
     TB --- TC((C))
     TC --- TA
   end
   subgraph Square
-    direction LR
     SA((A)) --- SB((B))
     SB --- SC((C))
     SC --- SD((D))
     SD --- SA
   end
   subgraph SquareDiag[Square+diagonals]
-    direction LR
     DA((A)) --- DB((B))
     DB --- DC((C))
     DC --- DD((D))
@@ -1994,7 +1990,7 @@ graph LR
   PE1[PE1<br/>head-end] -->|"BSID + EPE-SID"| ASBR[ASBR]
   ASBR -->|"PeerNode-SID 24001"| PeerA[Peer A<br/>transit, expensive]
   ASBR -->|"PeerAdj-SID 24002"| PeerB[Peer B<br/>private peering]
-  ASBR -->|"PeerSet-SID 24003<br/>(load-share)"| PeerC[Peer-Set: C1, C2]
+  ASBR -->|"PeerSet-SID 24003 (load-share)"| PeerC[Peer-Set: C1, C2]
   style PeerA fill:#6b3a1a
   style PeerB fill:#1e4620
   style PeerC fill:#264f78
