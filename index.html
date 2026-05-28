@@ -1795,6 +1795,111 @@ Transit hashes by peeking under labels for the IP header. Fragile when:
 **Operational symptom of polarisation:** "we have 4× 100G ECMP but only 1 link is hot." Almost always salt-not-set or stage-1-and-stage-2-using-same-inputs.
   </textarea>
   </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Per-vendor hash-tuning knobs
+
+What you actually configure when ECMP across a 4-member group polarises.
+
+**Cisco IOS-XR:**
+```
+hw-module loadbalancing l3
+ hash-key src-ip dst-ip protocol src-port dst-port flow-label
+ hash-seed <unique-per-node>
+```
+
+**Juniper Junos:**
+```
+forwarding-options enhanced-hash-key
+ family inet {
+   layer-3 { source-address destination-address protocol; }
+   layer-4 { source-port destination-port; }
+ }
+ hash-seed <unique-per-system>
+```
+
+**Nokia SR OS:**
+```
+configure router lsp-load-balancing
+ hash-label
+ ip-load-balancing 5-tuple
+ system-ip-load-balancing
+```
+`system-ip-load-balancing` ties seed to system-IP — unique per node automatically.
+
+**The non-negotiable across all three:** *unique* per-node hash seed. Without it, every transit hashes the same flow the same way → polarisation across the whole path even with otherwise-good 5-tuple inputs.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Default hash fields per vendor
+
+What gets hashed *out of the box* with no extra config — matters when troubleshooting mixed-vendor ECMP.
+
+| Vendor / Silicon | Default hash inputs | Quirks |
+|------------------|--------------------|--------|
+| **Cisco IOS-XR / NCS** | src-IP, dst-IP, protocol, L4 src/dst-port | MPLS labels not hashed by default; opt-in with `hash-input mpls labels`. IPv6 flow-label honoured if non-zero. |
+| **Juniper Junos / Trio / Express** | src-IP, dst-IP, protocol | **L4 ports NOT hashed by default.** Add `enhanced-hash-key family inet layer-4`. Catches every operator coming from IOS-XR. |
+| **Nokia SR OS / FP5** | Full 5-tuple by default | Closest to what most operators expect. |
+| **Arista EOS** | Full 5-tuple + symmetric by default | Same hash for A→B and B→A — useful for stateful middleboxes. |
+| **Broadcom (Tomahawk / Jericho)** | Up to ~12 fields; defaults vary per SDK release | Whitebox NOS surfaces SDK config; SONiC defaults differ from Cumulus. |
+
+**Consequence in mixed-vendor cores**: the same flow hits different hash decisions at different transit points → effective polarisation even with hash-seeds tuned per node. **Audit every transit type, not just one.**
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Entropy label — MSD budget and depth limits
+
+Pushing an EL/ELI pair eats 2 labels of the platform's **Max SID Depth (MSD)** budget. Matters when SR Policy SID list + VPN label + EL/ELI together exceed silicon push capacity.
+
+**MSD push by silicon generation:**
+
+| Silicon | MSD push | EL/ELI cost | Effective free depth |
+|---------|---------|-------------|---------------------|
+| Cisco SiliconOne G100/G200 (NCS 5700) | 12 | 2 | 10 |
+| Juniper Trio6 (MPC11E / LC9600) | 10 | 2 | 8 |
+| Juniper Express5 (PTX LC1201) | 12 | 2 | 10 |
+| Nokia FP5 (7750 SR XMA-s) | 16 | 2 | 14 |
+| Broadcom Jericho2c+ | 10 | 2 | 8 |
+| Older Trident3 | 5 | 2 | 3 — too tight for SR-TE + VPN + EL |
+
+**Operational impact:**
+- A 5-deep SR-TE policy + VPN label + EL/ELI = 8 labels pushed. Trident3 can't; PTX with Express5 can.
+- Without EL, transit hashing on deep stacks falls back to label-only entropy (low quality) → polarisation almost guaranteed.
+
+**Design rule:** target MSD ≥ (max policy depth + 2 for EL/ELI + 2 for service labels). Anything tighter is fragile.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Polarisation in numbers — before/after hash seed
+
+4-member ECMP bundle, 1000 flows, identical hash function on every transit.
+
+**Without per-node hash seed (polarised):**
+```
+Stage 1 (entry):     m1: 250 | m2: 250 | m3: 250 | m4: 250
+Stage 2 (transit):   m1: 250 | m2:   0 | m3:   0 | m4:   0
+```
+Stage 2 sees only m1's 250 flows. Same hash function + same inputs → same bucket. The downstream bundle effectively becomes a single member.
+
+**With unique per-node hash seed:**
+```
+Stage 1:             m1: 250 | m2: 250 | m3: 250 | m4: 250
+Stage 2 (re-hashed): each upstream member's 250 redistribute ~62/63/62/63 across m1-m4
+Effective:           m1: ~250 | m2: ~250 | m3: ~250 | m4: ~250
+```
+
+**Real-world symptom:** monitoring shows 4× 100G ECMP, member 1 at 95% utilisation, members 2-4 at 5-15%. Fix: verify `hash-seed` is set per node + verify all transits use the same *strategy* (unique per box, not a shared constant).
+
+**When salt doesn't help:** if the bundle carries only 1-2 elephant flows (e.g. one 10 Gbps backup transfer), no per-flow hashing will spread it. Need flowlet hashing (mid-flow re-hash on idle gap) or adaptive routing (per-packet spray, lossless transport required).
+  </textarea>
+  </section>
 </section>
 
 <!-- ============ SECTION 6 — ECMP / UCMP ============ -->
@@ -1997,6 +2102,98 @@ Both families: SR-MPLS, SR-TE, flex-algo, TI-LFA, BGP-LS to PCE.
 | Edge PE with services | NCS 5500 | 7750 SR (FP5) | MX480/960 (MPC10/11) |
 | SR-MPLS core / peering | NCS 5700 | 7750 SR (FP5) | PTX 10K (Express 5) |
 
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Silicon generations — what each chip supports for SR-MPLS
+
+| Family | Silicon | Line-rate SR | UCMP weighted | MSD push | Notable cards |
+|--------|---------|--------------|---------------|----------|---------------|
+| **Broadcom** | Trident3 | basic | no (equal-only) | 5 | older whitebox access |
+| | Trident4 / Tomahawk 4 | yes | limited (8) | 8 | DC leaf/spine |
+| | Tomahawk 5 | yes | yes (64+) | 10 | 51.2T spine (hyperscale, AI) |
+| | Jericho2 / J2c+ | yes | yes (64+) | 10 | DC-fabric + WAN peering, deep buffer (HBM) |
+| **Cisco** | SiliconOne G100 / G200 | yes | yes (64+) | 12 | NCS 5700, 8000 |
+| **Nokia** | FP4 | yes | yes (32) | 12 | 7750 SR-7/14 mid-tier |
+| | FP5 | yes | yes (64+) | 16 | current high-end XMA-s |
+| **Juniper** | Trio5 (MPC10E) | yes | yes (32) | 8 | MX mid-tier |
+| | Trio6 (MPC11E, LC9600) | yes | yes (32) | 10 | MX10008 etc |
+| | Express5 (PTX LC1201/02) | yes | yes (64+) | 12 | pure peering / SR-MPLS core |
+
+**Rule of thumb:** anything pre-2019 (Trident3, FP3, older Trio) — assume MSD < 6, equal-ECMP only. SR-MPLS works as transport but TE/policy features cap out fast.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Three numbers operators compare — FIB / MSD / ECMP width
+
+| Card | IPv4 FIB (LPM) | Label table | MSD push | ECMP width |
+|------|---------------|-------------|----------|-----------|
+| NCS 540-24Z8Q2C | ~1M | ~256k | 8 | 64 |
+| NCS 5700-OPT-SE (SiliconOne) | ~4M | ~1M | 12 | 256 |
+| Nokia 7250 IXR-6 (Jericho2) | ~1.5M | ~256k | 10 | 64 |
+| Nokia 7750 SR-14s (FP5 XMA-s) | ~10M | ~1M | 16 | 256 |
+| Juniper MX10008 LC9600 (Trio6) | ~4M | ~1M | 10 | 128 |
+| Juniper PTX10008 LC1201 (Express5) | ~6M | ~2M | 12 | 256 |
+
+**Why these three:**
+- **FIB scale** — full BGP table is ~1M routes today and growing. Anything under 2M is short-lived in core/peering.
+- **MSD push** — deep SR-TE policies + VPN + EL/ELI need ≥10. Under 6 = transport only, no policy.
+- **ECMP width** — hyperscale spine fabrics need 64+ to use all uplinks. 32 caps parallel spines.
+
+<span class="tag warn">Datasheet red flag</span> Quoting "32 ECMP" or "MSD 6" on a 2024+ card means re-spun older silicon. Current gen has moved past those numbers.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Buffer architecture — deep HBM vs shallow on-chip
+
+Two architectures, two use cases. Picking the wrong one for the role is a real failure mode.
+
+**Deep HBM (off-chip stacked DRAM)**
+- 100s of MB to GBs per port group
+- **Where**: WAN-facing core, peering — anywhere RTT × link-rate exceeds 50 ms × rate
+- **Silicon**: Broadcom Jericho2c+ / J3, Cisco SiliconOne, Nokia FP5, Juniper Express5
+- **Trade-off**: 10-50 µs per-packet latency from HBM access; absorbs sustained bursts
+
+**Shallow on-chip (SRAM/cache inside the ASIC)**
+- MB-scale total (Tomahawk 5 = ~165 MB)
+- **Where**: DC fabric leaf/spine, low-RTT environments, AI fabrics
+- **Silicon**: Broadcom Tomahawk family, older Trident
+- **Trade-off**: sub-µs latency; drops on sustained bursts unless paired with PFC/ECN
+
+**Pick wrong = pain:**
+- HBM card in a leaf role → over-buffered, queue latency kills incast / RoCE
+- Shallow card in peering role → 50 ms RTT × 100 Gbps = 625 MB needed, 165 MB → loss
+
+SR-MPLS doesn't change the rule — buffer architecture is dataplane, orthogonal to SR control plane.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Optics support per card — 2026 reality
+
+| Card | 10G | 25G | 100G | 400G | 800G |
+|------|-----|-----|------|------|------|
+| NCS 540-24Z8Q2C | 24×SFP+ | 8×SFP28 | 2×QSFP28 | — | — |
+| NCS 5700-OPT-SE | ✓ | ✓ | ✓ | 36×QSFP-DD | — |
+| Nokia 7750 SR-1x XMA-s | ✓ | ✓ | ✓ | ✓ | early QSFP-DD 800 |
+| Juniper MX10008 LC9600 | ✓ | ✓ | ✓ | 24×QSFP56-DD | — |
+| Juniper PTX10008 LC1201 | — | — | ✓ | 36×QSFP56-DD | — |
+| PTX10001-36MR | — | — | ✓ | 36×QSFP-DD-400 | — |
+| Broadcom Tomahawk 5 (Arista 7060X6 etc) | — | — | ✓ | ✓ | 64×OSFP-800 |
+
+**State of the market:**
+- **400G** is mainstream across SP edge + DC spine.
+- **800G** is hyperscale spine + AI fabric (Tomahawk 5). SP edge mostly still 400G.
+- **Pluggable coherent** (QSFP-DD ZR / ZR+) is replacing transponders for metro / regional — single-card DWDM with 100/400G coherent built into the pluggable. Major capex savings on transponder shelves.
+
+<span class="tag warn">Cage ≠ optic speed</span> QSFP-DD cage takes 400G now, can take 800G when ASIC + host support it. Check the card datasheet, not the port cage shape.
   </textarea>
   </section>
 </section>
