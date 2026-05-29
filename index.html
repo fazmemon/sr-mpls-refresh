@@ -3310,6 +3310,103 @@ Need real NICs/hardware — know them cold, don't waste lab time:
   </section>
 </section>
 
+<!-- ============ SECTION 20 — EVPN-VXLAN LAB ============ -->
+<section>
+  <section data-markdown>
+  <textarea data-template>
+## 20 · Lab — EVPN-VXLAN spine-leaf fabric
+
+Cement the DC strength. **Host:** Docker host ≥8 GB (16 GB comfy) — **cEOS + containerlab, no KVM** (Hetzner box / cloud VM, *not* the laptop). cEOS image free (Arista account).
+
+**Build:** 2 spine + 2 leaf CLOS · **underlay** eBGP (or OSPF) for loopbacks · **overlay** MP-BGP EVPN (iBGP w/ RR on spines, or eBGP-EVPN) · 2 tenants = 2 VRFs · host containers per leaf.
+
+↓ topology → control plane → what to see
+  </textarea>
+  </section>
+
+  <section>
+    <h3>Topology — 2 spine · 2 leaf CLOS</h3>
+    <div class="mermaid">
+graph TB
+  subgraph UL[Underlay: eBGP / OSPF]
+    S1[Spine 1]
+    S2[Spine 2]
+  end
+  L1["Leaf 1 — VTEP"]
+  L2["Leaf 2 — VTEP"]
+  S1 --- L1
+  S1 --- L2
+  S2 --- L1
+  S2 --- L2
+  HA["Host A · Tenant 1"] --- L1
+  HB["Host B · Tenant 2"] --- L1
+  HC["Host C · Tenant 1"] --- L2
+  HD["Host D · Tenant 2"] --- L2
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;">Spines carry the eBGP/OSPF underlay (every VTEP loopback reachable). Leaves are VTEPs running BGP-EVPN overlay. Hosts split across two tenants (VRFs). VXLAN tunnels run leaf ↔ leaf.</p>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Underlay + overlay
+
+- **Underlay** — eBGP (RFC 7938, ASN per leaf) or OSPF; only job = every VTEP loopback reachable
+- **Overlay** — MP-BGP **EVPN** (AFI/SAFI 25/70); spines as route-reflectors (iBGP), or eBGP-EVPN
+- **VTEP** = each leaf; VXLAN encaps L2/L3 between leaves over the underlay
+- **RD** makes each VRF/EVI's routes unique · **RT** import/export = tenant isolation
+  </textarea>
+  </section>
+
+  <section>
+    <h3>Overlay — VXLAN dataplane + EVPN control plane</h3>
+    <div class="mermaid">
+graph LR
+  HA[Host A] --> L1["Leaf 1 / VTEP"]
+  L1 ==>|"VXLAN VNI 10010 over IP underlay"| L2["Leaf 2 / VTEP"]
+  L2 --> HC[Host C]
+  L1 -.->|"BGP-EVPN Type-2 MAC/IP"| L2
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;">Dataplane = VXLAN tunnel leaf→leaf over the IP underlay. Control plane = BGP-EVPN: Type-2 (MAC/IP), Type-3 (flood list), Type-5 (prefix). RD scopes routes per VRF; RT controls import/export.</p>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### EVPN route types — what `show bgp evpn` shows
+
+| Type | Carries | Used for |
+|------|---------|----------|
+| **Type-2** | MAC (+ IP) | host reachability · ARP suppression · MAC mobility |
+| **Type-3** | Inclusive Multicast (IMET) | BUM flood list per VNI |
+| **Type-5** | IP prefix | inter-subnet / L3 (symmetric IRB, prefix advertise) |
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### What to SEE (the demos)
+
+- `show bgp evpn` — Type-2/3/5 routes flowing
+- **Tenant isolation:** flip an **RT** → watch a route stop importing
+- **VLAN → VNI** at the VTEP: `show vxlan vtep`, `show vxlan address-table`
+- **MAC mobility:** move a host → new Type-2 with a bumped sequence number
+- **ARP suppression:** VTEP answers ARP locally from EVPN-learned MAC/IP
+- **Inter-VRF vs intra-VRF** reachability = **macro-segmentation** in action
+
+*(captures filled when run on the Docker host)*
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Out of scope — whiteboard only
+
+**Micro-segmentation policy** (intra-VRF): Cisco **TrustSec SGT/GBP** vs Arista **MSS-Group** — different mechanisms, not portable.
+
+Demonstrate **macro-seg via VRF/RT** in the lab; keep micro-seg **conceptual** unless the platform does it cleanly.
+  </textarea>
+  </section>
+</section>
+
 <!-- ============ END ============ -->
 <section class="center">
   <h2>End</h2>
