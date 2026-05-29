@@ -3212,6 +3212,7 @@ graph LR
 - **CPU pinning / `isolcpus`** — keep the hot path off scheduler noise; **NUMA** — NIC on the right socket
 - **`ethtool -G`** ring buffers (absorb bursts) · **`ethtool -C`** interrupt coalescing (latency vs CPU) · **busy-poll** for lowest latency
 - **hugepages** — fewer TLB misses
+- **`nohz_full` + RCU offload** — stop the scheduler tick on isolated cores · **`tuned-adm` `network-latency`** · **CPU governor = performance** · **RPS/RFS** to spread softirq load
 - *"You can't optimise latency you can't measure"* → hardware timestamps (PTP)
   </textarea>
   </section>
@@ -3246,6 +3247,18 @@ graph TB
 
   <section data-markdown>
   <textarea data-template>
+### The network stack — iproute2 &amp; namespaces
+
+- **iproute2** — `ip addr`/`link`/`route`/`neigh`; **`ss`** (not netstat); `tc` for qdisc/shaping
+- **Network namespaces** + **veth** pairs + **bridges** — the same primitives containerlab/Docker use; isolate full stacks on one host
+- **Policy routing** — `ip rule` + multiple tables (source-based / multi-homing)
+- **VLAN / bridge** — `bridge fdb`, 802.1Q sub-ifaces (`eth0.100`)
+- A CLOS/overlay lab is exactly this under the hood — a namespace is a virtual router
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
 ### Multicast for market data
 
 - **SSM + IGMPv3** — known source (exchange feed), no RP, A/B feeds trivial
@@ -3260,7 +3273,21 @@ graph TB
 
 - **Why:** MiFID II / RTS-25 traceable µs timestamps + latency measurement. NTP (ms) is not enough.
 - **How:** GPS grandmaster → boundary/transparent clocks in every switch (correct for queue/residence) → **NIC hardware timestamping (ns)**
-- **Linux:** `linuxptp` = **`ptp4l`** (PTP on the wire) + **`phc2sys`** (sync system clock to the NIC PHC)
+- **Linux:** `linuxptp` = **`ptp4l`** (PTP on the wire) + **`phc2sys`** (sync system clock to the NIC PHC) + **`ts2phc`** (discipline the PHC to a 1PPS/GPS source)
+- **Clock roles:** ordinary (endpoint) · **boundary** (re-times per port) · **transparent** (corrects residence time)
+- **SW vs HW timestamping** (`SO_TIMESTAMPING`) — HW (NIC PHC) = ns; SW = µs and jittery
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Troubleshooting toolkit
+
+- **Sockets** — `ss -tanp` (states, queues), `ss -i` (rtt / retrans / cwnd)
+- **NIC** — `ethtool -S` (drops/overruns), `-g` (ring), `-c` (coalescing), `ip -s link`
+- **Counters** — `/proc/net/snmp`, `/proc/net/softnet_stat` (backlog drops), `netstat -su` (`RcvbufErrors`)
+- **Live** — `perf top`, `bpftrace`, `tcpdump`/`tshark`, `mtr` for the path
+- **Overrun signature:** rising `rx_dropped` + `RcvbufErrors` under load while CPU sits idle → ring/backlog/socket, not bandwidth
   </textarea>
   </section>
 
