@@ -2987,6 +2987,264 @@ Three-way choice:
   </section>
 </section>
 
+<!-- ============ SECTION 17 — AWS THEORY ============ -->
+<section>
+  <section data-markdown>
+  <textarea data-template>
+## 17 · AWS networking — the model
+
+The same three primitives in every account:
+**private network (VPC)** · **managed transit hub (TGW)** · **dedicated interconnect (DX)**. Everything else is policy on top.
+
+- **VPC** — your isolated L3 network (a CIDR you own)
+- **Subnet** — a slice of the VPC, pinned to **one AZ** (a failure domain)
+- **Route table** — what makes a subnet *public* or *private* (not a checkbox)
+- Security is two layers: **SG** (instance, stateful) + **NACL** (subnet, stateless)
+
+↓ for each
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### VPC, subnets, routing
+
+- **VPC** = CIDR block (e.g. `10.0.0.0/16`), region-wide
+- **Subnet** = smaller CIDR, lives in **one AZ**
+- **Route table** decides reachability:
+  - `0.0.0.0/0 → IGW` ⇒ **public** subnet
+  - `0.0.0.0/0 → NAT GW` ⇒ **private** subnet (egress only)
+  - the local VPC CIDR is always routable
+- <span class="tag warn">Key</span> a subnet is "public" **only because its route table points the default route at an Internet Gateway** — there is no public/private flag.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Security groups vs NACLs
+
+| | Security Group | NACL |
+|--|----------------|------|
+| Scope | Instance (ENI) | Subnet |
+| State | **Stateful** (return auto-allowed) | **Stateless** (allow both ways) |
+| Rules | Allow only | Allow **and** deny |
+| Eval | All rules | Numbered, first-match |
+
+- Default to **SG** for everything; reach for a **NACL** only for a subnet-wide blanket/explicit **deny** (e.g. block a bad CIDR).
+- Stateless gotcha: a NACL must open the **ephemeral port range** for return traffic.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Getting in and out
+
+- **Internet Gateway (IGW)** — free, bidirectional; public reachability for a public subnet
+- **NAT Gateway** — *paid*, **egress-only**: private instances reach out, nothing reaches in
+- **Public IP** — ephemeral, lost on stop/start · **Elastic IP** — static, yours, charged when *unattached* · **Private IP** — within the VPC
+- Interview line: *"public vs private subnet is a **routing** decision (IGW vs NAT), not a security one."*
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Connecting VPCs & hybrid — the interview meat
+
+- **VPC peering** — 1:1, non-transitive, no overlapping CIDRs
+- **Transit Gateway (TGW)** — the hub: many VPCs + on-prem + cross-region, transitive
+- **PrivateLink** — expose one service via an ENI in the consumer VPC; no routing, no CIDR-overlap problem
+- **Hybrid on-prem ↔ AWS:**
+  - **Site-to-Site VPN** — IPsec over the internet, BGP or static, quick & cheap, *variable* latency
+  - **Direct Connect** — dedicated circuit, low/consistent latency, BGP, weeks + $$$ to provision
+  - **Cloud WAN** — managed global WAN over TGW + DX
+- **Egress / data-transfer cost is the real design driver** (free in-AZ, $ cross-AZ/region, $$ to internet).
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### HFT / AI on AWS
+
+- **EFA (Elastic Fabric Adapter)** — AWS's RDMA NIC; **SRD** transport + libfabric; OS-bypass for HPC/ML (Trainium / H100 clusters)
+- **Cluster placement group** — packs instances on one spine for lowest latency / highest bisection
+- **Low-latency edge for market data** — **Local Zones / Outposts / Wavelength** put compute next to the exchange/metro
+- Two networks, like on-prem AI: frontend = normal VPC/ENA; **backend GPU/HPC fabric = EFA**
+  </textarea>
+  </section>
+</section>
+
+<!-- ============ SECTION 18 — LINUX THEORY ============ -->
+<section>
+  <section data-markdown>
+  <textarea data-template>
+## 18 · Linux — the packet path & the box
+
+Two things a trading shop probes: **the receive path** (where packets drop on the way to your app) and **plain sysadmin** (the box won't behave).
+
+Receive path: **wire → NIC ring → IRQ/softirq → kernel socket buffer → app `recv()`**. Every stage can drop. *Find the layer before you blame the network.*
+
+↓ for the path, perf, bypass, multicast, PTP, sysadmin
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### The receive path & where it drops
+
+| Stage | Drops as | See it with |
+|-------|----------|-------------|
+| NIC ring buffer (DMA) | `rx_dropped`, overruns | `ethtool -S`, `ip -s link` |
+| IRQ → softirq (NAPI) | CPU not draining the ring | `/proc/interrupts`, `mpstat` |
+| Kernel socket buffer | **`RcvbufErrors`** | `netstat -su`, `ss -u` |
+| Application | slow `recv()` → buffer fills | app metrics |
+
+- Ring sized with `ethtool -G`; socket buffer by `net.core.rmem_max` + `SO_RCVBUF`.
+- The whole HFT game is keeping this path short and drop-free.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Low-latency / market-data tuning
+
+- **IRQ affinity + RSS** — pin NIC queues to specific cores
+- **CPU pinning / `isolcpus`** — keep the hot path off scheduler noise; **NUMA** — NIC on the right socket
+- **`ethtool -G`** ring buffers (absorb bursts) · **`ethtool -C`** interrupt coalescing (latency vs CPU) · **busy-poll** for lowest latency
+- **hugepages** — fewer TLB misses
+- *"You can't optimise latency you can't measure"* → hardware timestamps (PTP)
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Kernel bypass
+
+Per-packet kernel cost (syscalls, copies, IRQs) is the enemy of HFT jitter.
+
+- **DPDK** — poll-mode driver, packets straight to userspace, dedicated cores
+- **Solarflare / Onload** — transparent socket acceleration (no app rewrite)
+- **AF_XDP** — eBPF fast path, kernel-assisted bypass
+
+<span class="tag warn">Trade-off</span> burns cores, sidesteps normal kernel tooling → harder to observe/debug.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Multicast for market data
+
+- **SSM + IGMPv3** — known source (exchange feed), no RP, A/B feeds trivial
+- Socket: join `(S,G)`, `SO_REUSEADDR`/`SO_REUSEPORT`, size `SO_RCVBUF` + `net.core.rmem_max`
+- **Gapping** = receiver socket buffer overruns → sequence gap → feed arbitration / re-request. It's almost never "the network" — it's `RcvbufErrors`.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### PTP / hardware timestamping
+
+- **Why:** MiFID II / RTS-25 traceable µs timestamps + latency measurement. NTP (ms) is not enough.
+- **How:** GPS grandmaster → boundary/transparent clocks in every switch (correct for queue/residence) → **NIC hardware timestamping (ns)**
+- **Linux:** `linuxptp` = **`ptp4l`** (PTP on the wire) + **`phc2sys`** (sync system clock to the NIC PHC)
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Sysadmin & scripting (interviews lean here)
+
+- **systemd** — `systemctl status/restart`, **`journalctl -u`**, unit `ExecStart`/`User`/perms
+- **processes** — `top -H`, `pidstat`; `SIGTERM` vs `SIGKILL`; **`D`-state = I/O wait**, not CPU
+- **permissions** — `ls -l`, `chmod`/`chown`, **`namei -l`** to walk a path; SSH key must be `600`
+- **disk** — `df` vs `du`; **deleted-but-open file** → `lsof +L1`; LVM / `fstab` / mounts
+- **scripting** — `grep`/`awk`/`sed` pipelines; `ss`, `/proc/net` for sockets
+- The classics: *"service won't start / disk full / load high / can't reach a host — walk me through it."*
+  </textarea>
+  </section>
+</section>
+
+<!-- ============ SECTION 19 — COMBINED LAB ============ -->
+<section>
+  <section data-markdown>
+  <textarea data-template>
+## 19 · Lab — AWS box + Linux diagnostics
+
+Build a VPC + a public EC2 Linux box (the AWS lab), then run the Linux diagnose-it scenarios **on that same box**. Faz drives; captures added live.
+
+<span class="tag warn">Cost</span> t3.micro = free-tier $0 · NAT GW / S2S-VPN are paid → tear down same day.
+
+↓ AWS build → Linux drills
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### AWS build — click-path
+
+1. **VPC** `10.0.0.0/16` → **public subnet** `10.0.1.0/24`
+2. **IGW** → attach → route table `0.0.0.0/0 → IGW`
+3. **Security group** — inbound SSH 22 from **my public IP /32 only**
+4. **Key pair** (`chmod 400 key.pem`) → launch **t3.micro** (AL2023), public IP on
+5. `ssh -i key.pem ec2-user@<ip>` → `curl -s https://ifconfig.me ; ping -c2 8.8.8.8`
+
+*(capture: console + SSH session — tomorrow)*
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### AWS stretch — public vs private
+
+- Private subnet `10.0.2.0/24` (no IGW route) → **NAT GW** in the public subnet → route `0/0 → natgw`
+- 2nd instance, **no public IP** → it can `curl ifconfig.me` (egress) but is **unreachable inbound**
+- This is the public-vs-private/egress point interviewers probe. **⚠️ delete the NAT GW same day.**
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Linux drill — the receive path (multicast gapping)
+
+- **Inject:** fast UDP multicast sender vs a small-`SO_RCVBUF` receiver
+- **Symptom:** consumer dropping packets under load
+- **Diagnose:** `netstat -su` / `ss -u` → **`RcvbufErrors`** climbing
+- **Fix:** raise `net.core.rmem_max` + set `SO_RCVBUF`; size to burst × rate
+
+*(capture tomorrow)*
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Linux drill — diagnose-it set
+
+One at a time; only the symptom given, Faz drives:
+
+- **`tc netem`** loss/delay → `ping`, `tc qdisc show`
+- **Disk full** + deleted-held-open → `df`, `du -xsh`, **`lsof +L1`**
+- **systemd unit** won't start → `systemctl status`, **`journalctl -u`**
+- **Runaway load** → `top -H`, `pidstat`, CPU vs `D`-state
+- **Perms block** → `ls -l`, **`namei -l`**, `chmod`/`chown`
+- **Can't reach host** → **`ip route get`** vs **`nft list ruleset`**
+- **NIC counters** → `ethtool -S`, `ip -s link`
+
+*(captures filled tomorrow, one per scenario)*
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Concept-only — whiteboard, not labbed
+
+Need real NICs/hardware — know them cold, don't waste lab time:
+
+- **Kernel bypass** — DPDK / Solarflare-Onload / AF_XDP
+- **PTP hardware timestamping** — `ptp4l` + `phc2sys`, NIC PHC
+- **NIC IRQ-affinity tuning at line rate** — RSS queues, `smp_affinity`
+  </textarea>
+  </section>
+</section>
+
 <!-- ============ END ============ -->
 <section class="center">
   <h2>End</h2>
