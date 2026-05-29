@@ -3067,6 +3067,18 @@ graph LR
 
   <section data-markdown>
   <textarea data-template>
+### DNS, VPC endpoints &amp; PrivateLink
+
+- **Route 53** — public + **private hosted zones**; **Resolver** inbound/outbound endpoints for hybrid DNS
+- **VPC DNS** — the `.2` resolver; `enableDnsSupport` / `enableDnsHostnames`
+- **Gateway endpoint** — S3 / DynamoDB reached privately via a **route-table** entry (free)
+- **Interface endpoint (PrivateLink)** — an **ENI** in your subnet fronting a service: private IP, no IGW/NAT, no CIDR overlap, cross-account
+- Why PrivateLink over peering: exposes **one service**, not a whole network → scales to many consumers
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
 ### Connecting VPCs & hybrid — the interview meat
 
 - **VPC peering** — 1:1, non-transitive, no overlapping CIDRs
@@ -3100,12 +3112,50 @@ graph LR
 
   <section data-markdown>
   <textarea data-template>
+### Direct Connect &amp; VPN — the detail
+
+- **Site-to-Site VPN** — **two** IPsec tunnels (redundancy), BGP (dynamic) or static, ECMP across tunnels, over the public internet
+- **Direct Connect** — dedicated port (1/10/100G) into a DX location; **VIFs**: private (→ VPC/VGW), public (→ AWS public services), transit (→ TGW)
+- **DX Gateway** — one DX reaching VPCs in many regions; **MACsec** for L2 encryption
+- DX has **no built-in encryption** → run a VPN over it or use MACsec; DX + VPN backup is the common resilient pattern
+- Decision: **VPN** = quick/cheap/variable · **DX** = consistent low latency, weeks + $$$
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Cross-region &amp; the cost driver
+
+- **TGW inter-region peering** — connect hubs across regions over the AWS backbone
+- **Data transfer = the architecture driver:** free **in-AZ** · **cross-AZ** charged each way · **cross-region** more · **to internet** most · **NAT GW** adds per-GB processing
+- Egress is asymmetric and easy to under-budget — *topology follows the price sheet*
+- IPv6 egress: **egress-only IGW** (the v6 analogue of NAT — outbound only)
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
 ### HFT / AI on AWS
 
 - **EFA (Elastic Fabric Adapter)** — AWS's RDMA NIC; **SRD** transport + libfabric; OS-bypass for HPC/ML (Trainium / H100 clusters)
 - **Cluster placement group** — packs instances on one spine for lowest latency / highest bisection
 - **Low-latency edge for market data** — **Local Zones / Outposts / Wavelength** put compute next to the exchange/metro
+- **ENA / ENA-Express** — enhanced networking (SR-IOV); ENA-Express runs SRD underneath for higher pps + lower tail latency
+- **Placement groups** — **cluster** (low latency, single AZ) · spread (HA) · partition (big distributed)
 - Two networks, like on-prem AI: frontend = normal VPC/ENA; **backend GPU/HPC fabric = EFA**
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Interview gotchas — the mental model
+
+- *"Can't SSH to my instance"* → IGW route? SG inbound? public IP/EIP? right AZ/subnet?
+- **SG stateful vs NACL stateless** — a NACL must open the **ephemeral port range** for return traffic
+- **Public subnet = a route to the IGW**, not a checkbox
+- **PrivateLink** when CIDRs overlap or you only want to expose one service
+- **DX vs VPN** = consistent-low-latency-$$$ vs cheap-variable-internet
+- Cost: in-AZ free → cross-AZ → cross-region → internet, each step dearer — design around it
   </textarea>
   </section>
 </section>
