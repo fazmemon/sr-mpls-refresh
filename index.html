@@ -3310,11 +3310,125 @@ Need real NICs/hardware — know them cold, don't waste lab time:
   </section>
 </section>
 
-<!-- ============ SECTION 20 — EVPN-VXLAN LAB ============ -->
+<!-- ============ SECTION 20 — EVPN-VXLAN THEORY ============ -->
 <section>
   <section data-markdown>
   <textarea data-template>
-## 20 · Lab — EVPN-VXLAN spine-leaf fabric
+## 20 · EVPN-VXLAN — control &amp; data plane
+
+The modern DC fabric: a **VXLAN dataplane** (L2/L3 over an IP underlay) driven by a **BGP-EVPN control plane** (MP-BGP advertises MAC / IP / prefix). Replaces flood-and-learn with a routed control plane.
+
+- **Underlay** — eBGP-CLOS (RFC 7938), loopback reachability, ECMP
+- **Overlay** — MP-BGP EVPN (AFI 25 / SAFI 70), a VTEP per leaf
+- **Multi-tenancy** — L2 segment = **L2VNI**; per-VRF routing = **L3VNI**; RD/RT scope
+
+↓ dataplane → why EVPN → route types → RD/RT → IRB → BUM → multihoming → mobility
+  </textarea>
+  </section>
+
+  <section>
+    <h3>VXLAN dataplane — encapsulation</h3>
+    <div class="mermaid">
+graph LR
+  F["Original L2 frame"] --> V["+ VXLAN header (24-bit VNI)"]
+  V --> U["+ UDP (dst 4789, src = inner-flow hash)"]
+  U --> I["+ outer IP (src/dst = VTEP loopbacks)"]
+  I --> W(("underlay / ECMP"))
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;">VTEP encaps/decaps. 24-bit VNI = 16M segments. Source UDP port = inner-flow hash → ECMP entropy across the fabric. +50B overhead → underlay needs jumbo MTU (~9000).</p>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### VNIs and why a control plane
+
+- **L2VNI** = a bridge domain (VLAN-equivalent, MAC scope) · **L3VNI** = a routing instance (per VRF)
+- Classic VXLAN = **flood-and-learn** (multicast or ingress-replication, no control plane) → doesn't scale, slow convergence
+- **EVPN** = MP-BGP advertises reachability → control-plane MAC/IP learning, **ARP suppression**, **MAC mobility**, **multihoming**
+- AFI/SAFI **25/70**; iBGP with RR on spines, or eBGP-EVPN. Same control plane runs over VXLAN **or** MPLS dataplane.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### EVPN route types
+
+| Type | Name | Role |
+|------|------|------|
+| **1** | Ethernet A-D | multihoming: per-ES **mass-withdraw** + per-EVI **aliasing** |
+| **2** | MAC/IP advertisement | host MAC (+IP); ARP/ND suppression; MAC mobility |
+| **3** | Inclusive Multicast (IMET) | BUM flood list per VNI |
+| **4** | Ethernet Segment | **DF election** for a multihomed segment |
+| **5** | IP Prefix | L3 / inter-subnet (symmetric IRB, summarisation, external) |
+
+Type-2/3/5 are the everyday ones; 1/4 appear once you multihome.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### RD &amp; RT — uniqueness and isolation
+
+- **RD (Route Distinguisher)** — prepended per EVI/VRF so overlapping tenant MAC/IP stay unique in BGP (often auto-derived `RID:VNI`)
+- **RT (Route Target)** — extended community controlling **import/export** → which VRF/EVI a route lands in = **tenant isolation**
+- L2VNI RT scopes the bridge domain; L3VNI RT scopes the VRF
+- Flip an RT and the route stops importing on the far leaf — the macro-seg lever (lab demo)
+  </textarea>
+  </section>
+
+  <section>
+    <h3>IRB — symmetric vs asymmetric</h3>
+    <div class="mermaid">
+graph TB
+  subgraph A[Asymmetric IRB]
+    A1["Ingress leaf: route into dest L2VNI"] --> A2["Egress leaf: bridge to host"]
+  end
+  subgraph S[Symmetric IRB]
+    B1["Ingress leaf: route into L3VNI"] --> B2["Egress leaf: route out to host"]
+  end
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;">IRB = routing + bridging at the VTEP, with an <b>anycast gateway</b> (same IP+MAC on every leaf → gateway always local, seamless mobility). Asymmetric needs every VNI on every leaf; <b>symmetric</b> uses one common per-VRF L3VNI → scales, the modern default.</p>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### BUM traffic (broadcast / unknown-unicast / multicast)
+
+- **Type-3 IMET** builds the per-VNI flood list
+- **Ingress replication (head-end)** — source VTEP unicasts a copy to each remote VTEP; no multicast underlay needed (DC default)
+- **Multicast underlay (PIM)** — VNI → multicast group; scales BUM but needs PIM in the fabric
+- **ARP/ND suppression** cuts most BUM anyway — the VTEP answers locally from EVPN-learned MAC/IP
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Multihoming — ESI-LAG
+
+- **Ethernet Segment (ES)** — a host/switch dual-homed to ≥2 leaves, identified by an **ESI**
+- **Type-4** → **DF (Designated Forwarder) election** — one leaf forwards BUM to the host (no duplicates)
+- **Type-1 A-D** → **aliasing** (load-balance unicast across both leaves) + **mass-withdraw** (fast convergence on link loss)
+- **All-active** (both forward) vs **single-active**; replaces MLAG/vPC with a standards-based control plane
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### MAC mobility &amp; loop protection
+
+- Move a host → new **Type-2** with an incremented **MAC mobility sequence number**; highest seq wins, old withdrawn
+- **Duplicate-MAC detection** — N moves in M seconds → freeze + alarm (mis-cable / loop)
+- **Sticky MAC** — pin a MAC so it can't move (security)
+- Anycast gateway means the host's default gateway never changes as it moves
+  </textarea>
+  </section>
+</section>
+
+<!-- ============ SECTION 21 — EVPN-VXLAN LAB ============ -->
+<section>
+  <section data-markdown>
+  <textarea data-template>
+## 21 · Lab — EVPN-VXLAN spine-leaf fabric
 
 Cement the DC strength. **Host:** Docker host ≥8 GB (16 GB comfy) — **cEOS + containerlab, no KVM** (Hetzner box / cloud VM, *not* the laptop). cEOS image free (Arista account).
 
