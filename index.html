@@ -3019,6 +3019,25 @@ The same three primitives in every account:
   </textarea>
   </section>
 
+  <section>
+    <h3>VPC anatomy — public vs private</h3>
+    <div class="mermaid">
+graph LR
+  NET((Internet))
+  IGW[Internet Gateway]
+  subgraph VPC[VPC 10.0.0.0/16]
+    PUB["Public subnet — route 0/0 to IGW"]
+    NAT[NAT Gateway]
+    PRIV["Private subnet — route 0/0 to NAT"]
+  end
+  NET --- IGW
+  IGW --- PUB
+  PRIV -->|egress| NAT
+  NAT --> IGW
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;">Public subnet = default route to the IGW. Private subnet egresses via the NAT GW (which lives in the public subnet) → out the IGW; nothing reaches the private instance inbound.</p>
+  </section>
+
   <section data-markdown>
   <textarea data-template>
 ### Security groups vs NACLs
@@ -3059,6 +3078,24 @@ The same three primitives in every account:
   - **Cloud WAN** — managed global WAN over TGW + DX
 - **Egress / data-transfer cost is the real design driver** (free in-AZ, $ cross-AZ/region, $$ to internet).
   </textarea>
+  </section>
+
+  <section>
+    <h3>Connecting VPCs &amp; hybrid</h3>
+    <div class="mermaid">
+graph LR
+  ONPREM[On-prem network]
+  subgraph AWS[AWS]
+    TGW[Transit Gateway]
+    VPCA[VPC A]
+    VPCB[VPC B]
+  end
+  TGW --- VPCA
+  TGW --- VPCB
+  ONPREM ==>|"Site-to-Site VPN"| TGW
+  ONPREM -.->|"Direct Connect"| TGW
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;">TGW = transitive hub for many VPCs + on-prem. On-prem joins via Site-to-Site VPN (IPsec/internet, cheap, variable latency) or Direct Connect (dedicated circuit, consistent, $$$). PrivateLink (not shown) exposes one service via an ENI, no routing.</p>
   </section>
 
   <section data-markdown>
@@ -3103,6 +3140,20 @@ Receive path: **wire → NIC ring → IRQ/softirq → kernel socket buffer → a
   </textarea>
   </section>
 
+  <section>
+    <h3>The receive path — and where it drops</h3>
+    <div class="mermaid">
+graph LR
+  WIRE((Wire)) --> NIC["NIC ring (DMA)"]
+  NIC --> SOFT["IRQ / softirq (NAPI)"]
+  SOFT --> SOCK["Socket buffer (rmem)"]
+  SOCK --> APP["App recv()"]
+  style NIC fill:#6b3a1a,color:#fff
+  style SOCK fill:#6b3a1a,color:#fff
+    </div>
+    <p style="font-size: 0.7em; color: #ccc; text-align: center;">Drops by stage: <b style="color:#ce9178">NIC ring</b> → <code>rx_dropped</code> (<code>ethtool -S</code>); <b style="color:#ce9178">socket buffer</b> → <code>RcvbufErrors</code> (<code>netstat -su</code>). Find the layer before blaming the network.</p>
+  </section>
+
   <section data-markdown>
   <textarea data-template>
 ### Low-latency / market-data tuning
@@ -3127,6 +3178,20 @@ Per-packet kernel cost (syscalls, copies, IRQs) is the enemy of HFT jitter.
 
 <span class="tag warn">Trade-off</span> burns cores, sidesteps normal kernel tooling → harder to observe/debug.
   </textarea>
+  </section>
+
+  <section>
+    <h3>Kernel bypass — normal vs bypass</h3>
+    <div class="mermaid">
+graph TB
+  subgraph K[Normal kernel path]
+    N1[NIC] --> N2[Kernel net stack] --> N3["App socket"]
+  end
+  subgraph B[Kernel bypass]
+    B1[NIC] --> B2["Userspace PMD / Onload"] --> B3[App]
+  end
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;">Bypass (DPDK poll-mode, Solarflare Onload, AF_XDP) skips syscalls / copies / IRQs for lowest latency &amp; jitter — at the cost of dedicated cores and losing normal kernel tooling.</p>
   </section>
 
   <section data-markdown>
