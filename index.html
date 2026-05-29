@@ -3037,16 +3037,19 @@ Three-way choice:
     maxScale: 1.5,
     plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ],
   });
-  // Render all mermaid diagrams once reveal is ready (markdown plugin processes async)
-  Reveal.on('ready', () => {
-    setTimeout(() => mermaid.run({ querySelector: '.mermaid' }), 200);
-  });
-  // Re-render on slide change in case a diagram is being seen first time
-  Reveal.on('slidechanged', () => {
-    document.querySelectorAll('.mermaid:not([data-processed])').forEach(el => {
+  // Render each diagram only when its slide is the current (visible) one.
+  // Rendering inside a display:none slide makes mermaid mis-measure text, so
+  // diagrams on non-current slides intermittently blank out or error. Scoping
+  // each render to the visible slide makes it deterministic.
+  function renderCurrentMermaid() {
+    const cur = Reveal.getCurrentSlide();
+    if (!cur) return;
+    cur.querySelectorAll('.mermaid:not([data-processed])').forEach(el => {
       try { mermaid.run({ nodes: [el] }); } catch (e) {}
     });
-  });
+  }
+  Reveal.on('ready', renderCurrentMermaid);
+  Reveal.on('slidechanged', renderCurrentMermaid);
 </script>
 <style>
   .mermaid { background: #1e1e1e; padding: 8px; border-radius: 6px; text-align: center; }
