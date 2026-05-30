@@ -588,35 +588,31 @@ This is **how PCE knows your topology and current SR state** without speaking IG
   </section>
 
   <section>
-    <h3>BGP-LS → PCE — single domain & multi-domain</h3>
+    <h3>BGP-LS → PCE — single domain</h3>
     <div class="mermaid">
 graph LR
-  subgraph SD[Single domain]
-    SDr1((R1))
-    SDr2((R2))
-    SDr3((R3))
-    SDspeaker[BGP-LS speaker]
-    SDpce[PCE]
-    SDr1 --- SDr2
-    SDr2 --- SDr3
-    SDspeaker -.->|"BGP-LS NLRI"| SDpce
-    SDr2 ==>|"iBGP-LS session"| SDspeaker
+  subgraph IGP[One IGP domain · one AS]
+    R1((R1)) --- R2((R2)) --- R3((R3))
   end
-    </div>
-    <div class="mermaid">
-graph LR
-  subgraph MD[Multi-domain / multi-AS]
-    A1[Domain A nodes] --> Aspk[BGP-LS speaker A]
-    B1[Domain B nodes] --> Bspk[BGP-LS speaker B]
-    Aspk -->|"BGP-LS"| cPCEa[Child PCE A]
-    Bspk -->|"BGP-LS"| cPCEb[Child PCE B]
-    cPCEa -->|"H-PCE (RFC 6805)"| hPCE[Parent PCE]
-    cPCEb -->|"H-PCE"| hPCE
-    hPCE -->|"inter-domain SR Policy via BSID at ASBR"| Head[Head-end PE]
-  end
+  R2 ==>|"iBGP BGP-LS (AFI 16388 / SAFI 71)"| PCE[PCE / controller]
     </div>
     <p style="font-size: 0.7em; color: #888; text-align: center;">
-      One BGP-LS speaker per IGP domain is enough. Multi-domain composition happens at the controller, not in the network — H-PCE stitches domain paths via binding-SIDs.
+      Any one router (here R2 = the BGP-LS speaker) runs the IGP and exports the whole link-state DB — <b>nodes, links, prefixes + SR info</b> — to the PCE as <b>BGP-LS NLRI</b>. Single AS ⇒ <b>iBGP</b>. This is read-only <i>topology</i> to the controller — <b>not</b> labels (that's BGP-LU, later).
+    </p>
+  </section>
+
+  <section>
+    <h3>BGP-LS → PCE — multi-domain (H-PCE)</h3>
+    <div class="mermaid">
+graph LR
+  A[Domain A · AS 1] ==>|"iBGP BGP-LS"| cA[Child PCE A]
+  B[Domain B · AS 2] ==>|"iBGP BGP-LS"| cB[Child PCE B]
+  cA -->|"H-PCE (RFC 6805)"| P[Parent PCE]
+  cB -->|"H-PCE"| P
+  P -->|"inter-domain SR Policy · BSID at ASBR"| H[Head-end PE]
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;">
+      One BGP-LS speaker per domain feeds its child PCE (iBGP within each AS; <b>eBGP-LS</b> only if the controller sits in another AS). H-PCE stitches the cross-domain path; the head-end PE gets one SR Policy whose <b>binding-SID</b> hides the next domain's segment list.
     </p>
   </section>
 
