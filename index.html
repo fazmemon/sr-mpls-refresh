@@ -971,29 +971,21 @@ segment-routing
   </textarea>
   </section>
 
-  <section data-markdown>
-  <textarea data-template>
-### SR-LDP interworking — label translation at the boundary
-
-Mapping Server gives the *control plane* a SID for LDP-only nodes. The **dataplane** still has to translate between SR labels and LDP labels at the SR↔LDP boundary.
-
-**Direction 1 — SR-capable PE → LDP-only PE:**
-- PE1 (SR) pushes label 16005 (SRGB + SID 5 for the LDP-only PE2).
-- Packet hits a boundary node (SR-capable and also speaks LDP).
-- Boundary's MPLS LFIB has 16005 → swap to LDP's label-for-PE2 (some opaque value, e.g. 100177), forward.
-- PE2 receives the LDP label, pops normally.
-
-**Direction 2 — LDP-only PE → SR-capable PE:**
-- PE2 (LDP) pushes LDP's label-for-PE1.
-- Boundary's LFIB: in-label = LDP-label-for-PE1, action = swap to 16001 (SR label for PE1), forward.
-- Transit nodes carry 16001; PE1 pops.
-
-**Operational verify (Cisco IOS-XR):** `show mpls forwarding labels 16001 detail` on the boundary should list both the SR-side entry and the LDP-stitched entry.
-
-**`sr-prefer` flag:** on the boundary node, `segment-routing mpls / sr-prefer` makes SR labels win where both SR and LDP advertise reachability for the same prefix. Without it, LDP wins by default — defeats the migration.
-
-<span class="tag warn">Mapping-server alone isn't enough</span> The SID tells SR-capable nodes *how to label*, but the LDP-only node can't pop a label it doesn't know. Boundary node has to swap. **Mapping server + boundary swap = both halves.**
-  </textarea>
+  <section>
+    <h3>SR-LDP interworking — label swap at the boundary</h3>
+    <div class="mermaid">
+graph LR
+  PE1["PE1 (SR)"]
+  BN["Boundary node<br/>SR + LDP · LFIB swaps"]
+  PE2["PE2 (LDP-only)"]
+  PE1 -->|"push 16005 (SID 5)"| BN
+  BN -->|"swap 16005 → LDP 100177"| PE2
+  PE2 -->|"push LDP label → PE1"| BN
+  BN -->|"swap LDP → 16001 (SID 1)"| PE1
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;">
+      Mapping server gives the <i>control plane</i> a SID for the LDP-only nodes; the boundary node (SR + LDP) does the <i>dataplane</i> swap <b>both ways</b> in its LFIB — SR label ↔ LDP label. <b><code>sr-prefer</code></b> makes SR win where both protocols advertise the same prefix (else LDP wins, defeating the migration). And the mapping server alone isn't enough — the LDP-only node can't pop a label it doesn't know → <b>mapping server + boundary swap = both halves</b>. Verify on the boundary: <code>show mpls forwarding labels 16001 detail</code>.
+    </p>
   </section>
 
   <section data-markdown>
