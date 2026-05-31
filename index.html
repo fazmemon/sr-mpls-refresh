@@ -1786,6 +1786,52 @@ Transit hashes by peeking under labels for the IP header. Fragile when:
 
   <section data-markdown>
   <textarea data-template>
+### Elephant flows — why ECMP can't split them
+
+**Elephant** = one long-lived, high-volume flow (backup, storage replication, vMotion, AI all-reduce). **Mice** = many small short flows (a quote, a request). A link is *mostly mice by count, mostly elephant by bytes*.
+
+**The hard limit:** ECMP hashes the **5-tuple** and keeps every packet of a flow on **one** member *by design* (no reordering). An elephant is **one** 5-tuple → **one** hash → **one** link. **No hash can split it — splitting is exactly what ECMP refuses to do.** A better hash fixes *polarisation*, never elephants.
+
+| Symptom | Real cause | Fix |
+|---------|-----------|-----|
+| Many flows, 1 link hot, **CPUs idle** | **Polarisation** (unsalted hash) | per-router **hash seed** |
+| **One/few huge flows**, traceable | **Elephant** pinned to one member | tools below — *not* a hash |
+
+**Splitting a real elephant:**
+- **Flowlet / DLB** — a TCP flow comes in bursts with idle gaps; if a gap > max path-latency-delta, send the next burst down another member **without reordering** (Broadcom DLB / Arista / Cisco). *Degrades on a back-to-back saturating flow — no gaps.*
+- **Packet spraying / adaptive routing** — spray per-packet, drop ordering. Only safe on reorder-tolerant transport — **RoCE / IB / AWS SRD / Ultra Ethernet**. Why AI fabrics abandon ECMP.
+- **Steer it** — detect via sFlow/IPFIX, push the heavy 5-tuple down a dedicated **SR Policy / PBR** lane; mice keep ECMPing. *The SR-TE own-domain win.*
+- **Design** — fatter/more members, or **segregate bulk off the hot path**.
+
+**Trading vs AI:** trading hot-path is mice (multicast) → elephant risk is *bulk colliding with latency-sensitive traffic* → **segregate**, don't DLB. AI all-reduce is *all elephants* → **packet-spray on lossless RoCE** + rail-aligned topology.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Elephant flows — why ECMP can't split them
+
+**Elephant** = one long-lived, high-volume flow (backup, storage replication, vMotion, AI all-reduce). **Mice** = many small short flows. A link is *mostly mice by count, mostly elephant by bytes*.
+
+**The hard limit:** ECMP hashes the **5-tuple** and keeps every packet of a flow on **one** member *by design* (no reordering). An elephant is **one** 5-tuple → **one** hash → **one** link. **No hash can split it — splitting is exactly what ECMP refuses to do.** A better hash fixes *polarisation*, never elephants.
+
+| Symptom | Real cause | Fix |
+|---------|-----------|-----|
+| Many flows, 1 link hot, **CPUs idle** | **Polarisation** (unsalted hash) | per-router **hash seed** |
+| **One/few huge flows**, traceable | **Elephant** pinned to one member | tools below — *not* a hash |
+
+**Splitting a real elephant:**
+- **Flowlet / DLB** — a TCP flow comes in bursts with idle gaps; if a gap > max path-latency-delta, send the next burst down another member **without reordering** (Broadcom DLB / Arista / Cisco). *Degrades on a back-to-back saturating flow — no gaps.*
+- **Packet spraying / adaptive routing** — spray per-packet, drop ordering. Only safe on reorder-tolerant transport — **RoCE / IB / AWS SRD / Ultra Ethernet**. Why AI fabrics abandon ECMP.
+- **Steer it** — detect via sFlow/IPFIX, push the heavy 5-tuple down a dedicated **SR Policy / PBR** lane; mice keep ECMPing. *The SR-TE own-domain win.*
+- **Design** — fatter/more members, or **segregate bulk off the hot path**.
+
+**Trading vs AI:** trading hot-path is mice (multicast) → elephant risk is *bulk colliding with latency-sensitive traffic* → **segregate**, don't DLB. AI all-reduce is *all elephants* → **packet-spray on lossless RoCE** + rail-aligned topology.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
 ### Per-vendor hash-tuning knobs
 
 What you actually configure when ECMP across a 4-member group polarises.
