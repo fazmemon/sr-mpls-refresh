@@ -37,12 +37,15 @@
 <h2>Target topology</h2>
 <div class="mermaid">
 graph LR
-  subgraph AS100["AS 100 — IS-IS CORE + SR-MPLS"]
+  subgraph AS100["AS 100 — IS-IS CORE + SR-MPLS (SQUARE: 2 paths PE1→ASBR1)"]
     PE1["PE1<br/>Lo0 10.0.0.1 · SID 1"]
     P1["P1<br/>Lo0 10.0.0.2 · SID 2"]
+    P3["P3<br/>Lo0 10.0.0.8 · SID 8"]
     ASBR1["ASBR1<br/>Lo0 10.0.0.3 · SID 3"]
     PE1 ---|"10.1.12.0/30"| P1
     P1 ---|"10.1.23.0/30"| ASBR1
+    PE1 ---|"10.1.18.0/30"| P3
+    P3 ---|"10.1.38.0/30"| ASBR1
   end
   subgraph AS200["AS 200 — IS-IS CORE + SR-MPLS"]
     ASBR2["ASBR2<br/>Lo0 10.0.0.4 · SID 4"]
@@ -55,13 +58,15 @@ graph LR
   ASBR1 ===|"eBGP: BGP-LU + multihop VPNv4 · 10.1.34.0/30"| ASBR2
   ASBR1 -.->|"eBGP · EPE · 10.1.37.0/30"| PEERX
 </div>
-<p style="color:#888;font-size:0.9em;">SRGB 16000–23999 everywhere · Node-SID index = last loopback octet · Loopbacks 10.0.0.N/32 · links 10.1.x.y/30. <strong>Thick line</strong> = inter-AS Option-C boundary (Stage 2); <strong>dotted</strong> = EPE peer (Stage 3).</p>
+<p style="color:#888;font-size:0.9em;"><strong>AS 100 is a SQUARE</strong> — PE1 and ASBR1 are NOT directly linked, so there are two disjoint paths (via P1, via P3). That's what makes SR-TE / flex-algo / UCMP / proper square-topology TI-LFA demonstrable. SRGB 16000–23999 everywhere · Loopbacks 10.0.0.N/32 · links 10.1.x.y/30. <strong>Thick line</strong> = inter-AS Option-C boundary (Stage 2); <strong>dotted</strong> = EPE peer (Stage 3).</p>
+<p style="color:#888;font-size:0.9em;"><strong>Why a square not a triangle:</strong> a triangle gives every node a trivial loop-free alternate, so it under-demonstrates TI-LFA. The square has no strict PQ-node → the repair list grows to a 2-SID stack (the real FRR case). It also gives two equal-cost paths for ECMP/UCMP and a long-vs-short choice for SR-TE/flex-algo.</p>
 
 <table>
 <tr><th>Node</th><th>AS</th><th>Lo0</th><th>Node-SID</th><th>Role</th><th>RAM</th></tr>
 <tr><td>PE1</td><td>100</td><td>10.0.0.1</td><td>1</td><td>Ingress PE (VPNv4)</td><td>16G</td></tr>
 <tr><td>P1</td><td>100</td><td>10.0.0.2</td><td>2</td><td>Core P</td><td>16G</td></tr>
 <tr><td>ASBR1</td><td>100</td><td>10.0.0.3</td><td>3</td><td>ASBR + EPE head</td><td>16G</td></tr>
+<tr><td>P3</td><td>100</td><td>10.0.0.8</td><td>8</td><td>2nd core path (makes AS100 a square)</td><td>16G</td></tr>
 <tr><td>ASBR2</td><td>200</td><td>10.0.0.4</td><td>4</td><td>ASBR</td><td>16G</td></tr>
 <tr><td>P2</td><td>200</td><td>10.0.0.5</td><td>5</td><td>Core P</td><td>16G</td></tr>
 <tr><td>PE2</td><td>200</td><td>10.0.0.6</td><td>6</td><td>Egress PE (VPNv4)</td><td>16G</td></tr>
@@ -72,24 +77,35 @@ graph LR
 
 <hr>
 
-<h2>STAGE 1 — AS 100 SR core (PE1 ─ P1 ─ ASBR1)</h2>
-<p>Proves: IS-IS + SR-MPLS baseline on XR, prefix-SIDs, label-FIB, TI-LFA. This alone re-captures deck §3/§4 on real IOS-XR (vs the cEOS captures).</p>
+<h2>STAGE 1 — AS 100 SR core, as a SQUARE (PE1, P1, P3, ASBR1)</h2>
+<p>Proves on real IOS-XR: §3 baseline SR (prefix-SIDs, label-FIB), §4 TI-LFA (square → 2-SID repair), §5 flex-algo, §6 SR-TE explicit path, §8 ECMP/UCMP. The square (two disjoint PE1→ASBR1 paths) is what makes the steering/FRR demos possible — a line couldn't.</p>
+
+<div class="ok"><strong>Strategy in one line:</strong> build the square so PE1 has a short path (via P1) and a long path (via P3) to ASBR1. Baseline SR ECMPs both; then we set metrics so one is "short", and use flex-algo / SR-TE to deliberately ride the OTHER — that's the capture. TI-LFA: pull the active link, the repair list steers onto the disjoint path.</div>
 
 <h3>Build in EVE</h3>
 <ol>
-<li>Open <code>Test.unl</code> (or a new lab). Add <strong>3× xrv9k</strong> nodes — name them <code>PE1</code>, <code>P1</code>, <code>ASBR1</code>.</li>
-<li>Wire: <code>PE1 Gi0/0/0/0 ── P1 Gi0/0/0/0</code>; <code>P1 Gi0/0/0/1 ── ASBR1 Gi0/0/0/0</code>.</li>
-<li>Start the 3 nodes. Wait ~4 min for each <code>...CPU0:ios#</code> prompt.</li>
+<li>Open <code>Test.unl</code> (or a new lab). Add <strong>4× xrv9k</strong> nodes — <code>PE1</code>, <code>P1</code>, <code>P3</code>, <code>ASBR1</code>.</li>
+<li>Wire the square (PE1 and ASBR1 NOT directly connected):
+  <ul>
+  <li><code>PE1 Gi0/0/0/0 ── P1 Gi0/0/0/0</code></li>
+  <li><code>P1 Gi0/0/0/1 ── ASBR1 Gi0/0/0/0</code></li>
+  <li><code>PE1 Gi0/0/0/1 ── P3 Gi0/0/0/0</code></li>
+  <li><code>P3 Gi0/0/0/1 ── ASBR1 Gi0/0/0/2</code></li>
+  </ul></li>
+<li>Start the 4 nodes. Wait ~4 min for each <code>...CPU0:ios#</code> prompt.</li>
 </ol>
 
-<h3>Link addressing (Stage 1)</h3>
+<h3>Link addressing (Stage 1 — square)</h3>
 <table>
 <tr><th>Link</th><th>Side A</th><th>Side B</th></tr>
-<tr><td>PE1–P1</td><td>PE1 Gi0/0/0/0 = 10.1.12.1/30</td><td>P1 Gi0/0/0/0 = 10.1.12.2/30</td></tr>
-<tr><td>P1–ASBR1</td><td>P1 Gi0/0/0/1 = 10.1.23.2/30</td><td>ASBR1 Gi0/0/0/0 = 10.1.23.3/30</td></tr>
+<tr><td>PE1–P1 (short path)</td><td>PE1 Gi0/0/0/0 = 10.1.12.1/30</td><td>P1 Gi0/0/0/0 = 10.1.12.2/30</td></tr>
+<tr><td>P1–ASBR1 (short path)</td><td>P1 Gi0/0/0/1 = 10.1.23.2/30</td><td>ASBR1 Gi0/0/0/0 = 10.1.23.3/30</td></tr>
+<tr><td>PE1–P3 (long path)</td><td>PE1 Gi0/0/0/1 = 10.1.18.1/30</td><td>P3 Gi0/0/0/0 = 10.1.18.8/30</td></tr>
+<tr><td>P3–ASBR1 (long path)</td><td>P3 Gi0/0/0/1 = 10.1.38.8/30</td><td>ASBR1 Gi0/0/0/2 = 10.1.38.3/30</td></tr>
 </table>
+<div class="warn">Default IS-IS metric = 10 on all links → both paths equal-cost (ECMP) at first. For the SR-TE / flex-algo demos we make the P3 path "longer" by raising its IS-IS metric (or use a delay metric for flex-algo) — see the Stage 1 SR-TE/flex-algo block below.</div>
 
-<h3>Config — PE1</h3>
+<h3>Config — PE1 (two uplinks: Gi0=via P1, Gi1=via P3)</h3>
 <pre><code>configure
 hostname PE1
 interface Loopback0
@@ -97,6 +113,10 @@ interface Loopback0
 !
 interface GigabitEthernet0/0/0/0
  ipv4 address 10.1.12.1 255.255.255.252
+ no shutdown
+!
+interface GigabitEthernet0/0/0/1
+ ipv4 address 10.1.18.1 255.255.255.252
  no shutdown
 !
 router isis CORE
@@ -113,6 +133,11 @@ router isis CORE
   !
  !
  interface GigabitEthernet0/0/0/0
+  point-to-point
+  address-family ipv4 unicast
+  !
+ !
+ interface GigabitEthernet0/0/0/1
   point-to-point
   address-family ipv4 unicast
   !
@@ -168,7 +193,51 @@ segment-routing
 commit
 end</code></pre>
 
-<h3>Config — ASBR1 (Stage 1 part — IGP/SR only; BGP added Stage 2)</h3>
+<h3>Config — P3 (the second core path)</h3>
+<pre><code>configure
+hostname P3
+interface Loopback0
+ ipv4 address 10.0.0.8 255.255.255.255
+!
+interface GigabitEthernet0/0/0/0
+ ipv4 address 10.1.18.8 255.255.255.252
+ no shutdown
+!
+interface GigabitEthernet0/0/0/1
+ ipv4 address 10.1.38.8 255.255.255.252
+ no shutdown
+!
+router isis CORE
+ is-type level-2-only
+ net 49.0001.0000.0000.0008.00
+ address-family ipv4 unicast
+  metric-style wide
+  segment-routing mpls
+ !
+ interface Loopback0
+  passive
+  address-family ipv4 unicast
+   prefix-sid index 8
+  !
+ !
+ interface GigabitEthernet0/0/0/0
+  point-to-point
+  address-family ipv4 unicast
+  !
+ !
+ interface GigabitEthernet0/0/0/1
+  point-to-point
+  address-family ipv4 unicast
+  !
+ !
+!
+segment-routing
+ global-block 16000 23999
+!
+commit
+end</code></pre>
+
+<h3>Config — ASBR1 (Stage 1 part — IGP/SR; two core uplinks Gi0=via P1, Gi2=via P3. BGP added Stage 2)</h3>
 <pre><code>configure
 hostname ASBR1
 interface Loopback0
@@ -176,6 +245,10 @@ interface Loopback0
 !
 interface GigabitEthernet0/0/0/0
  ipv4 address 10.1.23.3 255.255.255.252
+ no shutdown
+!
+interface GigabitEthernet0/0/0/2
+ ipv4 address 10.1.38.3 255.255.255.252
  no shutdown
 !
 router isis CORE
@@ -196,27 +269,69 @@ router isis CORE
   address-family ipv4 unicast
   !
  !
+ interface GigabitEthernet0/0/0/2
+  point-to-point
+  address-family ipv4 unicast
+  !
+ !
 !
 segment-routing
  global-block 16000 23999
 !
 commit
 end</code></pre>
+<div class="warn"><strong>Interface note:</strong> ASBR1 now uses Gi0/0/0/0 (→P1), Gi0/0/0/2 (→P3). Stage 2 inter-AS link uses Gi0/0/0/1 (→ASBR2). Stage 3 EPE peer uses <strong>Gi0/0/0/3</strong> (→PEERX) — changed from the old Gi0/0/0/2 to avoid the clash. The Stage 3 block below reflects this.</div>
 
-<div class="verify"><strong>VERIFY Stage 1</strong> (capture these — they ARE the §3/§4 deck output on real XR):
-<pre><code>show isis adjacency                       ! PE1-P1, P1-ASBR1 both Up
-show isis segment-routing prefix-sids     ! SID 1/2/3, labels 16001/16002/16003
-show mpls forwarding                       ! label-FIB: pop/swap per prefix-SID
-show route 10.0.0.3                        ! ASBR1 loopback reachable from PE1
-traceroute 10.0.0.3                        ! single label push, SR path
-! TI-LFA (deck §4):
-configure
+<div class="verify"><strong>VERIFY Stage 1a — §3 baseline + §8 ECMP</strong> (on PE1):
+<pre><code>show isis adjacency                       ! 2 adjacencies on PE1 (P1, P3), all Up
+show isis segment-routing prefix-sids     ! SIDs 1/2/3/8 → labels 16001/2/3/16008
+show route 10.0.0.3                        ! TWO equal-cost paths to ASBR1 (via P1 AND P3) = ECMP
+show mpls forwarding                       ! label-FIB, two out-paths for 16003
+traceroute 10.0.0.3                        ! SR path (run twice — ECMP may pick either)</code></pre></div>
+
+<div class="verify"><strong>VERIFY Stage 1b — §4 TI-LFA</strong> (the square gives the real 2-SID repair):
+<pre><code>configure
  router isis CORE address-family ipv4 unicast
   fast-reroute per-prefix
   fast-reroute per-prefix ti-lfa
  commit
  end
-show isis fast-reroute 10.0.0.3/32 detail   ! backup repair path + SID list</code></pre></div>
+show isis fast-reroute 10.0.0.3/32 detail   ! backup via the OTHER path; repair SID-list
+! then pull the active link mid-ping to measure (admin-down PE1 Gi0/0/0/0), watch reroute</code></pre></div>
+
+<div class="verify"><strong>VERIFY Stage 1c — §6 SR-TE explicit path</strong> (force the long path via P3):
+<pre><code>configure
+ segment-routing traffic-eng
+  segment-list LONG-VIA-P3
+   index 10 mpls adjacency 10.1.18.8     ! PE1→P3 adj
+   index 20 mpls adjacency 10.1.38.3     ! P3→ASBR1 adj
+  !
+  policy PE1-TO-ASBR1-LONG
+   color 100 end-point ipv4 10.0.0.3
+   candidate-paths preference 100 explicit segment-list LONG-VIA-P3
+ commit
+ end
+show segment-routing traffic-eng policy color 100   ! policy up, SID list = forced P3 path
+traceroute 10.0.0.3                                  ! now pinned via P3, not ECMP</code></pre></div>
+
+<div class="verify"><strong>VERIFY Stage 1d — §5 flex-algo</strong> (min-delay algo 128 picks a different path):
+<pre><code>! set a delay on the P1 path so algo-128 prefers the P3 path
+configure
+ router isis CORE
+  flex-algo 128
+   metric-type delay
+  !
+  interface GigabitEthernet0/0/0/0 address-family ipv4 unicast    ! PE1→P1
+   ! (advertise a high delay here so min-delay avoids it)
+  !
+ ! per-algo prefix-SID on each loopback:
+ router isis CORE interface Loopback0 address-family ipv4 unicast
+  prefix-sid algorithm 128 index 128
+ commit
+ end
+show isis segment-routing prefix-sids   ! now algo-0 AND algo-128 SIDs per node
+show route 10.0.0.3                       ! algo-0 vs algo-128 pick different paths</code></pre>
+<div class="warn">Flex-algo on XRv9000 is the least-certain piece — exact delay-advertisement syntax may differ by XR train. If a command is rejected, <code>?</code> at that point and adapt; flex-algo is the one to drop if short on time (SR-TE explicit-path above already proves path steering).</div></div>
 
 <hr>
 
@@ -365,12 +480,16 @@ show mpls forwarding                          ! label stack: VPN label + transpo
 
 <h3>Build in EVE</h3>
 <ol>
-<li>Add <strong>1× xrv9k</strong>: <code>PEERX</code>. Wire <code>ASBR1 Gi0/0/0/2 ── PEERX Gi0/0/0/0</code>.</li>
-<li>Link: ASBR1 Gi0/0/0/2 = <code>10.1.37.3/30</code>, PEERX Gi0/0/0/0 = <code>10.1.37.7/30</code>. PEERX Lo0 = <code>10.0.0.7</code>, AS 300.</li>
+<li>Add <strong>1× xrv9k</strong>: <code>PEERX</code>. Wire <code>ASBR1 Gi0/0/0/3 ── PEERX Gi0/0/0/0</code>. <em>(Gi0/0/0/3 — because Gi2 now goes to P3.)</em></li>
+<li>Link: ASBR1 Gi0/0/0/3 = <code>10.1.37.3/30</code>, PEERX Gi0/0/0/0 = <code>10.1.37.7/30</code>. PEERX Lo0 = <code>10.0.0.7</code>, AS 300.</li>
 </ol>
 
 <h3>ASBR1 — enable EPE on the peer + BGP-LS</h3>
 <pre><code>configure
+interface GigabitEthernet0/0/0/3
+ ipv4 address 10.1.37.3 255.255.255.252
+ no shutdown
+!
 router bgp 100
  neighbor 10.1.37.7
   remote-as 300
