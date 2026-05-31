@@ -2782,8 +2782,8 @@ The shape that wins:
 
 AWS / Azure / GCP — the deltas you need.
 
-The same three concepts everywhere:
-1. Private network construct (VPC / VNet / VPC)
+The same three concepts everywhere (AWS / Azure / GCP):
+1. Private network construct (VPC / VNet / VPC — GCP also calls it VPC, but it's *global*)
 2. Managed transit hub (TGW / vWAN / NCC)
 3. Dedicated interconnect (DX / ExpressRoute / Cloud Interconnect)
 
@@ -2876,134 +2876,40 @@ Plus per-cloud HPC/AI variants.
   </section>
 </section>
 
-<!-- ============ SECTION 12 — SRV6 APPENDIX ============ -->
-<section>
-  <section data-markdown>
-  <textarea data-template>
-## Appendix · SRv6, case-by-case
-
-SRv6 = Segment Routing over IPv6.
-- SIDs are 128-bit IPv6 addresses
-- Path encoded in **Segment Routing Header (SRH)**
-- Transit nodes do IPv6 forwarding on destination address (rotated as segments consume)
-- **uSID** = micro-SID compression (16/32-bit SIDs packed into 128-bit container)
-
-Why operators pick it:
-- No MPLS dataplane — just IPv6
-- **Network programming model** — SIDs encode behaviour (End.X, End.DT4 etc.)
-- Inter-AS naturally works (SIDs routable globally)
-- IPv6-native operators (Bell, SoftBank, LINE) get a single-AF deployment
-
-↓ for evaluation against each case
-  </textarea>
-  </section>
-
-  <section data-markdown>
-  <textarea data-template>
-### Case A (MPLS shop) — SRv6 wrong
-
-- MPLS dataplane already exists, engineers know it, services ride it
-- SR-MPLS slots into same forwarding plane, no rip-out
-- SRv6 = parallel two SR variants for years, *or* forklift to v6-only
-- Neither justifiable by UCMP/EPE
-- SR-MPLS gets identical UCMP, EPE, flex-algo, TI-LFA
-
-<span class="tag ok">Verdict: SR-MPLS</span>
-  </textarea>
-  </section>
-
-  <section data-markdown>
-  <textarea data-template>
-### Case B (IP-only) — SRv6 genuinely on the table
-
-No MPLS investment to protect → "don't disrupt the dataplane" cuts the other way.
-
-**SR-MPLS** would *add* MPLS as new operations burden.
-**SRv6** adds an IPv6 header — network already routes v6.
-
-Three-way choice:
-1. Stay IP + BGP-LB (fix UCMP only)
-2. Adopt SR-MPLS (full SR with MPLS dataplane)
-3. Adopt SRv6 (full SR with IPv6, no MPLS)
-
-**Pick (3) over (2)** when: IPv6-comfortable team, kit supports line-rate, no MPLS-dependent services, can absorb tooling immaturity.
-
-**Pick (2) over (3)** when: services need EVPN-over-MPLS, hardware older, team has MPLS muscle memory, vendor SRv6 patchy on chosen platform.
-  </textarea>
-  </section>
-
-  <section data-markdown>
-  <textarea data-template>
-### Trade-offs vs SR-MPLS (both cases)
-
-- **Header overhead**: native SRv6 SID = 16 bytes. 5-SID path = 80 bytes. SR-MPLS labels = 4 bytes each. uSID compresses but adds complexity.
-- **Hardware**: older silicon slow-paths SRv6. Current-gen does line-rate but uSID depth varies.
-- **Inter-AS SRv6** only works if peer also runs SRv6 — at boundary you're still doing BGP multipath + DMZ-LB.
-- **Operational tooling** (traceroute, OAM) lags MPLS by years.
-
-**Unambiguous SRv6 wins**:
-- Greenfield IPv6-only (5GC mobile backhaul — 3GPP designed around it)
-- Heavy intent-based service chaining (NFV-heavy)
-- Operator already running IPv6 underlay with no MPLS investment
-  </textarea>
-  </section>
-</section>
-
-<!-- ============ SECTION 13 — RESOURCES ============ -->
-<section>
-  <section data-markdown>
-  <textarea data-template>
-## Resources
-
-**Primary lab (priority 1)**:
-- [ipspace SR-MPLS workshop](https://blog.ipspace.net/2026/04/sr-mpls-workshop/) — Apr 2026
-- [Codespaces launcher](https://codespaces.new/ipspace/sr-workshop)
-- [Repo `ipspace/sr-workshop`](https://github.com/ipspace/sr-workshop)
-
-**Companion**:
-- [ITNOG10 SR training (Apr 2026)](https://www.itnog.it/itnog10/files/TRaining_Segment%20Routing%20ITNOG%202026%20april%2020_signed.pdf)
-- [routingcraft: Making SR User-Friendly](https://routingcraft.net/making-segment-routing-user-friendly/)
-- [ipspace: Egress Peer Engineering](https://blog.ipspace.net/2024/10/worth-reading-egress-peer-engineering/)
-
-**Tooling**:
-- [netlab install](https://netlab.tools/install/) · [netlab tutorials](https://netlab.tools/tutorials/)
-- [evpn.bgplabs.net Codespaces](https://evpn.bgplabs.net/4-codespaces/) — EVPN labs
-
-**Software downloads**:
-- [Arista cEOS](https://www.arista.com/en/login) — login → Support → Software Downloads
-  </textarea>
-  </section>
-</section>
-
 <!-- ============ SECTION 17 — AWS THEORY ============ -->
 <section>
   <section data-markdown>
   <textarea data-template>
 ## 17 · AWS networking — the model
 
-The same three primitives in every account:
-**private network (VPC)** · **managed transit hub (TGW)** · **dedicated interconnect (DX)**. Everything else is policy on top.
+Translated into language you already speak: **a VPC is a VRF that owns a CIDR.** AWS gives you the same primitives as a physical network — an address space, segments, a routing table, firewalls — just rented and API-driven. Learn the mapping and the rest is detail.
 
-- **VPC** — your isolated L3 network (a CIDR you own)
-- **Subnet** — a slice of the VPC, pinned to **one AZ** (a failure domain)
-- **Route table** — what makes a subnet *public* or *private* (not a checkbox)
-- Security is two layers: **SG** (instance, stateful) + **NACL** (subnet, stateless)
+| AWS thing | What it really is |
+|-----------|-------------------|
+| **VPC** | An isolated routing domain / VRF — a CIDR block that's yours alone |
+| **Subnet** | A segment carved from the VPC, **locked to one Availability Zone** (= one failure domain) |
+| **Route table** | The thing that actually decides where a subnet's traffic goes — this is what makes a subnet "public" or "private" |
+| **Internet/NAT Gateway** | The edge devices that do (or don't) let a subnet reach the internet |
+| **Security Group / NACL** | A stateful per-host firewall / a stateless per-subnet ACL |
 
-↓ for each
+The whole section is just these, in depth. ↓
   </textarea>
   </section>
 
   <section data-markdown>
   <textarea data-template>
-### VPC, subnets, routing
+### VPC, subnets, routing — what's actually happening
 
-- **VPC** = CIDR block (e.g. `10.0.0.0/16`), region-wide
-- **Subnet** = smaller CIDR, lives in **one AZ**
-- **Route table** decides reachability:
-  - `0.0.0.0/0 → IGW` ⇒ **public** subnet
-  - `0.0.0.0/0 → NAT GW` ⇒ **private** subnet (egress only)
-  - the local VPC CIDR is always routable
-- <span class="tag warn">Key</span> a subnet is "public" **only because its route table points the default route at an Internet Gateway** — there is no public/private flag.
+**VPC** = a CIDR you reserve (e.g. `10.0.0.0/16`), scoped to **one region**, isolated from every other VPC by default. Nothing routes in or out until *you* add a path. Same idea as standing up a fresh VRF with its own address plan.
+
+**Subnet** = a smaller CIDR (e.g. `10.0.1.0/24`) carved from the VPC, and — the bit that bites people — **it lives in exactly one Availability Zone.** An AZ is a physically separate datacentre, so *subnet = your failure-domain boundary*. Want HA? Same app, a subnet in each of ≥2 AZs.
+
+**Route table** = the per-subnet routing table. Every subnet is associated with exactly one. It always contains the **local route** (the whole VPC CIDR, so all subnets in a VPC reach each other — you can't remove this). What you *add* is the default route:
+- `0.0.0.0/0 → Internet Gateway` ⇒ the subnet is **public**
+- `0.0.0.0/0 → NAT Gateway` ⇒ the subnet is **private** (can egress, can't be reached inbound)
+- no `0.0.0.0/0` at all ⇒ **isolated** (VPC-internal only)
+
+<span class="tag warn">The thing to internalise</span> "public" and "private" are **not properties of the subnet** — there's no checkbox. They're a *description of what its route table's default route points at.* Change the route, change the subnet's nature. That's the whole game.
   </textarea>
   </section>
 
@@ -3028,55 +2934,71 @@ graph LR
 
   <section data-markdown>
   <textarea data-template>
-### Security groups vs NACLs
+### Security groups vs NACLs — two firewalls, different jobs
+
+AWS gives you **two** filtering layers and they behave differently. Knowing *why* you'd use each is the interview point.
 
 | | Security Group | NACL |
 |--|----------------|------|
-| Scope | Instance (ENI) | Subnet |
-| State | **Stateful** (return auto-allowed) | **Stateless** (allow both ways) |
-| Rules | Allow only | Allow **and** deny |
-| Eval | All rules | Numbered, first-match |
+| Attached to | An **instance/ENI** (the host) | A **subnet** (everything in it) |
+| State | **Stateful** — allow traffic out, the return is automatically allowed back | **Stateless** — it has no memory; you must allow the return direction yourself |
+| Rules | **Allow only** (implicit deny-all) | **Allow *and* deny** |
+| Evaluation | All rules considered together | **Numbered list, first match wins** |
 
-- Default to **SG** for everything; reach for a **NACL** only for a subnet-wide blanket/explicit **deny** (e.g. block a bad CIDR).
-- Stateless gotcha: a NACL must open the **ephemeral port range** for return traffic.
+**Stateful (SG)** = like a host firewall that tracks connections: you permit "outbound 443" and the reply just works. **Stateless (NACL)** = a plain packet-filter ACL with no connection table — so if you allow inbound 443, you **also** have to allow the **outbound ephemeral range (1024–65535)** or the reply is silently dropped. That ephemeral-port trap is the single most-asked NACL gotcha.
+
+**Which when:** put your real policy in **Security Groups** — they're identity-aware (an SG rule can reference *another SG*, not just an IP, which is how you do micro-segmentation by role). Use a **NACL** only for a coarse, subnet-wide **deny** that should apply to everything regardless of host config — e.g. blackhole a malicious CIDR at the subnet edge. SG = scalpel, NACL = blunt subnet-wide gate.
   </textarea>
   </section>
 
   <section data-markdown>
   <textarea data-template>
-### Getting in and out
+### Getting in and out — gateways &amp; addresses
 
-- **Internet Gateway (IGW)** — free, bidirectional; public reachability for a public subnet
-- **NAT Gateway** — *paid*, **egress-only**: private instances reach out, nothing reaches in
-- **Public IP** — ephemeral, lost on stop/start · **Elastic IP** — static, yours, charged when *unattached* · **Private IP** — within the VPC
-- Interview line: *"public vs private subnet is a **routing** decision (IGW vs NAT), not a security one."*
+**Internet Gateway (IGW)** — one per VPC, **free**, **bidirectional**. It's just the door to the internet; a subnet only *uses* it if its route table points `0/0` at it. The IGW also does the NAT between your instance's public IP and its private IP. No IGW route = no internet, in or out.
+
+**NAT Gateway** — **paid** (~$0.045/hr + per-GB), and **egress-only by design**. It lets a *private* subnet's instances start outbound connections (pull updates, call an API) while staying unreachable from the internet. It physically sits **in a public subnet** and forwards out through the IGW. This is the "I want to reach out but never be reached" pattern — exactly what backend/DB tiers need.
+
+**The three address types** (a common point of confusion):
+- **Private IP** — from the subnet CIDR, always present, only meaningful inside the VPC.
+- **Public IP** — auto-assigned, **ephemeral**: you lose it on stop/start. Fine for throwaway.
+- **Elastic IP (EIP)** — a static public IP you *own* and attach; survives stop/start. Quirk: it's **free while attached to a running instance, charged when left unattached** (AWS bills idle reserved IPs).
+
+<span class="tag ok">Interview line</span> *"public vs private is a **routing** decision (IGW vs NAT GW), not a security one — and reachability also needs a public/elastic IP on the instance, not just the route."*
   </textarea>
   </section>
 
   <section data-markdown>
   <textarea data-template>
-### DNS, VPC endpoints &amp; PrivateLink
+### DNS &amp; private service access — the "reach a service without internet" problem
 
-- **Route 53** — public + **private hosted zones**; **Resolver** inbound/outbound endpoints for hybrid DNS
-- **VPC DNS** — the `.2` resolver; `enableDnsSupport` / `enableDnsHostnames`
-- **Gateway endpoint** — S3 / DynamoDB reached privately via a **route-table** entry (free)
-- **Interface endpoint (PrivateLink)** — an **ENI** in your subnet fronting a service: private IP, no IGW/NAT, no CIDR overlap, cross-account
-- Why PrivateLink over peering: exposes **one service**, not a whole network → scales to many consumers
+The recurring need: an instance in a **private** subnet has to reach an AWS service (S3, an API, another team's app) **without** a route to the internet. AWS solves it with **endpoints**, and names DNS pieces you should know:
+
+- **Route 53** — AWS DNS. **Public hosted zones** (internet records) + **private hosted zones** (names that only resolve inside your VPC). **Resolver inbound/outbound endpoints** = how on-prem DNS and VPC DNS query each other across a hybrid link.
+- **VPC DNS** — the built-in resolver at the **`.2` address** of your VPC CIDR; toggled by `enableDnsSupport` / `enableDnsHostnames`.
+- **Gateway endpoint** — for **S3 / DynamoDB** only. It's just a **route-table entry** sending that service's prefixes to the AWS backbone instead of the internet. Free. No internet path needed.
+- **Interface endpoint (PrivateLink)** — the general case: AWS drops an **ENI (a private IP) into your subnet** that fronts the target service. Your instance talks to a private IP; traffic never touches an IGW/NAT, and there's **no CIDR-overlap problem** because you're not routing networks together — just reaching one ENI.
+
+**Why PrivateLink beats VPC peering for exposing a service:** peering joins two whole networks (and breaks if their CIDRs overlap). PrivateLink exposes **exactly one service** behind one ENI — so it scales to thousands of consumers and across accounts without any address-planning fight. *Expose a service, not a network.*
   </textarea>
   </section>
 
   <section data-markdown>
   <textarea data-template>
-### Connecting VPCs & hybrid — the interview meat
+### Connecting VPCs &amp; going hybrid — the interview meat
 
-- **VPC peering** — 1:1, non-transitive, no overlapping CIDRs
-- **Transit Gateway (TGW)** — the hub: many VPCs + on-prem + cross-region, transitive
-- **PrivateLink** — expose one service via an ENI in the consumer VPC; no routing, no CIDR-overlap problem
-- **Hybrid on-prem ↔ AWS:**
-  - **Site-to-Site VPN** — IPsec over the internet, BGP or static, quick & cheap, *variable* latency
-  - **Direct Connect** — dedicated circuit, low/consistent latency, BGP, weeks + $$$ to provision
-  - **Cloud WAN** — managed global WAN over TGW + DX
-- **Egress / data-transfer cost is the real design driver** (free in-AZ, $ cross-AZ/region, $$ to internet).
+How VPCs join to each other and to on-prem — in order of scale:
+
+- **VPC peering** — a direct 1:1 link between two VPCs. **Non-transitive** (if A–B and B–C peer, A still can't reach C), and **no overlapping CIDRs**. Fine for a couple of VPCs; collapses into a mesh nightmare beyond a handful.
+- **Transit Gateway (TGW)** — the **hub-and-spoke router** that fixes that: attach many VPCs + on-prem + other regions to one TGW and it routes **transitively** between them, with its own route tables for segmentation. This is the modern default for any real estate. (Think of it as a cloud PE/route-reflector for your VPCs.)
+- **PrivateLink** — when you don't want to *route networks* at all, just expose one service (previous slide).
+
+**Hybrid on-prem ↔ AWS — the two ways in:**
+- **Site-to-Site VPN** — IPsec over the public internet, **two tunnels** for redundancy, BGP (dynamic) or static. Stands up in minutes, cheap — but latency/jitter follow the internet.
+- **Direct Connect (DX)** — a **dedicated physical circuit** into an AWS DX location. Low, **consistent** latency, BGP-routed — but weeks to provision and $$$. (DX = your MPLS/leased-line DCI; VPN = an internet tunnel.)
+- **Cloud WAN** — AWS-managed global WAN that wraps TGW + DX for multi-region.
+
+<span class="tag warn">The real design driver</span> not features — **data-transfer cost.** Free within an AZ, charged cross-AZ, more cross-region, most to the internet. Topology in AWS often follows the price sheet more than the diagram.
   </textarea>
   </section>
 
@@ -3096,6 +3018,25 @@ graph LR
   ONPREM -.->|"Direct Connect"| TGW
     </div>
     <p style="font-size: 0.7em; color: #888; text-align: center;">TGW = transitive hub for many VPCs + on-prem. On-prem joins via Site-to-Site VPN (IPsec/internet, cheap, variable latency) or Direct Connect (dedicated circuit, consistent, $$$). PrivateLink (not shown) exposes one service via an ENI, no routing.</p>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### On-prem DC patterns → AWS equivalents (the hybrid bridge)
+
+Going hybrid over Direct Connect doesn't invent new segmentation — **the on-prem logical pattern maps 1:1 onto AWS constructs.** The skill is recognising the equivalent, not learning a new model.
+
+| On-prem (what you built) | AWS equivalent |
+|--------------------------|----------------|
+| **VRF per service/tenant** (routing isolation) | **VPC per service**, or a **VRF on the Transit Gateway** (a TGW route table per segment) |
+| **VLAN** segment | **Subnet** |
+| Inter-VRF route leak / control | **TGW route tables** (+ VPC peering for 1:1) |
+| **ACL** between segments | **NACL** (subnet) / **Security Group** (host, identity-aware) |
+| **Firewall** between zones | **Network Firewall / NVA in an inspection VPC** that the TGW steers through |
+| **MPLS-VRF DCI** between sites | **Direct Connect + DX Gateway** (transit VIF → TGW) |
+
+**The point:** segmentation intent is portable. VRF→VPC, VLAN→subnet, ACL→SG/NACL, inter-zone firewall→inspection VPC, MPLS DCI→Direct Connect. *(VRF maps to a VPC at small scale or a TGW route table at fleet scale — pick by how many segments you carry.)* DX is just the DCI carrying it across the boundary.
+  </textarea>
   </section>
 
   <section data-markdown>
@@ -3582,6 +3523,105 @@ graph LR
 **Micro-segmentation policy** (intra-VRF): Cisco **TrustSec SGT/GBP** vs Arista **MSS-Group** — different mechanisms, not portable.
 
 Demonstrate **macro-seg via VRF/RT** in the lab; keep micro-seg **conceptual** unless the platform does it cleanly.
+  </textarea>
+  </section>
+</section>
+
+<!-- ============ SECTION 12 — SRV6 APPENDIX ============ -->
+<section>
+  <section data-markdown>
+  <textarea data-template>
+## Appendix · SRv6, case-by-case
+
+SRv6 = Segment Routing over IPv6.
+- SIDs are 128-bit IPv6 addresses
+- Path encoded in **Segment Routing Header (SRH)**
+- Transit nodes do IPv6 forwarding on destination address (rotated as segments consume)
+- **uSID** = micro-SID compression (16/32-bit SIDs packed into 128-bit container)
+
+Why operators pick it:
+- No MPLS dataplane — just IPv6
+- **Network programming model** — SIDs encode behaviour (End.X, End.DT4 etc.)
+- Inter-AS naturally works (SIDs routable globally)
+- IPv6-native operators (Bell, SoftBank, LINE) get a single-AF deployment
+
+↓ for evaluation against each case
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Case A (MPLS shop) — SRv6 wrong
+
+- MPLS dataplane already exists, engineers know it, services ride it
+- SR-MPLS slots into same forwarding plane, no rip-out
+- SRv6 = parallel two SR variants for years, *or* forklift to v6-only
+- Neither justifiable by UCMP/EPE
+- SR-MPLS gets identical UCMP, EPE, flex-algo, TI-LFA
+
+<span class="tag ok">Verdict: SR-MPLS</span>
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Case B (IP-only) — SRv6 genuinely on the table
+
+No MPLS investment to protect → "don't disrupt the dataplane" cuts the other way.
+
+**SR-MPLS** would *add* MPLS as new operations burden.
+**SRv6** adds an IPv6 header — network already routes v6.
+
+Three-way choice:
+1. Stay IP + BGP-LB (fix UCMP only)
+2. Adopt SR-MPLS (full SR with MPLS dataplane)
+3. Adopt SRv6 (full SR with IPv6, no MPLS)
+
+**Pick (3) over (2)** when: IPv6-comfortable team, kit supports line-rate, no MPLS-dependent services, can absorb tooling immaturity.
+
+**Pick (2) over (3)** when: services need EVPN-over-MPLS, hardware older, team has MPLS muscle memory, vendor SRv6 patchy on chosen platform.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Trade-offs vs SR-MPLS (both cases)
+
+- **Header overhead**: native SRv6 SID = 16 bytes. 5-SID path = 80 bytes. SR-MPLS labels = 4 bytes each. uSID compresses but adds complexity.
+- **Hardware**: older silicon slow-paths SRv6. Current-gen does line-rate but uSID depth varies.
+- **Inter-AS SRv6** only works if peer also runs SRv6 — at boundary you're still doing BGP multipath + DMZ-LB.
+- **Operational tooling** (traceroute, OAM) lags MPLS by years.
+
+**Unambiguous SRv6 wins**:
+- Greenfield IPv6-only (5GC mobile backhaul — 3GPP designed around it)
+- Heavy intent-based service chaining (NFV-heavy)
+- Operator already running IPv6 underlay with no MPLS investment
+  </textarea>
+  </section>
+</section>
+
+<!-- ============ SECTION 13 — RESOURCES ============ -->
+<section>
+  <section data-markdown>
+  <textarea data-template>
+## Resources
+
+**Primary lab (priority 1)**:
+- [ipspace SR-MPLS workshop](https://blog.ipspace.net/2026/04/sr-mpls-workshop/) — Apr 2026
+- [Codespaces launcher](https://codespaces.new/ipspace/sr-workshop)
+- [Repo `ipspace/sr-workshop`](https://github.com/ipspace/sr-workshop)
+
+**Companion**:
+- [ITNOG10 SR training (Apr 2026)](https://www.itnog.it/itnog10/files/TRaining_Segment%20Routing%20ITNOG%202026%20april%2020_signed.pdf)
+- [routingcraft: Making SR User-Friendly](https://routingcraft.net/making-segment-routing-user-friendly/)
+- [ipspace: Egress Peer Engineering](https://blog.ipspace.net/2024/10/worth-reading-egress-peer-engineering/)
+
+**Tooling**:
+- [netlab install](https://netlab.tools/install/) · [netlab tutorials](https://netlab.tools/tutorials/)
+- [evpn.bgplabs.net Codespaces](https://evpn.bgplabs.net/4-codespaces/) — EVPN labs
+
+**Software downloads**:
+- [Arista cEOS](https://www.arista.com/en/login) — login → Support → Software Downloads
   </textarea>
   </section>
 </section>
