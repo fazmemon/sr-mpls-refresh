@@ -35,17 +35,27 @@
 <div class="warn"><strong>XR config workflow reminder:</strong> IOS-XR is two-stage — type config, then <code>commit</code>. Nothing applies until committed. <code>show configuration failed</code> if a commit is rejected. Each node's loopback must be enrolled in IS-IS (<code>passive</code> under the interface) or its prefix-SID won't advertise — the exact trap hit on the cEOS lab.</p></div>
 
 <h2>Target topology</h2>
-<pre><code>            AS 100  (IGP: IS-IS "CORE", SR-MPLS)        AS 200  (IGP: IS-IS "CORE", SR-MPLS)
-        ┌─────────────────────────────────┐      ┌─────────────────────────────────┐
-        │  PE1 ──── P1 ──── ASBR1          │      │          ASBR2 ──── P2 ──── PE2  │
-        │  Lo0 .1   Lo0 .2  Lo0 .3         │      │          Lo0 .4    Lo0 .5  Lo0 .6│
-        └───────────────────────┬─────────┘      └────┬────────────────────────────┘
-                                 │  eBGP (BGP-LU + VPNv4 multihop)
-                                 └────────────────────┘
-                         ASBR1 ─── PEERX (AS 300, Lo0 .7)   ← EPE target
-
-  Underlay SRGB: 16000–23999 everywhere.   Node-SID index = last loopback octet (PE1=1 … PEERX=7).
-  Link /30s: 10.1.x.y.   Loopbacks: 10.0.0.N/32  (N = node index).</code></pre>
+<div class="mermaid">
+graph LR
+  subgraph AS100["AS 100 — IS-IS CORE + SR-MPLS"]
+    PE1["PE1<br/>Lo0 10.0.0.1 · SID 1"]
+    P1["P1<br/>Lo0 10.0.0.2 · SID 2"]
+    ASBR1["ASBR1<br/>Lo0 10.0.0.3 · SID 3"]
+    PE1 ---|"10.1.12.0/30"| P1
+    P1 ---|"10.1.23.0/30"| ASBR1
+  end
+  subgraph AS200["AS 200 — IS-IS CORE + SR-MPLS"]
+    ASBR2["ASBR2<br/>Lo0 10.0.0.4 · SID 4"]
+    P2["P2<br/>Lo0 10.0.0.5 · SID 5"]
+    PE2["PE2<br/>Lo0 10.0.0.6 · SID 6"]
+    ASBR2 ---|"10.1.45.0/30"| P2
+    P2 ---|"10.1.56.0/30"| PE2
+  end
+  PEERX["PEERX<br/>AS 300 · Lo0 10.0.0.7<br/>EPE target"]
+  ASBR1 ===|"eBGP: BGP-LU + multihop VPNv4 · 10.1.34.0/30"| ASBR2
+  ASBR1 -.->|"eBGP · EPE · 10.1.37.0/30"| PEERX
+</div>
+<p style="color:#888;font-size:0.9em;">SRGB 16000–23999 everywhere · Node-SID index = last loopback octet · Loopbacks 10.0.0.N/32 · links 10.1.x.y/30. <strong>Thick line</strong> = inter-AS Option-C boundary (Stage 2); <strong>dotted</strong> = EPE peer (Stage 3).</p>
 
 <table>
 <tr><th>Node</th><th>AS</th><th>Lo0</th><th>Node-SID</th><th>Role</th><th>RAM</th></tr>
@@ -433,5 +443,10 @@ show bgp link-state link-state          ! topology + EPE SIDs exported (what a c
 
 <div class="warn"><strong>Trial clock:</strong> 24h Pacific window (≈08:00 UK Sun → 08:00 UK Mon). Stage 1 first (proves XR boots + banks 2 captures); Stage 2 is the headline; Stage 3 if time. If the pod is slow to boot 7 nodes, do Stages 1–2 (6 nodes) and treat Stage 3 EPE as the stretch.</div>
 
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({ startOnLoad: true, theme: 'dark', securityLevel: 'loose' });
+</script>
+<style>.mermaid{background:#121212;border:1px solid #333;border-radius:6px;padding:14px;margin:1em 0;text-align:center;}</style>
 </body>
 </html>
