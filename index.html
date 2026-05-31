@@ -3370,8 +3370,87 @@ The modern DC fabric: a **VXLAN dataplane** (L2/L3 over an IP underlay) driven b
 - **Overlay** — MP-BGP EVPN (AFI 25 / SAFI 70), a VTEP per leaf
 - **Multi-tenancy** — L2 segment = **L2VNI**; per-VRF routing = **L3VNI**; RD/RT scope
 
-↓ dataplane → why EVPN → route types → RD/RT → IRB → BUM → multihoming → mobility
+↓ the mental model → topology → underlay/overlay → encap → packet walk → route types → RD/RT → IRB → BUM → multihoming → mobility
   </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### The mental model — two networks stacked
+
+A DC fabric is **two networks running on the same boxes**, each with its own data plane + control plane:
+
+| Layer | Data plane | Control plane | Carries |
+|-------|-----------|---------------|---------|
+| **Underlay** | IP routing | **eBGP** (RFC 7938) | only **leaf loopback** reachability — "how do I reach VTEP X" |
+| **Overlay** | **VXLAN** (encapsulation) | **EVPN** (BGP AFI 25) | which **MAC/host** sits behind which leaf |
+
+- **Leaves are the VTEPs** (VXLAN Tunnel End Points) — they encap/decap. Spines just route the outer IP; they never see tenant MACs.
+- **VNI** = the tenant/segment ID inside the VXLAN header (24-bit → 16M segments).
+- Get this split and everything else is detail: *underlay finds the leaf, overlay finds the host.*
+  </textarea>
+  </section>
+
+  <section>
+    <h3>Spine-leaf (Clos) — physical topology</h3>
+    <div class="mermaid">
+graph TB
+  SP1["Spine 1"]
+  SP2["Spine 2"]
+  L1["Leaf 1<br/>(VTEP)"]
+  L2["Leaf 2<br/>(VTEP)"]
+  L3["Leaf 3<br/>(VTEP)"]
+  SP1 --- L1
+  SP1 --- L2
+  SP1 --- L3
+  SP2 --- L1
+  SP2 --- L2
+  SP2 --- L3
+  H1["Server A"] --- L1
+  H2["Server B"] --- L3
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;">Every leaf connects to <b>every</b> spine; <b>spines never interconnect</b>, leaves never interconnect. Any server→server = leaf→spine→leaf = <b>uniform 2 hops</b>, with <b>massive ECMP</b> (one path per spine). <b>No STP</b> — it's all L3. Add spines for bandwidth, add leaves for ports.</p>
+  </section>
+
+  <section>
+    <h3>Underlay vs overlay — the two stacked layers</h3>
+    <div class="mermaid">
+graph TB
+  subgraph OV["OVERLAY — tenant view"]
+    direction LR
+    SA["Server A"] -.->|"VXLAN tunnel (EVPN-signalled)"| SB["Server B"]
+  end
+  subgraph UL["UNDERLAY — physical IP fabric"]
+    direction LR
+    LA["Leaf1/VTEP"] --- S["Spine"] --- LB["Leaf3/VTEP"]
+  end
+  OV -. "rides on top of" .-> UL
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;"><b>Underlay</b> (bottom): plain IP, eBGP carries only VTEP loopbacks. <b>Overlay</b> (top): the VXLAN tunnel between two VTEPs, with EVPN telling each VTEP where every MAC lives. The tenant thinks A and B share a LAN; physically it's IP + encapsulation.</p>
+  </section>
+
+  <section>
+    <h3>VXLAN encapsulation — packet format</h3>
+    <div class="mermaid">
+graph LR
+  ORIG["Original frame<br/>(tenant MAC/IP + VLAN)"] --> VX["+ VXLAN<br/>(24-bit VNI)"]
+  VX --> UDP["+ UDP<br/>(dst 4789,<br/>src = flow hash)"]
+  UDP --> OIP["+ Outer IP<br/>(src VTEP → dst VTEP)"]
+  OIP --> WIRE(("onto the<br/>underlay"))
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;">Ingress VTEP wraps the original frame: <b>outer IP (VTEP→VTEP) | UDP | VXLAN+VNI | original frame</b> — "MAC-in-UDP". Outer src-UDP-port = inner-flow hash → gives the spines ECMP entropy. Adds <b>~50 bytes</b> → underlay MTU must be jumbo (<b>9216</b>) or you fragment/drop.</p>
+  </section>
+
+  <section>
+    <h3>End-to-end packet walk</h3>
+    <div class="mermaid">
+graph LR
+  SA["Server A"] -->|"plain frame"| L1["Ingress Leaf<br/>VTEP: encap<br/>(look up B → behind Leaf3,<br/>wrap in VXLAN to Leaf3 loopback)"]
+  L1 -->|"outer IP packet"| SP["Spine<br/>routes on OUTER IP only<br/>(never sees tenant MAC)"]
+  SP -->|"outer IP packet"| L3["Egress Leaf<br/>VTEP: decap<br/>(strip VXLAN → original frame)"]
+  L3 -->|"plain frame"| SB["Server B"]
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;">The spine is a pure IP router — it forwards on the outer VTEP-to-VTEP IP and is oblivious to tenants/VNIs. All the intelligence is at the leaves (the VTEPs). EVPN pre-populated Leaf1 with "MAC-B is behind Leaf3's loopback", so there's no flooding.</p>
   </section>
 
   <section>
