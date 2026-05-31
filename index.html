@@ -2692,6 +2692,20 @@ graph TB
 
   <section data-markdown>
   <textarea data-template>
+### Scaling the fabric — spines, super-spines, planes
+
+A 2-tier leaf-spine has a hard ceiling: **max leaves = spine port count**, and **bisection bandwidth = number of spines × leaf-uplink speed.** You scale on three axes:
+
+- **Add spines (scale bandwidth):** more spines = more ECMP paths = more east-west capacity and finer failure granularity (lose 1 of 8 spines = lose ⅛ capacity, not ½). Leaf uplink count caps how many spines you can attach.
+- **Add a tier — super-spine / 5-stage Clos (scale node count):** group leaf+spine into a **pod**; interconnect pods with a **super-spine** layer. Now you scale to many thousands of hosts. Worst-case path = leaf → spine → super-spine → spine → leaf (5 hops). This is the hyperscale shape.
+- **Multi-plane (scale without giant spines):** instead of one set of huge spine chassis, run **N parallel planes** of fixed boxes; each leaf uplink goes to a different plane. Cheaper/fixed silicon, more cabling — the SONiC/whitebox + AI-fabric pattern.
+
+<div class="ok"><strong>Rule of thumb:</strong> add spines until you run out of leaf uplinks → then go 5-stage (pods + super-spine) for host count, or multi-plane for bandwidth on fixed silicon. Oversubscription is set by leaf <em>uplink:downlink</em> ratio — 1:1 (non-blocking, AI/HFT) up to 3:1 (general compute).</div>
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
 ### HFT / low-latency
 
 Different game entirely. Sits **parallel** to CLOS, not on it.
