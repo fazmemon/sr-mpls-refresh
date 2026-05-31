@@ -2630,7 +2630,25 @@ What's changed since you last designed:
 - **gNMI/OpenConfig** everywhere; SNMP is for museums
 - **FRR** is the de-facto BGP/IGP stack in disaggregated NOSes
 
-↓ for HFT + AI + hybrid
+↓ for the design patterns, HFT + AI + hybrid
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### DC logical-design patterns — pick by scale
+
+"Pattern" in DC design = a **reusable reference topology** you select for the scale + east-west demand. Three you should name and justify:
+
+| Pattern | Shape | When | Trade-off |
+|---------|-------|------|-----------|
+| **Collapsed core** | Core + aggregation merged; access hangs off it | Small DC / single room | Cheapest; limited scale, bigger failure domain |
+| **3-tier** (access→agg→core) | Classic hierarchical, L2 access + L3 core | Legacy enterprise, north-south heavy | STP in the L2 tiers, oversubscribed, **poor east-west** |
+| **Spine-leaf (Clos)** | Every leaf to every spine, L3 fabric | Modern DC, **east-west heavy** (virtualisation, AI, storage) | More cables/optics; needs an overlay for L2-stretch |
+
+**Why the shift to spine-leaf:** traffic went **north-south → east-west** (VM-to-VM, GPU-to-GPU, distributed storage). 3-tier oversubscribes the core and leans on STP; spine-leaf gives **equal hop-count + full ECMP** between any two leaves, scales by adding spines, and no STP (it's routed). Scale further with a **5-stage Clos** (super-spine joining pods).
+
+<span class="tag ok">One-liner</span> *"collapsed-core for a closet, 3-tier for legacy north-south, spine-leaf the moment east-west matters — and east-west always wins now."*
   </textarea>
   </section>
 
@@ -3105,17 +3123,23 @@ Receive path: **wire → NIC ring → IRQ/softirq → kernel socket buffer → a
 
   <section data-markdown>
   <textarea data-template>
-### The receive path & where it drops
+### The receive path & where it drops — what each stage *is*
 
-| Stage | Drops as | See it with |
-|-------|----------|-------------|
-| NIC ring buffer (DMA) | `rx_dropped`, overruns | `ethtool -S`, `ip -s link` |
-| IRQ → softirq (NAPI) | CPU not draining the ring | `/proc/interrupts`, `mpstat` |
-| Kernel socket buffer | **`RcvbufErrors`** | `netstat -su`, `ss -u` |
-| Application | slow `recv()` → buffer fills | app metrics |
+A packet crosses four stages between the wire and your app, and **each has a finite buffer that drops when it fills.** The skill is reading the counter that tells you *which* stage failed — because the fix is different at each.
 
-- Ring sized with `ethtool -G`; socket buffer by `net.core.rmem_max` + `SO_RCVBUF`.
-- The whole HFT game is keeping this path short and drop-free.
+| Stage | What it is | Drops as | See it with |
+|-------|-----------|----------|-------------|
+| **NIC ring (DMA)** | Hardware queue the NIC DMA-writes packets into | `rx_dropped`, overruns | `ethtool -S`, `ip -s link` |
+| **IRQ → softirq (NAPI)** | Kernel draining the ring into the stack on a CPU | ring fills because **CPU too busy** | `/proc/interrupts`, `mpstat`, `softnet_stat` |
+| **Socket buffer (rmem)** | Per-socket queue holding data until the app reads | **`RcvbufErrors`** | `netstat -su`, `ss -u` |
+| **Application** | Your code calling `recv()` | socket buffer fills → app too slow | app metrics, `ss -u` (Recv-Q) |
+
+**Reading it as a diagnosis:**
+- `rx_dropped` rising but CPUs idle → **NIC ring too small** for the burst → `ethtool -G` to grow it.
+- ring drops *with* one CPU pegged in softirq → **IRQ not spread** → RSS / RPS to spread across cores.
+- `RcvbufErrors` rising, CPU idle → **socket buffer too small / app too slow** → raise `net.core.rmem_max` + `SO_RCVBUF`, or speed up the reader.
+
+<span class="tag ok">The HFT point</span> there is no "the network is slow" — there's a *specific stage* with a full buffer, and a counter that names it. Keep this path short and every buffer sized for the burst.
   </textarea>
   </section>
 
@@ -3148,15 +3172,15 @@ graph LR
 
   <section data-markdown>
   <textarea data-template>
-### Kernel bypass
+### Kernel bypass — why, and the three ways
 
-Per-packet kernel cost (syscalls, copies, IRQs) is the enemy of HFT jitter.
+**The problem it solves:** the normal path (NIC → IRQ → kernel stack → socket → `recv()` syscall → copy to userspace) costs a few µs *and* jitters — every interrupt, context-switch and copy is variable. For HFT, the **jitter** (tail latency) matters more than the average. Bypass deletes those steps so the app reads packets almost directly from the NIC.
 
-- **DPDK** — poll-mode driver, packets straight to userspace, dedicated cores
-- **Solarflare / Onload** — transparent socket acceleration (no app rewrite)
-- **AF_XDP** — eBPF fast path, kernel-assisted bypass
+- **DPDK** — a **poll-mode driver** in userspace owns the NIC and *spins* a dedicated core constantly checking for packets (no interrupts, no kernel). Lowest, most deterministic latency. You rewrite the app to DPDK's APIs, and that core is 100% busy forever.
+- **Solarflare / Onload** — **transparent**: it shims the standard socket calls, so an existing app gets userspace networking **with no code change**. The pragmatic trading-desk choice — most of the win, none of the rewrite.
+- **AF_XDP** — the modern **in-kernel** middle ground: an eBPF program at the driver hook redirects chosen packets straight to a userspace ring. Faster than the normal stack, but you keep more kernel tooling than full DPDK.
 
-<span class="tag warn">Trade-off</span> burns cores, sidesteps normal kernel tooling → harder to observe/debug.
+<span class="tag warn">The trade-off to state</span> bypass **burns whole cores** (poll-mode = 100% CPU by design) and **sidesteps normal tooling** — `tcpdump`, `ss`, netfilter no longer see the traffic, so observability/debugging gets harder. You spend cores + visibility to buy deterministic latency.
   </textarea>
   </section>
 
@@ -3188,11 +3212,15 @@ graph TB
 
   <section data-markdown>
   <textarea data-template>
-### Multicast for market data
+### Multicast for market data — how the feed actually works
 
-- **SSM + IGMPv3** — known source (exchange feed), no RP, A/B feeds trivial
-- Socket: join `(S,G)`, `SO_REUSEADDR`/`SO_REUSEPORT`, size `SO_RCVBUF` + `net.core.rmem_max`
-- **Gapping** = receiver socket buffer overruns → sequence gap → feed arbitration / re-request. It's almost never "the network" — it's `RcvbufErrors`.
+Exchanges push prices as **UDP multicast** — one stream, every subscriber receives it, no per-client connection. The Linux/host details a trading shop will probe:
+
+- **SSM (Source-Specific Multicast) + IGMPv3** — you join a specific **(Source, Group)**, i.e. *this exchange server, this group*. No shared rendezvous point (RP) needed (that's the older ASM/PIM-SM world), and the **A/B feed** model (two identical streams from two sources) is trivial — just join both (S,G)s and arbitrate.
+- **The socket recipe:** `IP_ADD_SOURCE_MEMBERSHIP` to join the (S,G); **`SO_REUSEADDR`/`SO_REUSEPORT`** so multiple processes can bind the same group/port; and size **`SO_RCVBUF`** (capped by `net.core.rmem_max`) for the burst — market-data bursts are spiky.
+- **A/B arbitration:** feeds carry **sequence numbers**; you take whichever of A/B delivers each sequence first and detect a **gap** when a number is missing.
+
+<span class="tag warn">"Gapping" — the interview scenario</span> a gap is almost **never the network** — it's the **receiver's socket buffer overrunning** under a burst: packets arrive fine, the app reads too slowly, the buffer fills, UDP drops them → missing sequence → you must re-request / fail over to the B feed. The fingerprint is **`RcvbufErrors` in `netstat -su`**, not interface errors. Fix = bigger `SO_RCVBUF`/`rmem_max` + a faster reader (or kernel bypass). This ties straight back to the receive-path slide — gapping *is* a socket-buffer drop.
   </textarea>
   </section>
 
