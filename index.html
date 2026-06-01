@@ -525,10 +525,10 @@ graph LR
   P((P<br/>node-SID 2))
   PE2((PE2<br/>node-SID 3))
   X((X<br/>node-SID 4))
-  PE1 ---|"LSP(PE1):<br/>SR Cap, prefix-SID 1, adj-SIDs"| P
+  PE1 ---|"LSP(PE1): SR Cap, prefix-SID, adj-SIDs"| P
   P ---|"reflood"| PE2
   P ---|"reflood"| X
-  PE2 -.->|"its own LSP:<br/>SR Cap, prefix-SID 3"| P
+  PE2 -.->|"its own LSP: SR Cap + prefix-SID"| P
   X -.->|"its own LSP"| P
     </div>
     <p style="font-size: 0.7em; color: #888; text-align: center;">
@@ -556,7 +556,7 @@ OSPFv3 (RFC 8666) — same idea, native v6 LSAs, no opaque hack.
     <h3>OSPF flooding — opaque LSAs carry SR info</h3>
     <div class="mermaid">
 graph LR
-  R1((R1)) ---|"Type-10 Opaque LSA<br/>(Router Info + Extended Prefix + Extended Link)"| R2((R2))
+  R1((R1)) ---|"Type-10 Opaque LSA (Router Info + Ext Prefix + Ext Link)"| R2((R2))
   R2 ---|"flood within area"| R3((R3))
   R2 ---|"flood within area"| R4((R4))
   R3 -.->|"its own Type-10 LSAs"| R2
@@ -588,37 +588,31 @@ This is **how PCE knows your topology and current SR state** without speaking IG
   </section>
 
   <section>
-    <h3>BGP-LS → PCE — single domain & multi-domain</h3>
+    <h3>BGP-LS → PCE — single domain</h3>
     <div class="mermaid">
 graph LR
-  subgraph SD[Single domain]
-    direction TB
-    SDr1((R1))
-    SDr2((R2))
-    SDr3((R3))
-    SDspeaker[BGP-LS speaker]
-    SDpce[PCE]
-    SDr1 --- SDr2
-    SDr2 --- SDr3
-    SDspeaker -.->|"BGP-LS NLRI:<br/>node/link/prefix/policy"| SDpce
-    SDr2 ===|"iBGP-LS session"| SDspeaker
+  subgraph IGP[One IGP domain · one AS]
+    R1((R1)) --- R2((R2)) --- R3((R3))
   end
-    </div>
-    <div class="mermaid">
-graph LR
-  subgraph MD[Multi-domain / multi-AS]
-    direction TB
-    A1[Domain A nodes] --> Aspk[BGP-LS speaker A]
-    B1[Domain B nodes] --> Bspk[BGP-LS speaker B]
-    Aspk -->|"BGP-LS"| cPCEa[Child PCE A]
-    Bspk -->|"BGP-LS"| cPCEb[Child PCE B]
-    cPCEa -->|"H-PCE (RFC 6805)"| hPCE[Parent PCE]
-    cPCEb -->|"H-PCE"| hPCE
-    hPCE -->|"compute inter-domain SR Policy<br/>with binding-SID at ASBR"| Head[Head-end PE]
-  end
+  R2 ==>|"iBGP BGP-LS (AFI 16388 / SAFI 71)"| PCE[PCE / controller]
     </div>
     <p style="font-size: 0.7em; color: #888; text-align: center;">
-      One BGP-LS speaker per IGP domain is enough. Multi-domain composition happens at the controller, not in the network — H-PCE stitches domain paths via binding-SIDs.
+      Any one router (here R2 = the BGP-LS speaker) runs the IGP and exports the whole link-state DB — <b>nodes, links, prefixes + SR info</b> — to the PCE as <b>BGP-LS NLRI</b>. Single AS ⇒ <b>iBGP</b>. This is read-only <i>topology</i> to the controller — <b>not</b> labels (that's BGP-LU, later).
+    </p>
+  </section>
+
+  <section>
+    <h3>BGP-LS → PCE — multi-domain (H-PCE)</h3>
+    <div class="mermaid">
+graph LR
+  A[Domain A · AS 1] ==>|"iBGP BGP-LS"| cA[Child PCE A]
+  B[Domain B · AS 2] ==>|"iBGP BGP-LS"| cB[Child PCE B]
+  cA -->|"H-PCE (RFC 6805)"| P[Parent PCE]
+  cB -->|"H-PCE"| P
+  P -->|"inter-domain SR Policy · BSID at ASBR"| H[Head-end PE]
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;">
+      One BGP-LS speaker per domain feeds its child PCE (iBGP within each AS; <b>eBGP-LS</b> only if the controller sits in another AS). H-PCE stitches the cross-domain path; the head-end PE gets one SR Policy whose <b>binding-SID</b> hides the next domain's segment list.
     </p>
   </section>
 
@@ -679,9 +673,9 @@ graph LR
   end
   A1 --- G1
   A2 --- G1
-  G1 ===|"BGP-LU stitch"| C1
+  G1 ==>|"BGP-LU stitch"| C1
   C1 --- C2
-  C2 ===|"BGP-LU stitch"| G2
+  C2 ==>|"BGP-LU stitch"| G2
   G2 --- B1
     </div>
     <p style="font-size: 0.7em; color: #888; text-align: center;">
@@ -694,7 +688,6 @@ graph LR
     <div class="mermaid">
 graph LR
   subgraph SRDom[Single SR-MPLS domain — one IS-IS multi-level]
-    direction LR
     A1((PE-A1<br/>SID 1)) --- G1((AGG1<br/>SID 11))
     A2((PE-A2<br/>SID 2)) --- G1
     G1 --- C1((C1<br/>SID 21))
@@ -883,6 +876,28 @@ exit
 
   <section data-markdown>
   <textarea data-template>
+### SRGB collision with LDP — check before lighting SR
+
+Cisco IOS-XR's **default dynamic label range** is **16000–1048575**, overlapping the standard SRGB (16000–23999). Light SR on a node already running LDP and the SRGB block can't be reserved — SR fails to come up.
+
+**Vendor-specific fixes:**
+
+- **Cisco IOS-XR** — move LDP's dynamic range up first:
+  ```
+  mpls label range table 0 24000 1048575
+  ```
+  Reserves 16000–23999 for SR, 24000+ for everything else.
+
+- **Juniper Junos** — LDP uses a separate label-block by default; no collision unless `protocols mpls label-switched-path` explicitly set a static range overlapping the SRGB. Verify with `show route table mpls.0 | match label-range`.
+
+- **Nokia SR OS** — `configure router mpls-labels` already partitions `sr-labels` and `static-labels-range` / `reserved-label-block`. Default partition prevents collision; verify with `show router label-range`.
+
+<span class="tag warn">Order of operations</span> Move LDP/dynamic label range *first*, then enable SR. Reverse the order and SR refuses to start, or LDP grabs labels SR can't later reclaim without a reload.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
 ### Verification commands — what to check, what to expect
 
 | Check | Cisco IOS-XR | Juniper Junos | Nokia SR OS |
@@ -895,6 +910,35 @@ exit
 | Traceroute shows label push | `traceroute mpls multipath ipv4 <loopback>` | `traceroute monitor mpls ipv4 <loopback>` | `oam lsp-trace prefix <loopback>` |
 
 **Expected pattern:** every other node's loopback appears in IS-IS DB with a prefix-SID sub-TLV; MPLS LFIB has one entry per remote prefix-SID label (pop at PHP); traceroute shows single label on first hop only.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Verification output — annotated (Cisco IOS-XR)
+
+`show isis segment-routing prefix-sids` on a 4-node SR domain:
+```
+   SID    Prefix             Algo  Source   Flags                MT-ID
+   1      10.0.0.1/32         0    Local    N:1 P:0 E:0          IPv4 Unicast
+   2      10.0.0.2/32         0    Remote   N:1 P:0 E:0          IPv4 Unicast
+   3      10.0.0.3/32         0    Remote   N:1 P:0 E:0          IPv4 Unicast
+   4      10.0.0.4/32         0    Remote   N:1 P:0 E:0          IPv4 Unicast
+```
+
+| Field | Meaning |
+|-------|---------|
+| **SID** | Index. Label = SRGB.start + SID. With default SRGB 16000–23999, SID 3 → label 16003. |
+| **Algo** | 0 = standard SPF. Per-algo SIDs appear once flex-algo is enabled (§5). |
+| **Source** | `Local` (you advertise it) or `Remote` (learnt via IGP). |
+| **N:1** | Node SID flag. 1 for loopback prefix-SIDs. N:0 on a loopback = misconfigured. |
+| **P:0** | No-PHP off. P:1 means egress wants the label kept (rare; service-aware decap). |
+| **E:0** | Explicit-null off. E:1 advertises label 0/2 at PHP instead of implicit-null. |
+
+**Common pitfalls in this output:**
+- SID showing **`Remote / N:0`** on a loopback → originating router missing the `n` flag. Fix on the source.
+- SID **missing entirely** for a node → its LSP isn't being received. Check IS-IS adjacency, `metric-style wide`, LSP flooding.
+- Two nodes advertising the **same SID** → duplicate index. Last LSP wins; intermittent forwarding. Audit with `show isis database verbose | i Prefix-SID`.
   </textarea>
   </section>
 
@@ -924,6 +968,41 @@ segment-routing
 **Nokia SR OS:** `configure router isis segment-routing mapping-server prefix-sid ...`
 
 **Operational rule:** run two mapping servers per IS-IS area for redundancy. Decommission once all nodes are SR-capable. Without SRMS, SR and LDP traffic don't interwork on the LDP-only nodes — packets dropped.
+  </textarea>
+  </section>
+
+  <section>
+    <h3>SR-LDP interworking — label swap at the boundary</h3>
+    <div class="mermaid">
+graph LR
+  PE1["PE1 (SR)"]
+  BN["Boundary node<br/>SR + LDP · LFIB swaps"]
+  PE2["PE2 (LDP-only)"]
+  PE1 -->|"push 16005 (SID 5)"| BN
+  BN -->|"swap 16005 → LDP 100177"| PE2
+  PE2 -->|"push LDP label → PE1"| BN
+  BN -->|"swap LDP → 16001 (SID 1)"| PE1
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;">
+      Mapping server gives the <i>control plane</i> a SID for the LDP-only nodes; the boundary node (SR + LDP) does the <i>dataplane</i> swap <b>both ways</b> in its LFIB — SR label ↔ LDP label. <b><code>sr-prefer</code></b> makes SR win where both protocols advertise the same prefix (else LDP wins, defeating the migration). And the mapping server alone isn't enough — the LDP-only node can't pop a label it doesn't know → <b>mapping server + boundary swap = both halves</b>. Verify on the boundary: <code>show mpls forwarding labels 16001 detail</code>.
+    </p>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Per-platform vs per-interface label space — the SR delta
+
+**LDP heritage**: most platforms allocated labels from a **per-platform** label space (global to the box). In-label X meant the same thing regardless of which interface it arrived on. Older Juniper supported **per-interface** label space — same in-label X arriving on if-A vs if-B could resolve to different FECs.
+
+**SR mandates per-platform.** Prefix-SIDs and adjacency-SIDs come from the SRGB; SRGB is platform-wide by definition. There's no per-interface variant for SR labels.
+
+**Why it matters:**
+
+- **Mixed LDP/SR transit nodes**: LDP labels coming in on if-A vs if-B can be different; SR labels can't. Boundary LFIB has to handle both modes simultaneously without confusion.
+- **TI-LFA repair lists** (§4) push multiple SR labels onto the stack. Mid-stack swaps are platform-wide; nothing per-interface — keeps repair deterministic.
+- **L2VPN/EVPN service labels** stacked above the SR transport label can still be per-interface on some platforms; the *transport* SR label below is always platform-wide. Service-label scoping is a separate question from SR.
+
+**Verify**: Junos `show route forwarding-table family mpls table default` shows label scope. IOS-XR is per-platform by default. Nokia SR OS `show router mpls-labels label-range` shows the platform-wide partition.
   </textarea>
   </section>
 
@@ -983,6 +1062,34 @@ netlab connect p show isis database detail pe2.00-00
 SR Capability TLV ✓ (SRGB advertised), prefix-SID sub-TLV ✓ (index 3, N flag), adj-SID sub-TLV ✓. MSD = 6 labels push capacity.
 
 → See §14 (Labs) for the full workshop progression across all 9 labs.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Operational onboarding — adding a new SR node end-to-end
+
+Five-step flow to bring a new SR-capable node into a running domain.
+
+**1. Pick a unique prefix-SID index.** Reserve the next free SID — grep current LSPs across the domain: `show isis database verbose | i Prefix-SID`. Pick the next integer above the highest in use.
+
+**2. Configure base IS-IS + SR.** Loopback, NET, `metric-style wide`, `segment-routing mpls`, `prefix-sid index N` on the loopback.
+
+**3. Verify IS-IS adjacency.** `show isis adjacency` — both sides UP. **Common failure:** a neighbour has `metric-style narrow` — adjacency forms but the new node's prefix-SID sub-TLV gets dropped in flight.
+
+**4. Verify LSP propagation.** From any other node: `show isis database <new-node-id>.00-00 detail` — should include SR Capability TLV + Prefix-SID sub-TLV with the new index.
+
+**5. Verify dataplane.** From any other node: traceroute the new node's loopback. Should show one label push at the first hop, label = SRGB.start + new-node's-SID. MPLS LFIB on transits should have one new entry per the new prefix-SID label.
+
+**Failure modes worth memorising:**
+
+| Symptom | Cause |
+|---------|-------|
+| New node invisible from elsewhere | Narrow metric on a neighbour; LSP sub-TLVs silently truncated |
+| Prefix-SID advertised but not installed | New node itself missing `metric-style wide` |
+| Traceroute reaches *wrong* node | SID collision — index already in use elsewhere |
+| Traceroute uses wrong labels across domain | SRGB mismatch on the new node |
+| SR labels not used on mixed-deployment paths | `sr-prefer` not set on a boundary node |
   </textarea>
   </section>
 </section>
@@ -1676,6 +1783,134 @@ Transit hashes by peeking under labels for the IP header. Fragile when:
 **Operational symptom of polarisation:** "we have 4× 100G ECMP but only 1 link is hot." Almost always salt-not-set or stage-1-and-stage-2-using-same-inputs.
   </textarea>
   </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Elephant flows — why ECMP can't split them
+
+**Elephant** = one long-lived, high-volume flow (backup, storage replication, vMotion, AI all-reduce). **Mice** = many small short flows (a quote, a request). A link is *mostly mice by count, mostly elephant by bytes*.
+
+**The hard limit:** ECMP hashes the **5-tuple** and keeps every packet of a flow on **one** member *by design* (no reordering). An elephant is **one** 5-tuple → **one** hash → **one** link. **No hash can split it — splitting is exactly what ECMP refuses to do.** A better hash fixes *polarisation*, never elephants.
+
+| Symptom | Real cause | Fix |
+|---------|-----------|-----|
+| Many flows, 1 link hot, **CPUs idle** | **Polarisation** (unsalted hash) | per-router **hash seed** |
+| **One/few huge flows**, traceable | **Elephant** pinned to one member | tools below — *not* a hash |
+
+**Splitting a real elephant:**
+- **Flowlet / DLB** — a TCP flow comes in bursts with idle gaps; if a gap > max path-latency-delta, send the next burst down another member **without reordering** (Broadcom DLB / Arista / Cisco). *Degrades on a back-to-back saturating flow — no gaps.*
+- **Packet spraying / adaptive routing** — spray per-packet, drop ordering. Only safe on reorder-tolerant transport — **RoCE / IB / AWS SRD / Ultra Ethernet**. Why AI fabrics abandon ECMP.
+- **Steer it** — detect via sFlow/IPFIX, push the heavy 5-tuple down a dedicated **SR Policy / PBR** lane; mice keep ECMPing. *The SR-TE own-domain win.*
+- **Design** — fatter/more members, or **segregate bulk off the hot path**.
+
+**Trading vs AI:** trading hot-path is mice (multicast) → elephant risk is *bulk colliding with latency-sensitive traffic* → **segregate**, don't DLB. AI all-reduce is *all elephants* → **packet-spray on lossless RoCE** + rail-aligned topology.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Per-vendor hash-tuning knobs
+
+What you actually configure when ECMP across a 4-member group polarises.
+
+**Cisco IOS-XR:**
+```
+hw-module loadbalancing l3
+ hash-key src-ip dst-ip protocol src-port dst-port flow-label
+ hash-seed <unique-per-node>
+```
+
+**Juniper Junos:**
+```
+forwarding-options enhanced-hash-key
+ family inet {
+   layer-3 { source-address destination-address protocol; }
+   layer-4 { source-port destination-port; }
+ }
+ hash-seed <unique-per-system>
+```
+
+**Nokia SR OS:**
+```
+configure router lsp-load-balancing
+ hash-label
+ ip-load-balancing 5-tuple
+ system-ip-load-balancing
+```
+`system-ip-load-balancing` ties seed to system-IP — unique per node automatically.
+
+**The non-negotiable across all three:** *unique* per-node hash seed. Without it, every transit hashes the same flow the same way → polarisation across the whole path even with otherwise-good 5-tuple inputs.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Default hash fields per vendor
+
+What gets hashed *out of the box* with no extra config — matters when troubleshooting mixed-vendor ECMP.
+
+| Vendor / Silicon | Default hash inputs | Quirks |
+|------------------|--------------------|--------|
+| **Cisco IOS-XR / NCS** | src-IP, dst-IP, protocol, L4 src/dst-port | MPLS labels not hashed by default; opt-in with `hash-input mpls labels`. IPv6 flow-label honoured if non-zero. |
+| **Juniper Junos / Trio / Express** | src-IP, dst-IP, protocol | **L4 ports NOT hashed by default.** Add `enhanced-hash-key family inet layer-4`. Catches every operator coming from IOS-XR. |
+| **Nokia SR OS / FP5** | Full 5-tuple by default | Closest to what most operators expect. |
+| **Arista EOS** | Full 5-tuple + symmetric by default | Same hash for A→B and B→A — useful for stateful middleboxes. |
+| **Broadcom (Tomahawk / Jericho)** | Up to ~12 fields; defaults vary per SDK release | Whitebox NOS surfaces SDK config; SONiC defaults differ from Cumulus. |
+
+**Consequence in mixed-vendor cores**: the same flow hits different hash decisions at different transit points → effective polarisation even with hash-seeds tuned per node. **Audit every transit type, not just one.**
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Entropy label — MSD budget and depth limits
+
+Pushing an EL/ELI pair eats 2 labels of the platform's **Max SID Depth (MSD)** budget. Matters when SR Policy SID list + VPN label + EL/ELI together exceed silicon push capacity.
+
+**MSD push by silicon generation:**
+
+| Silicon | MSD push | EL/ELI cost | Effective free depth |
+|---------|---------|-------------|---------------------|
+| Cisco SiliconOne G100/G200 (NCS 5700) | 12 | 2 | 10 |
+| Juniper Trio6 (MPC11E / LC9600) | 10 | 2 | 8 |
+| Juniper Express5 (PTX LC1201) | 12 | 2 | 10 |
+| Nokia FP5 (7750 SR XMA-s) | 16 | 2 | 14 |
+| Broadcom Jericho2c+ | 10 | 2 | 8 |
+| Older Trident3 | 5 | 2 | 3 — too tight for SR-TE + VPN + EL |
+
+**Operational impact:**
+- A 5-deep SR-TE policy + VPN label + EL/ELI = 8 labels pushed. Trident3 can't; PTX with Express5 can.
+- Without EL, transit hashing on deep stacks falls back to label-only entropy (low quality) → polarisation almost guaranteed.
+
+**Design rule:** target MSD ≥ (max policy depth + 2 for EL/ELI + 2 for service labels). Anything tighter is fragile.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Polarisation in numbers — before/after hash seed
+
+4-member ECMP bundle, 1000 flows, identical hash function on every transit.
+
+**Without per-node hash seed (polarised):**
+```
+Stage 1 (entry):     m1: 250 | m2: 250 | m3: 250 | m4: 250
+Stage 2 (transit):   m1: 250 | m2:   0 | m3:   0 | m4:   0
+```
+Stage 2 sees only m1's 250 flows. Same hash function + same inputs → same bucket. The downstream bundle effectively becomes a single member.
+
+**With unique per-node hash seed:**
+```
+Stage 1:             m1: 250 | m2: 250 | m3: 250 | m4: 250
+Stage 2 (re-hashed): each upstream member's 250 redistribute ~62/63/62/63 across m1-m4
+Effective:           m1: ~250 | m2: ~250 | m3: ~250 | m4: ~250
+```
+
+**Real-world symptom:** monitoring shows 4× 100G ECMP, member 1 at 95% utilisation, members 2-4 at 5-15%. Fix: verify `hash-seed` is set per node + verify all transits use the same *strategy* (unique per box, not a shared constant).
+
+**When salt doesn't help:** if the bundle carries only 1-2 elephant flows (e.g. one 10 Gbps backup transfer), no per-flow hashing will spread it. Need flowlet hashing (mid-flow re-hash on idle gap) or adaptive routing (per-packet spray, lossless transport required).
+  </textarea>
+  </section>
 </section>
 
 <!-- ============ SECTION 6 — ECMP / UCMP ============ -->
@@ -1760,20 +1995,17 @@ For N PoPs: wire links so capacity is well-used, you survive failure, you don't 
     <div class="mermaid" style="display: flex; gap: 20px; justify-content: space-around;">
 graph LR
   subgraph Triangle
-    direction LR
     TA((A)) --- TB((B))
     TB --- TC((C))
     TC --- TA
   end
   subgraph Square
-    direction LR
     SA((A)) --- SB((B))
     SB --- SC((C))
     SC --- SD((D))
     SD --- SA
   end
   subgraph SquareDiag[Square+diagonals]
-    direction LR
     DA((A)) --- DB((B))
     DB --- DC((C))
     DC --- DD((D))
@@ -1883,6 +2115,98 @@ Both families: SR-MPLS, SR-TE, flex-algo, TI-LFA, BGP-LS to PCE.
 
   </textarea>
   </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Silicon generations — what each chip supports for SR-MPLS
+
+| Family | Silicon | Line-rate SR | UCMP weighted | MSD push | Notable cards |
+|--------|---------|--------------|---------------|----------|---------------|
+| **Broadcom** | Trident3 | basic | no (equal-only) | 5 | older whitebox access |
+| | Trident4 / Tomahawk 4 | yes | limited (8) | 8 | DC leaf/spine |
+| | Tomahawk 5 | yes | yes (64+) | 10 | 51.2T spine (hyperscale, AI) |
+| | Jericho2 / J2c+ | yes | yes (64+) | 10 | DC-fabric + WAN peering, deep buffer (HBM) |
+| **Cisco** | SiliconOne G100 / G200 | yes | yes (64+) | 12 | NCS 5700, 8000 |
+| **Nokia** | FP4 | yes | yes (32) | 12 | 7750 SR-7/14 mid-tier |
+| | FP5 | yes | yes (64+) | 16 | current high-end XMA-s |
+| **Juniper** | Trio5 (MPC10E) | yes | yes (32) | 8 | MX mid-tier |
+| | Trio6 (MPC11E, LC9600) | yes | yes (32) | 10 | MX10008 etc |
+| | Express5 (PTX LC1201/02) | yes | yes (64+) | 12 | pure peering / SR-MPLS core |
+
+**Rule of thumb:** anything pre-2019 (Trident3, FP3, older Trio) — assume MSD < 6, equal-ECMP only. SR-MPLS works as transport but TE/policy features cap out fast.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Three numbers operators compare — FIB / MSD / ECMP width
+
+| Card | IPv4 FIB (LPM) | Label table | MSD push | ECMP width |
+|------|---------------|-------------|----------|-----------|
+| NCS 540-24Z8Q2C | ~1M | ~256k | 8 | 64 |
+| NCS 5700-OPT-SE (SiliconOne) | ~4M | ~1M | 12 | 256 |
+| Nokia 7250 IXR-6 (Jericho2) | ~1.5M | ~256k | 10 | 64 |
+| Nokia 7750 SR-14s (FP5 XMA-s) | ~10M | ~1M | 16 | 256 |
+| Juniper MX10008 LC9600 (Trio6) | ~4M | ~1M | 10 | 128 |
+| Juniper PTX10008 LC1201 (Express5) | ~6M | ~2M | 12 | 256 |
+
+**Why these three:**
+- **FIB scale** — full BGP table is ~1M routes today and growing. Anything under 2M is short-lived in core/peering.
+- **MSD push** — deep SR-TE policies + VPN + EL/ELI need ≥10. Under 6 = transport only, no policy.
+- **ECMP width** — hyperscale spine fabrics need 64+ to use all uplinks. 32 caps parallel spines.
+
+<span class="tag warn">Datasheet red flag</span> Quoting "32 ECMP" or "MSD 6" on a 2024+ card means re-spun older silicon. Current gen has moved past those numbers.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Buffer architecture — deep HBM vs shallow on-chip
+
+Two architectures, two use cases. Picking the wrong one for the role is a real failure mode.
+
+**Deep HBM (off-chip stacked DRAM)**
+- 100s of MB to GBs per port group
+- **Where**: WAN-facing core, peering — anywhere RTT × link-rate exceeds 50 ms × rate
+- **Silicon**: Broadcom Jericho2c+ / J3, Cisco SiliconOne, Nokia FP5, Juniper Express5
+- **Trade-off**: 10-50 µs per-packet latency from HBM access; absorbs sustained bursts
+
+**Shallow on-chip (SRAM/cache inside the ASIC)**
+- MB-scale total (Tomahawk 5 = ~165 MB)
+- **Where**: DC fabric leaf/spine, low-RTT environments, AI fabrics
+- **Silicon**: Broadcom Tomahawk family, older Trident
+- **Trade-off**: sub-µs latency; drops on sustained bursts unless paired with PFC/ECN
+
+**Pick wrong = pain:**
+- HBM card in a leaf role → over-buffered, queue latency kills incast / RoCE
+- Shallow card in peering role → 50 ms RTT × 100 Gbps = 625 MB needed, 165 MB → loss
+
+SR-MPLS doesn't change the rule — buffer architecture is dataplane, orthogonal to SR control plane.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Optics support per card — 2026 reality
+
+| Card | 10G | 25G | 100G | 400G | 800G |
+|------|-----|-----|------|------|------|
+| NCS 540-24Z8Q2C | 24×SFP+ | 8×SFP28 | 2×QSFP28 | — | — |
+| NCS 5700-OPT-SE | ✓ | ✓ | ✓ | 36×QSFP-DD | — |
+| Nokia 7750 SR-1x XMA-s | ✓ | ✓ | ✓ | ✓ | early QSFP-DD 800 |
+| Juniper MX10008 LC9600 | ✓ | ✓ | ✓ | 24×QSFP56-DD | — |
+| Juniper PTX10008 LC1201 | — | — | ✓ | 36×QSFP56-DD | — |
+| PTX10001-36MR | — | — | ✓ | 36×QSFP-DD-400 | — |
+| Broadcom Tomahawk 5 (Arista 7060X6 etc) | — | — | ✓ | ✓ | 64×OSFP-800 |
+
+**State of the market:**
+- **400G** is mainstream across SP edge + DC spine.
+- **800G** is hyperscale spine + AI fabric (Tomahawk 5). SP edge mostly still 400G.
+- **Pluggable coherent** (QSFP-DD ZR / ZR+) is replacing transponders for metro / regional — single-card DWDM with 100/400G coherent built into the pluggable. Major capex savings on transponder shelves.
+
+<span class="tag warn">Cage ≠ optic speed</span> QSFP-DD cage takes 400G now, can take 800G when ASIC + host support it. Check the card datasheet, not the port cage shape.
+  </textarea>
+  </section>
 </section>
 
 <!-- ============ SECTION 6 — INTER-AS ============ -->
@@ -1926,7 +2250,7 @@ graph LR
   subgraph OptC[Option C — multi-hop eBGP VPNv4 + BGP-LU underlay]
     PEa3[PE-A] -.->|"VPNv4 multi-hop"| PEb3[PE-B]
     PEa3 --- ASBR_A3[ASBR-A]
-    ASBR_A3 ===|"BGP-LU"| ASBR_B3[ASBR-B]
+    ASBR_A3 ==>|"BGP-LU"| ASBR_B3[ASBR-B]
     ASBR_B3 --- PEb3
   end
     </div>
@@ -1996,7 +2320,7 @@ graph LR
   PE1[PE1<br/>head-end] -->|"BSID + EPE-SID"| ASBR[ASBR]
   ASBR -->|"PeerNode-SID 24001"| PeerA[Peer A<br/>transit, expensive]
   ASBR -->|"PeerAdj-SID 24002"| PeerB[Peer B<br/>private peering]
-  ASBR -->|"PeerSet-SID 24003<br/>(load-share)"| PeerC[Peer-Set: C1, C2]
+  ASBR -->|"PeerSet-SID 24003 (load-share)"| PeerC[Peer-Set: C1, C2]
   style PeerA fill:#6b3a1a
   style PeerB fill:#1e4620
   style PeerC fill:#264f78
@@ -2329,7 +2653,25 @@ What's changed since you last designed:
 - **gNMI/OpenConfig** everywhere; SNMP is for museums
 - **FRR** is the de-facto BGP/IGP stack in disaggregated NOSes
 
-↓ for HFT + AI + hybrid
+↓ for the design patterns, HFT + AI + hybrid
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### DC logical-design patterns — pick by scale
+
+"Pattern" in DC design = a **reusable reference topology** you select for the scale + east-west demand. Three you should name and justify:
+
+| Pattern | Shape | When | Trade-off |
+|---------|-------|------|-----------|
+| **Collapsed core** | Core + aggregation merged; access hangs off it | Small DC / single room | Cheapest; limited scale, bigger failure domain |
+| **3-tier** (access→agg→core) | Classic hierarchical, L2 access + L3 core | Legacy enterprise, north-south heavy | STP in the L2 tiers, oversubscribed, **poor east-west** |
+| **Spine-leaf (Clos)** | Every leaf to every spine, L3 fabric | Modern DC, **east-west heavy** (virtualisation, AI, storage) | More cables/optics; needs an overlay for L2-stretch |
+
+**Why the shift to spine-leaf:** traffic went **north-south → east-west** (VM-to-VM, GPU-to-GPU, distributed storage). 3-tier oversubscribes the core and leans on STP; spine-leaf gives **equal hop-count + full ECMP** between any two leaves, scales by adding spines, and no STP (it's routed). Scale further with a **5-stage Clos** (super-spine joining pods).
+
+<span class="tag ok">One-liner</span> *"collapsed-core for a closet, 3-tier for legacy north-south, spine-leaf the moment east-west matters — and east-west always wins now."*
   </textarea>
   </section>
 
@@ -2369,6 +2711,20 @@ graph TB
     <p style="font-size: 0.7em; color: #888; text-align: center;">
       Every leaf connects to every spine. ECMP across all spines for east-west. eBGP unnumbered underlay, EVPN/VXLAN overlay.
     </p>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Scaling the fabric — spines, super-spines, planes
+
+A 2-tier leaf-spine has a hard ceiling: **max leaves = spine port count**, and **bisection bandwidth = number of spines × leaf-uplink speed.** You scale on three axes:
+
+- **Add spines (scale bandwidth):** more spines = more ECMP paths = more east-west capacity and finer failure granularity (lose 1 of 8 spines = lose ⅛ capacity, not ½). Leaf uplink count caps how many spines you can attach.
+- **Add a tier — super-spine / 5-stage Clos (scale node count):** group leaf+spine into a **pod**; interconnect pods with a **super-spine** layer. Now you scale to many thousands of hosts. Worst-case path = leaf → spine → super-spine → spine → leaf (5 hops). This is the hyperscale shape.
+- **Multi-plane (scale without giant spines):** instead of one set of huge spine chassis, run **N parallel planes** of fixed boxes; each leaf uplink goes to a different plane. Cheaper/fixed silicon, more cabling — the SONiC/whitebox + AI-fabric pattern.
+
+<div class="ok"><strong>Rule of thumb:</strong> add spines until you run out of leaf uplinks → then go 5-stage (pods + super-spine) for host count, or multi-plane for bandwidth on fixed silicon. Oversubscription is set by leaf <em>uplink:downlink</em> ratio — 1:1 (non-blocking, AI/HFT) up to 3:1 (general compute).</div>
+  </textarea>
   </section>
 
   <section data-markdown>
@@ -2481,8 +2837,8 @@ The shape that wins:
 
 AWS / Azure / GCP — the deltas you need.
 
-The same three concepts everywhere:
-1. Private network construct (VPC / VNet / VPC)
+The same three concepts everywhere (AWS / Azure / GCP):
+1. Private network construct (VPC / VNet / VPC — GCP also calls it VPC, but it's *global*)
 2. Managed transit hub (TGW / vWAN / NCC)
 3. Dedicated interconnect (DX / ExpressRoute / Cloud Interconnect)
 
@@ -2571,6 +2927,746 @@ Plus per-cloud HPC/AI variants.
   (you'll be told "use H100 SXM on Azure NDv5 in West US 3" because that's where the capacity is)
 - **GPUDirect / RDMA semantics** at host level — can't reason about latency without it
 - **Inter-region backbone characteristics** — each cloud's backbone has different latency/jitter; matters for distributed training across regions
+  </textarea>
+  </section>
+</section>
+
+<!-- ============ SECTION 17 — AWS THEORY ============ -->
+<section>
+  <section data-markdown>
+  <textarea data-template>
+## 17 · AWS networking — the model
+
+Translated into language you already speak: **a VPC is a VRF that owns a CIDR.** AWS gives you the same primitives as a physical network — an address space, segments, a routing table, firewalls — just rented and API-driven. Learn the mapping and the rest is detail.
+
+| AWS thing | What it really is |
+|-----------|-------------------|
+| **VPC** | An isolated routing domain / VRF — a CIDR block that's yours alone |
+| **Subnet** | A segment carved from the VPC, **locked to one Availability Zone** (= one failure domain) |
+| **Route table** | The thing that actually decides where a subnet's traffic goes — this is what makes a subnet "public" or "private" |
+| **Internet/NAT Gateway** | The edge devices that do (or don't) let a subnet reach the internet |
+| **Security Group / NACL** | A stateful per-host firewall / a stateless per-subnet ACL |
+
+The whole section is just these, in depth. ↓
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### VPC, subnets, routing — what's actually happening
+
+**VPC** = a CIDR you reserve (e.g. `10.0.0.0/16`), scoped to **one region**, isolated from every other VPC by default. Nothing routes in or out until *you* add a path. Same idea as standing up a fresh VRF with its own address plan.
+
+**Subnet** = a smaller CIDR (e.g. `10.0.1.0/24`) carved from the VPC, and — the bit that bites people — **it lives in exactly one Availability Zone.** An AZ is a physically separate datacentre, so *subnet = your failure-domain boundary*. Want HA? Same app, a subnet in each of ≥2 AZs.
+
+**Route table** = the per-subnet routing table. Every subnet is associated with exactly one. It always contains the **local route** (the whole VPC CIDR, so all subnets in a VPC reach each other — you can't remove this). What you *add* is the default route:
+- `0.0.0.0/0 → Internet Gateway` ⇒ the subnet is **public**
+- `0.0.0.0/0 → NAT Gateway` ⇒ the subnet is **private** (can egress, can't be reached inbound)
+- no `0.0.0.0/0` at all ⇒ **isolated** (VPC-internal only)
+
+<span class="tag warn">The thing to internalise</span> "public" and "private" are **not properties of the subnet** — there's no checkbox. They're a *description of what its route table's default route points at.* Change the route, change the subnet's nature. That's the whole game.
+  </textarea>
+  </section>
+
+  <section>
+    <h3>VPC anatomy — public vs private</h3>
+    <div class="mermaid">
+graph LR
+  NET((Internet))
+  IGW[Internet Gateway]
+  subgraph VPC[VPC 10.0.0.0/16]
+    PUB["Public subnet — route 0/0 to IGW"]
+    NAT[NAT Gateway]
+    PRIV["Private subnet — route 0/0 to NAT"]
+  end
+  NET --- IGW
+  IGW --- PUB
+  PRIV -->|egress| NAT
+  NAT --> IGW
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;">Public subnet = default route to the IGW. Private subnet egresses via the NAT GW (which lives in the public subnet) → out the IGW; nothing reaches the private instance inbound.</p>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Security groups vs NACLs — two firewalls, different jobs
+
+AWS gives you **two** filtering layers and they behave differently. Knowing *why* you'd use each is the interview point.
+
+| | Security Group | NACL |
+|--|----------------|------|
+| Attached to | An **instance/ENI** (the host) | A **subnet** (everything in it) |
+| State | **Stateful** — allow traffic out, the return is automatically allowed back | **Stateless** — it has no memory; you must allow the return direction yourself |
+| Rules | **Allow only** (implicit deny-all) | **Allow *and* deny** |
+| Evaluation | All rules considered together | **Numbered list, first match wins** |
+
+**Stateful (SG)** = like a host firewall that tracks connections: you permit "outbound 443" and the reply just works. **Stateless (NACL)** = a plain packet-filter ACL with no connection table — so if you allow inbound 443, you **also** have to allow the **outbound ephemeral range (1024–65535)** or the reply is silently dropped. That ephemeral-port trap is the single most-asked NACL gotcha.
+
+**Which when:** put your real policy in **Security Groups** — they're identity-aware (an SG rule can reference *another SG*, not just an IP, which is how you do micro-segmentation by role). Use a **NACL** only for a coarse, subnet-wide **deny** that should apply to everything regardless of host config — e.g. blackhole a malicious CIDR at the subnet edge. SG = scalpel, NACL = blunt subnet-wide gate.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Getting in and out — gateways &amp; addresses
+
+**Internet Gateway (IGW)** — one per VPC, **free**, **bidirectional**. It's just the door to the internet; a subnet only *uses* it if its route table points `0/0` at it. The IGW also does the NAT between your instance's public IP and its private IP. No IGW route = no internet, in or out.
+
+**NAT Gateway** — **paid** (~$0.045/hr + per-GB), and **egress-only by design**. It lets a *private* subnet's instances start outbound connections (pull updates, call an API) while staying unreachable from the internet. It physically sits **in a public subnet** and forwards out through the IGW. This is the "I want to reach out but never be reached" pattern — exactly what backend/DB tiers need.
+
+**The three address types** (a common point of confusion):
+- **Private IP** — from the subnet CIDR, always present, only meaningful inside the VPC.
+- **Public IP** — auto-assigned, **ephemeral**: you lose it on stop/start. Fine for throwaway.
+- **Elastic IP (EIP)** — a static public IP you *own* and attach; survives stop/start. Quirk: it's **free while attached to a running instance, charged when left unattached** (AWS bills idle reserved IPs).
+
+<span class="tag ok">Interview line</span> *"public vs private is a **routing** decision (IGW vs NAT GW), not a security one — and reachability also needs a public/elastic IP on the instance, not just the route."*
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### DNS &amp; private service access — the "reach a service without internet" problem
+
+The recurring need: an instance in a **private** subnet has to reach an AWS service (S3, an API, another team's app) **without** a route to the internet. AWS solves it with **endpoints**, and names DNS pieces you should know:
+
+- **Route 53** — AWS DNS. **Public hosted zones** (internet records) + **private hosted zones** (names that only resolve inside your VPC). **Resolver inbound/outbound endpoints** = how on-prem DNS and VPC DNS query each other across a hybrid link.
+- **VPC DNS** — the built-in resolver at the **`.2` address** of your VPC CIDR; toggled by `enableDnsSupport` / `enableDnsHostnames`.
+- **Gateway endpoint** — for **S3 / DynamoDB** only. It's just a **route-table entry** sending that service's prefixes to the AWS backbone instead of the internet. Free. No internet path needed.
+- **Interface endpoint (PrivateLink)** — the general case: AWS drops an **ENI (a private IP) into your subnet** that fronts the target service. Your instance talks to a private IP; traffic never touches an IGW/NAT, and there's **no CIDR-overlap problem** because you're not routing networks together — just reaching one ENI.
+
+**Why PrivateLink beats VPC peering for exposing a service:** peering joins two whole networks (and breaks if their CIDRs overlap). PrivateLink exposes **exactly one service** behind one ENI — so it scales to thousands of consumers and across accounts without any address-planning fight. *Expose a service, not a network.*
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Connecting VPCs &amp; going hybrid — the interview meat
+
+How VPCs join to each other and to on-prem — in order of scale:
+
+- **VPC peering** — a direct 1:1 link between two VPCs. **Non-transitive** (if A–B and B–C peer, A still can't reach C), and **no overlapping CIDRs**. Fine for a couple of VPCs; collapses into a mesh nightmare beyond a handful.
+- **Transit Gateway (TGW)** — the **hub-and-spoke router** that fixes that: attach many VPCs + on-prem + other regions to one TGW and it routes **transitively** between them, with its own route tables for segmentation. This is the modern default for any real estate. (Think of it as a cloud PE/route-reflector for your VPCs.)
+- **PrivateLink** — when you don't want to *route networks* at all, just expose one service (previous slide).
+
+**Hybrid on-prem ↔ AWS — the two ways in:**
+- **Site-to-Site VPN** — IPsec over the public internet, **two tunnels** for redundancy, BGP (dynamic) or static. Stands up in minutes, cheap — but latency/jitter follow the internet.
+- **Direct Connect (DX)** — a **dedicated physical circuit** into an AWS DX location. Low, **consistent** latency, BGP-routed — but weeks to provision and $$$. (DX = your MPLS/leased-line DCI; VPN = an internet tunnel.)
+- **Cloud WAN** — AWS-managed global WAN that wraps TGW + DX for multi-region.
+
+<span class="tag warn">The real design driver</span> not features — **data-transfer cost.** Free within an AZ, charged cross-AZ, more cross-region, most to the internet. Topology in AWS often follows the price sheet more than the diagram.
+  </textarea>
+  </section>
+
+  <section>
+    <h3>Connecting VPCs &amp; hybrid</h3>
+    <div class="mermaid">
+graph LR
+  ONPREM[On-prem network]
+  subgraph AWS[AWS]
+    TGW[Transit Gateway]
+    VPCA[VPC A]
+    VPCB[VPC B]
+  end
+  TGW --- VPCA
+  TGW --- VPCB
+  ONPREM ==>|"Site-to-Site VPN"| TGW
+  ONPREM -.->|"Direct Connect"| TGW
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;">TGW = transitive hub for many VPCs + on-prem. On-prem joins via Site-to-Site VPN (IPsec/internet, cheap, variable latency) or Direct Connect (dedicated circuit, consistent, $$$). PrivateLink (not shown) exposes one service via an ENI, no routing.</p>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### On-prem DC patterns → AWS equivalents (the hybrid bridge)
+
+Going hybrid over Direct Connect doesn't invent new segmentation — **the on-prem logical pattern maps 1:1 onto AWS constructs.** The skill is recognising the equivalent, not learning a new model.
+
+| On-prem (what you built) | AWS equivalent |
+|--------------------------|----------------|
+| **VRF per service/tenant** (routing isolation) | **VPC per service**, or a **VRF on the Transit Gateway** (a TGW route table per segment) |
+| **VLAN** segment | **Subnet** |
+| Inter-VRF route leak / control | **TGW route tables** (+ VPC peering for 1:1) |
+| **ACL** between segments | **NACL** (subnet) / **Security Group** (host, identity-aware) |
+| **Firewall** between zones | **Network Firewall / NVA in an inspection VPC** that the TGW steers through |
+| **MPLS-VRF DCI** between sites | **Direct Connect + DX Gateway** (transit VIF → TGW) |
+
+**The point:** segmentation intent is portable. VRF→VPC, VLAN→subnet, ACL→SG/NACL, inter-zone firewall→inspection VPC, MPLS DCI→Direct Connect. *(VRF maps to a VPC at small scale or a TGW route table at fleet scale — pick by how many segments you carry.)* DX is just the DCI carrying it across the boundary.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Direct Connect &amp; VPN — the detail
+
+- **Site-to-Site VPN** — **two** IPsec tunnels (redundancy), BGP (dynamic) or static, ECMP across tunnels, over the public internet
+- **Direct Connect** — dedicated port (1/10/100G) into a DX location; **VIFs**: private (→ VPC/VGW), public (→ AWS public services), transit (→ TGW)
+- **DX Gateway** — one DX reaching VPCs in many regions; **MACsec** for L2 encryption
+- DX has **no built-in encryption** → run a VPN over it or use MACsec; DX + VPN backup is the common resilient pattern
+- Decision: **VPN** = quick/cheap/variable · **DX** = consistent low latency, weeks + $$$
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Cross-region &amp; the cost driver
+
+- **TGW inter-region peering** — connect hubs across regions over the AWS backbone
+- **Data transfer = the architecture driver:** free **in-AZ** · **cross-AZ** charged each way · **cross-region** more · **to internet** most · **NAT GW** adds per-GB processing
+- Egress is asymmetric and easy to under-budget — *topology follows the price sheet*
+- IPv6 egress: **egress-only IGW** (the v6 analogue of NAT — outbound only)
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### HFT / AI on AWS
+
+- **EFA (Elastic Fabric Adapter)** — AWS's RDMA NIC; **SRD** transport + libfabric; OS-bypass for HPC/ML (Trainium / H100 clusters)
+- **Cluster placement group** — packs instances on one spine for lowest latency / highest bisection
+- **Low-latency edge for market data** — **Local Zones / Outposts / Wavelength** put compute next to the exchange/metro
+- **ENA / ENA-Express** — enhanced networking (SR-IOV); ENA-Express runs SRD underneath for higher pps + lower tail latency
+- **Placement groups** — **cluster** (low latency, single AZ) · spread (HA) · partition (big distributed)
+- Two networks, like on-prem AI: frontend = normal VPC/ENA; **backend GPU/HPC fabric = EFA**
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Interview gotchas — the mental model
+
+- *"Can't SSH to my instance"* → IGW route? SG inbound? public IP/EIP? right AZ/subnet?
+- **SG stateful vs NACL stateless** — a NACL must open the **ephemeral port range** for return traffic
+- **Public subnet = a route to the IGW**, not a checkbox
+- **PrivateLink** when CIDRs overlap or you only want to expose one service
+- **DX vs VPN** = consistent-low-latency-$$$ vs cheap-variable-internet
+- Cost: in-AZ free → cross-AZ → cross-region → internet, each step dearer — design around it
+  </textarea>
+  </section>
+</section>
+
+<!-- ============ SECTION 18 — LINUX THEORY ============ -->
+<section>
+  <section data-markdown>
+  <textarea data-template>
+## 18 · Linux — the packet path & the box
+
+Two things a trading shop probes: **the receive path** (where packets drop on the way to your app) and **plain sysadmin** (the box won't behave).
+
+Receive path: **wire → NIC ring → IRQ/softirq → kernel socket buffer → app `recv()`**. Every stage can drop. *Find the layer before you blame the network.*
+
+↓ for the path, perf, bypass, multicast, PTP, sysadmin
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### The receive path & where it drops — what each stage *is*
+
+A packet crosses four stages between the wire and your app, and **each has a finite buffer that drops when it fills.** The skill is reading the counter that tells you *which* stage failed — because the fix is different at each.
+
+| Stage | What it is | Drops as | See it with |
+|-------|-----------|----------|-------------|
+| **NIC ring (DMA)** | Hardware queue the NIC DMA-writes packets into | `rx_dropped`, overruns | `ethtool -S`, `ip -s link` |
+| **IRQ → softirq (NAPI)** | Kernel draining the ring into the stack on a CPU | ring fills because **CPU too busy** | `/proc/interrupts`, `mpstat`, `softnet_stat` |
+| **Socket buffer (rmem)** | Per-socket queue holding data until the app reads | **`RcvbufErrors`** | `netstat -su`, `ss -u` |
+| **Application** | Your code calling `recv()` | socket buffer fills → app too slow | app metrics, `ss -u` (Recv-Q) |
+
+**Reading it as a diagnosis:**
+- `rx_dropped` rising but CPUs idle → **NIC ring too small** for the burst → `ethtool -G` to grow it.
+- ring drops *with* one CPU pegged in softirq → **IRQ not spread** → RSS / RPS to spread across cores.
+- `RcvbufErrors` rising, CPU idle → **socket buffer too small / app too slow** → raise `net.core.rmem_max` + `SO_RCVBUF`, or speed up the reader.
+
+<span class="tag ok">The HFT point</span> there is no "the network is slow" — there's a *specific stage* with a full buffer, and a counter that names it. Keep this path short and every buffer sized for the burst.
+  </textarea>
+  </section>
+
+  <section>
+    <h3>The receive path — and where it drops</h3>
+    <div class="mermaid">
+graph LR
+  WIRE((Wire)) --> NIC["NIC ring (DMA)"]
+  NIC --> SOFT["IRQ / softirq (NAPI)"]
+  SOFT --> SOCK["Socket buffer (rmem)"]
+  SOCK --> APP["App recv()"]
+  style NIC fill:#6b3a1a,color:#fff
+  style SOCK fill:#6b3a1a,color:#fff
+    </div>
+    <p style="font-size: 0.7em; color: #ccc; text-align: center;">Drops by stage: <b style="color:#ce9178">NIC ring</b> → <code>rx_dropped</code> (<code>ethtool -S</code>); <b style="color:#ce9178">socket buffer</b> → <code>RcvbufErrors</code> (<code>netstat -su</code>). Find the layer before blaming the network.</p>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Low-latency / market-data tuning
+
+- **IRQ affinity + RSS** — pin NIC queues to specific cores
+- **CPU pinning / `isolcpus`** — keep the hot path off scheduler noise; **NUMA** — NIC on the right socket
+- **`ethtool -G`** ring buffers (absorb bursts) · **`ethtool -C`** interrupt coalescing (latency vs CPU) · **busy-poll** for lowest latency
+- **hugepages** — fewer TLB misses
+- **`nohz_full` + RCU offload** — stop the scheduler tick on isolated cores · **`tuned-adm` `network-latency`** · **CPU governor = performance** · **RPS/RFS** to spread softirq load
+- *"You can't optimise latency you can't measure"* → hardware timestamps (PTP)
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Kernel bypass — why, and the three ways
+
+**The problem it solves:** the normal path (NIC → IRQ → kernel stack → socket → `recv()` syscall → copy to userspace) costs a few µs *and* jitters — every interrupt, context-switch and copy is variable. For HFT, the **jitter** (tail latency) matters more than the average. Bypass deletes those steps so the app reads packets almost directly from the NIC.
+
+- **DPDK** — a **poll-mode driver** in userspace owns the NIC and *spins* a dedicated core constantly checking for packets (no interrupts, no kernel). Lowest, most deterministic latency. You rewrite the app to DPDK's APIs, and that core is 100% busy forever.
+- **Solarflare / Onload** — **transparent**: it shims the standard socket calls, so an existing app gets userspace networking **with no code change**. The pragmatic trading-desk choice — most of the win, none of the rewrite.
+- **AF_XDP** — the modern **in-kernel** middle ground: an eBPF program at the driver hook redirects chosen packets straight to a userspace ring. Faster than the normal stack, but you keep more kernel tooling than full DPDK.
+
+<span class="tag warn">The trade-off to state</span> bypass **burns whole cores** (poll-mode = 100% CPU by design) and **sidesteps normal tooling** — `tcpdump`, `ss`, netfilter no longer see the traffic, so observability/debugging gets harder. You spend cores + visibility to buy deterministic latency.
+  </textarea>
+  </section>
+
+  <section>
+    <h3>Kernel bypass — normal vs bypass</h3>
+    <div class="mermaid">
+graph TB
+  subgraph K[Normal kernel path]
+    N1[NIC] --> N2[Kernel net stack] --> N3["App socket"]
+  end
+  subgraph B[Kernel bypass]
+    B1[NIC] --> B2["Userspace PMD / Onload"] --> B3[App]
+  end
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;">Bypass (DPDK poll-mode, Solarflare Onload, AF_XDP) skips syscalls / copies / IRQs for lowest latency &amp; jitter — at the cost of dedicated cores and losing normal kernel tooling.</p>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### The network stack — iproute2 &amp; namespaces
+
+- **iproute2** — `ip addr`/`link`/`route`/`neigh`; **`ss`** (not netstat); `tc` for qdisc/shaping
+- **Network namespaces** + **veth** pairs + **bridges** — the same primitives containerlab/Docker use; isolate full stacks on one host
+- **Policy routing** — `ip rule` + multiple tables (source-based / multi-homing)
+- **VLAN / bridge** — `bridge fdb`, 802.1Q sub-ifaces (`eth0.100`)
+- A CLOS/overlay lab is exactly this under the hood — a namespace is a virtual router
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Multicast for market data — how the feed actually works
+
+Exchanges push prices as **UDP multicast** — one stream, every subscriber receives it, no per-client connection. The Linux/host details a trading shop will probe:
+
+- **SSM (Source-Specific Multicast) + IGMPv3** — you join a specific **(Source, Group)**, i.e. *this exchange server, this group*. No shared rendezvous point (RP) needed (that's the older ASM/PIM-SM world), and the **A/B feed** model (two identical streams from two sources) is trivial — just join both (S,G)s and arbitrate.
+- **The socket recipe:** `IP_ADD_SOURCE_MEMBERSHIP` to join the (S,G); **`SO_REUSEADDR`/`SO_REUSEPORT`** so multiple processes can bind the same group/port; and size **`SO_RCVBUF`** (capped by `net.core.rmem_max`) for the burst — market-data bursts are spiky.
+- **A/B arbitration:** feeds carry **sequence numbers**; you take whichever of A/B delivers each sequence first and detect a **gap** when a number is missing.
+
+<span class="tag warn">"Gapping" — the interview scenario</span> a gap is almost **never the network** — it's the **receiver's socket buffer overrunning** under a burst: packets arrive fine, the app reads too slowly, the buffer fills, UDP drops them → missing sequence → you must re-request / fail over to the B feed. The fingerprint is **`RcvbufErrors` in `netstat -su`**, not interface errors. Fix = bigger `SO_RCVBUF`/`rmem_max` + a faster reader (or kernel bypass). This ties straight back to the receive-path slide — gapping *is* a socket-buffer drop.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### PTP / hardware timestamping
+
+- **Why:** MiFID II / RTS-25 traceable µs timestamps + latency measurement. NTP (ms) is not enough.
+- **How:** GPS grandmaster → boundary/transparent clocks in every switch (correct for queue/residence) → **NIC hardware timestamping (ns)**
+- **Linux:** `linuxptp` = **`ptp4l`** (PTP on the wire) + **`phc2sys`** (sync system clock to the NIC PHC) + **`ts2phc`** (discipline the PHC to a 1PPS/GPS source)
+- **Clock roles:** ordinary (endpoint) · **boundary** (re-times per port) · **transparent** (corrects residence time)
+- **SW vs HW timestamping** (`SO_TIMESTAMPING`) — HW (NIC PHC) = ns; SW = µs and jittery
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Troubleshooting toolkit
+
+- **Sockets** — `ss -tanp` (states, queues), `ss -i` (rtt / retrans / cwnd)
+- **NIC** — `ethtool -S` (drops/overruns), `-g` (ring), `-c` (coalescing), `ip -s link`
+- **Counters** — `/proc/net/snmp`, `/proc/net/softnet_stat` (backlog drops), `netstat -su` (`RcvbufErrors`)
+- **Live** — `perf top`, `bpftrace`, `tcpdump`/`tshark`, `mtr` for the path
+- **Overrun signature:** rising `rx_dropped` + `RcvbufErrors` under load while CPU sits idle → ring/backlog/socket, not bandwidth
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Sysadmin & scripting (interviews lean here)
+
+- **systemd** — `systemctl status/restart`, **`journalctl -u`**, unit `ExecStart`/`User`/perms
+- **processes** — `top -H`, `pidstat`; `SIGTERM` vs `SIGKILL`; **`D`-state = I/O wait**, not CPU
+- **permissions** — `ls -l`, `chmod`/`chown`, **`namei -l`** to walk a path; SSH key must be `600`
+- **disk** — `df` vs `du`; **deleted-but-open file** → `lsof +L1`; LVM / `fstab` / mounts
+- **scripting** — `grep`/`awk`/`sed` pipelines; `ss`, `/proc/net` for sockets
+- The classics: *"service won't start / disk full / load high / can't reach a host — walk me through it."*
+  </textarea>
+  </section>
+</section>
+
+<!-- ============ SECTION 19 — COMBINED LAB ============ -->
+<section>
+  <section data-markdown>
+  <textarea data-template>
+## 19 · Lab — AWS box + Linux diagnostics
+
+Build a VPC + a public EC2 Linux box (the AWS lab), then run the Linux diagnose-it scenarios **on that same box**. Faz drives; captures added live.
+
+<span class="tag warn">Cost</span> t3.micro = free-tier $0 · NAT GW / S2S-VPN are paid → tear down same day.
+
+↓ AWS build → Linux drills
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### AWS build — click-path
+
+1. **VPC** `10.0.0.0/16` → **public subnet** `10.0.1.0/24`
+2. **IGW** → attach → route table `0.0.0.0/0 → IGW`
+3. **Security group** — inbound SSH 22 from **my public IP /32 only**
+4. **Key pair** (`chmod 400 key.pem`) → launch **t3.micro** (AL2023), public IP on
+5. `ssh -i key.pem ec2-user@<ip>` → `curl -s https://ifconfig.me ; ping -c2 8.8.8.8`
+
+*(capture: console + SSH session — tomorrow)*
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### AWS stretch — public vs private
+
+- Private subnet `10.0.2.0/24` (no IGW route) → **NAT GW** in the public subnet → route `0/0 → natgw`
+- 2nd instance, **no public IP** → it can `curl ifconfig.me` (egress) but is **unreachable inbound**
+- This is the public-vs-private/egress point interviewers probe. **⚠️ delete the NAT GW same day.**
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Linux drill — the receive path (multicast gapping)
+
+- **Inject:** fast UDP multicast sender vs a small-`SO_RCVBUF` receiver
+- **Symptom:** consumer dropping packets under load
+- **Diagnose:** `netstat -su` / `ss -u` → **`RcvbufErrors`** climbing
+- **Fix:** raise `net.core.rmem_max` + set `SO_RCVBUF`; size to burst × rate
+
+*(capture tomorrow)*
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Linux drill — diagnose-it set
+
+One at a time; only the symptom given, Faz drives:
+
+- **`tc netem`** loss/delay → `ping`, `tc qdisc show`
+- **Disk full** + deleted-held-open → `df`, `du -xsh`, **`lsof +L1`**
+- **systemd unit** won't start → `systemctl status`, **`journalctl -u`**
+- **Runaway load** → `top -H`, `pidstat`, CPU vs `D`-state
+- **Perms block** → `ls -l`, **`namei -l`**, `chmod`/`chown`
+- **Can't reach host** → **`ip route get`** vs **`nft list ruleset`**
+- **NIC counters** → `ethtool -S`, `ip -s link`
+
+*(captures filled tomorrow, one per scenario)*
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Concept-only — whiteboard, not labbed
+
+Need real NICs/hardware — know them cold, don't waste lab time:
+
+- **Kernel bypass** — DPDK / Solarflare-Onload / AF_XDP
+- **PTP hardware timestamping** — `ptp4l` + `phc2sys`, NIC PHC
+- **NIC IRQ-affinity tuning at line rate** — RSS queues, `smp_affinity`
+  </textarea>
+  </section>
+</section>
+
+<!-- ============ SECTION 20 — EVPN-VXLAN THEORY ============ -->
+<section>
+  <section data-markdown>
+  <textarea data-template>
+## 20 · EVPN-VXLAN — control &amp; data plane
+
+The modern DC fabric: a **VXLAN dataplane** (L2/L3 over an IP underlay) driven by a **BGP-EVPN control plane** (MP-BGP advertises MAC / IP / prefix). Replaces flood-and-learn with a routed control plane.
+
+- **Underlay** — eBGP-CLOS (RFC 7938), loopback reachability, ECMP
+- **Overlay** — MP-BGP EVPN (AFI 25 / SAFI 70), a VTEP per leaf
+- **Multi-tenancy** — L2 segment = **L2VNI**; per-VRF routing = **L3VNI**; RD/RT scope
+
+↓ the mental model → topology → underlay/overlay → encap → packet walk → route types → RD/RT → IRB → BUM → multihoming → mobility
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### The mental model — two networks stacked
+
+A DC fabric is **two networks running on the same boxes**, each with its own data plane + control plane:
+
+| Layer | Data plane | Control plane | Carries |
+|-------|-----------|---------------|---------|
+| **Underlay** | IP routing | **eBGP** (RFC 7938) | only **leaf loopback** reachability — "how do I reach VTEP X" |
+| **Overlay** | **VXLAN** (encapsulation) | **EVPN** (BGP AFI 25) | which **MAC/host** sits behind which leaf |
+
+- **Leaves are the VTEPs** (VXLAN Tunnel End Points) — they encap/decap. Spines just route the outer IP; they never see tenant MACs.
+- **VNI** = the tenant/segment ID inside the VXLAN header (24-bit → 16M segments).
+- Get this split and everything else is detail: *underlay finds the leaf, overlay finds the host.*
+  </textarea>
+  </section>
+
+  <section>
+    <h3>Spine-leaf (Clos) — physical topology</h3>
+    <div class="mermaid">
+graph TB
+  SP1["Spine 1"]
+  SP2["Spine 2"]
+  L1["Leaf 1<br/>(VTEP)"]
+  L2["Leaf 2<br/>(VTEP)"]
+  L3["Leaf 3<br/>(VTEP)"]
+  SP1 --- L1
+  SP1 --- L2
+  SP1 --- L3
+  SP2 --- L1
+  SP2 --- L2
+  SP2 --- L3
+  H1["Server A"] --- L1
+  H2["Server B"] --- L3
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;">Every leaf connects to <b>every</b> spine; <b>spines never interconnect</b>, leaves never interconnect. Any server→server = leaf→spine→leaf = <b>uniform 2 hops</b>, with <b>massive ECMP</b> (one path per spine). <b>No STP</b> — it's all L3. Add spines for bandwidth, add leaves for ports.</p>
+  </section>
+
+  <section>
+    <h3>Underlay vs overlay — the two stacked layers</h3>
+    <div class="mermaid">
+graph TB
+  subgraph OV["OVERLAY — tenant view"]
+    direction LR
+    SA["Server A"] -.->|"VXLAN tunnel (EVPN-signalled)"| SB["Server B"]
+  end
+  subgraph UL["UNDERLAY — physical IP fabric"]
+    direction LR
+    LA["Leaf1/VTEP"] --- S["Spine"] --- LB["Leaf3/VTEP"]
+  end
+  OV -. "rides on top of" .-> UL
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;"><b>Underlay</b> (bottom): plain IP, eBGP carries only VTEP loopbacks. <b>Overlay</b> (top): the VXLAN tunnel between two VTEPs, with EVPN telling each VTEP where every MAC lives. The tenant thinks A and B share a LAN; physically it's IP + encapsulation.</p>
+  </section>
+
+  <section>
+    <h3>VXLAN encapsulation — packet format</h3>
+    <div class="mermaid">
+graph LR
+  ORIG["Original frame<br/>(tenant MAC/IP + VLAN)"] --> VX["+ VXLAN<br/>(24-bit VNI)"]
+  VX --> UDP["+ UDP<br/>(dst 4789,<br/>src = flow hash)"]
+  UDP --> OIP["+ Outer IP<br/>(src VTEP → dst VTEP)"]
+  OIP --> WIRE(("onto the<br/>underlay"))
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;">Ingress VTEP wraps the original frame: <b>outer IP (VTEP→VTEP) | UDP | VXLAN+VNI | original frame</b> — "MAC-in-UDP". Outer src-UDP-port = inner-flow hash → gives the spines ECMP entropy. Adds <b>~50 bytes</b> → underlay MTU must be jumbo (<b>9216</b>) or you fragment/drop.</p>
+  </section>
+
+  <section>
+    <h3>End-to-end packet walk</h3>
+    <div class="mermaid">
+graph LR
+  SA["Server A"] -->|"plain frame"| L1["Ingress Leaf<br/>VTEP: encap<br/>(look up B → behind Leaf3,<br/>wrap in VXLAN to Leaf3 loopback)"]
+  L1 -->|"outer IP packet"| SP["Spine<br/>routes on OUTER IP only<br/>(never sees tenant MAC)"]
+  SP -->|"outer IP packet"| L3["Egress Leaf<br/>VTEP: decap<br/>(strip VXLAN → original frame)"]
+  L3 -->|"plain frame"| SB["Server B"]
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;">The spine is a pure IP router — it forwards on the outer VTEP-to-VTEP IP and is oblivious to tenants/VNIs. All the intelligence is at the leaves (the VTEPs). EVPN pre-populated Leaf1 with "MAC-B is behind Leaf3's loopback", so there's no flooding.</p>
+  </section>
+
+  <section>
+    <h3>VXLAN dataplane — encapsulation</h3>
+    <div class="mermaid">
+graph LR
+  F["Original L2 frame"] --> V["+ VXLAN header (24-bit VNI)"]
+  V --> U["+ UDP (dst 4789, src = inner-flow hash)"]
+  U --> I["+ outer IP (src/dst = VTEP loopbacks)"]
+  I --> W(("underlay / ECMP"))
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;">VTEP encaps/decaps. 24-bit VNI = 16M segments. Source UDP port = inner-flow hash → ECMP entropy across the fabric. +50B overhead → underlay needs jumbo MTU (~9000).</p>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### VNIs and why a control plane
+
+- **L2VNI** = a bridge domain (VLAN-equivalent, MAC scope) · **L3VNI** = a routing instance (per VRF)
+- Classic VXLAN = **flood-and-learn** (multicast or ingress-replication, no control plane) → doesn't scale, slow convergence
+- **EVPN** = MP-BGP advertises reachability → control-plane MAC/IP learning, **ARP suppression**, **MAC mobility**, **multihoming**
+- AFI/SAFI **25/70**; iBGP with RR on spines, or eBGP-EVPN. Same control plane runs over VXLAN **or** MPLS dataplane.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### EVPN route types
+
+| Type | Name | Role |
+|------|------|------|
+| **1** | Ethernet A-D | multihoming: per-ES **mass-withdraw** + per-EVI **aliasing** |
+| **2** | MAC/IP advertisement | host MAC (+IP); ARP/ND suppression; MAC mobility |
+| **3** | Inclusive Multicast (IMET) | BUM flood list per VNI |
+| **4** | Ethernet Segment | **DF election** for a multihomed segment |
+| **5** | IP Prefix | L3 / inter-subnet (symmetric IRB, summarisation, external) |
+
+Type-2/3/5 are the everyday ones; 1/4 appear once you multihome.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### RD &amp; RT — uniqueness and isolation
+
+- **RD (Route Distinguisher)** — prepended per EVI/VRF so overlapping tenant MAC/IP stay unique in BGP (often auto-derived `RID:VNI`)
+- **RT (Route Target)** — extended community controlling **import/export** → which VRF/EVI a route lands in = **tenant isolation**
+- L2VNI RT scopes the bridge domain; L3VNI RT scopes the VRF
+- Flip an RT and the route stops importing on the far leaf — the macro-seg lever (lab demo)
+  </textarea>
+  </section>
+
+  <section>
+    <h3>IRB — symmetric vs asymmetric</h3>
+    <div class="mermaid">
+graph TB
+  subgraph A[Asymmetric IRB]
+    A1["Ingress leaf: route into dest L2VNI"] --> A2["Egress leaf: bridge to host"]
+  end
+  subgraph S[Symmetric IRB]
+    B1["Ingress leaf: route into L3VNI"] --> B2["Egress leaf: route out to host"]
+  end
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;">IRB = routing + bridging at the VTEP, with an <b>anycast gateway</b> (same IP+MAC on every leaf → gateway always local, seamless mobility). Asymmetric needs every VNI on every leaf; <b>symmetric</b> uses one common per-VRF L3VNI → scales, the modern default.</p>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### BUM traffic (broadcast / unknown-unicast / multicast)
+
+- **Type-3 IMET** builds the per-VNI flood list
+- **Ingress replication (head-end)** — source VTEP unicasts a copy to each remote VTEP; no multicast underlay needed (DC default)
+- **Multicast underlay (PIM)** — VNI → multicast group; scales BUM but needs PIM in the fabric
+- **ARP/ND suppression** cuts most BUM anyway — the VTEP answers locally from EVPN-learned MAC/IP
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Multihoming — ESI-LAG
+
+- **Ethernet Segment (ES)** — a host/switch dual-homed to ≥2 leaves, identified by an **ESI**
+- **Type-4** → **DF (Designated Forwarder) election** — one leaf forwards BUM to the host (no duplicates)
+- **Type-1 A-D** → **aliasing** (load-balance unicast across both leaves) + **mass-withdraw** (fast convergence on link loss)
+- **All-active** (both forward) vs **single-active**; replaces MLAG/vPC with a standards-based control plane
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### MAC mobility &amp; loop protection
+
+- Move a host → new **Type-2** with an incremented **MAC mobility sequence number**; highest seq wins, old withdrawn
+- **Duplicate-MAC detection** — N moves in M seconds → freeze + alarm (mis-cable / loop)
+- **Sticky MAC** — pin a MAC so it can't move (security)
+- Anycast gateway means the host's default gateway never changes as it moves
+  </textarea>
+  </section>
+</section>
+
+<!-- ============ SECTION 21 — EVPN-VXLAN LAB ============ -->
+<section>
+  <section data-markdown>
+  <textarea data-template>
+## 21 · Lab — EVPN-VXLAN spine-leaf fabric
+
+Cement the DC strength. **Host:** Docker host ≥8 GB (16 GB comfy) — **cEOS + containerlab, no KVM** (Hetzner box / cloud VM, *not* the laptop). cEOS image free (Arista account).
+
+**Build:** 2 spine + 2 leaf CLOS · **underlay** eBGP (or OSPF) for loopbacks · **overlay** MP-BGP EVPN (iBGP w/ RR on spines, or eBGP-EVPN) · 2 tenants = 2 VRFs · host containers per leaf.
+
+↓ topology → control plane → what to see
+  </textarea>
+  </section>
+
+  <section>
+    <h3>Topology — 2 spine · 2 leaf CLOS</h3>
+    <div class="mermaid">
+graph TB
+  subgraph UL[Underlay: eBGP / OSPF]
+    S1[Spine 1]
+    S2[Spine 2]
+  end
+  L1["Leaf 1 — VTEP"]
+  L2["Leaf 2 — VTEP"]
+  S1 --- L1
+  S1 --- L2
+  S2 --- L1
+  S2 --- L2
+  HA["Host A · Tenant 1"] --- L1
+  HB["Host B · Tenant 2"] --- L1
+  HC["Host C · Tenant 1"] --- L2
+  HD["Host D · Tenant 2"] --- L2
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;">Spines carry the eBGP/OSPF underlay (every VTEP loopback reachable). Leaves are VTEPs running BGP-EVPN overlay. Hosts split across two tenants (VRFs). VXLAN tunnels run leaf ↔ leaf.</p>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Underlay + overlay
+
+- **Underlay** — eBGP (RFC 7938, ASN per leaf) or OSPF; only job = every VTEP loopback reachable
+- **Overlay** — MP-BGP **EVPN** (AFI/SAFI 25/70); spines as route-reflectors (iBGP), or eBGP-EVPN
+- **VTEP** = each leaf; VXLAN encaps L2/L3 between leaves over the underlay
+- **RD** makes each VRF/EVI's routes unique · **RT** import/export = tenant isolation
+  </textarea>
+  </section>
+
+  <section>
+    <h3>Overlay — VXLAN dataplane + EVPN control plane</h3>
+    <div class="mermaid">
+graph LR
+  HA[Host A] --> L1["Leaf 1 / VTEP"]
+  L1 ==>|"VXLAN VNI 10010 over IP underlay"| L2["Leaf 2 / VTEP"]
+  L2 --> HC[Host C]
+  L1 -.->|"BGP-EVPN Type-2 MAC/IP"| L2
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center;">Dataplane = VXLAN tunnel leaf→leaf over the IP underlay. Control plane = BGP-EVPN: Type-2 (MAC/IP), Type-3 (flood list), Type-5 (prefix). RD scopes routes per VRF; RT controls import/export.</p>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### EVPN route types — what `show bgp evpn` shows
+
+| Type | Carries | Used for |
+|------|---------|----------|
+| **Type-2** | MAC (+ IP) | host reachability · ARP suppression · MAC mobility |
+| **Type-3** | Inclusive Multicast (IMET) | BUM flood list per VNI |
+| **Type-5** | IP prefix | inter-subnet / L3 (symmetric IRB, prefix advertise) |
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### What to SEE (the demos)
+
+- `show bgp evpn` — Type-2/3/5 routes flowing
+- **Tenant isolation:** flip an **RT** → watch a route stop importing
+- **VLAN → VNI** at the VTEP: `show vxlan vtep`, `show vxlan address-table`
+- **MAC mobility:** move a host → new Type-2 with a bumped sequence number
+- **ARP suppression:** VTEP answers ARP locally from EVPN-learned MAC/IP
+- **Inter-VRF vs intra-VRF** reachability = **macro-segmentation** in action
+
+*(captures filled when run on the Docker host)*
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Out of scope — whiteboard only
+
+**Micro-segmentation policy** (intra-VRF): Cisco **TrustSec SGT/GBP** vs Arista **MSS-Group** — different mechanisms, not portable.
+
+Demonstrate **macro-seg via VRF/RT** in the lab; keep micro-seg **conceptual** unless the platform does it cleanly.
   </textarea>
   </section>
 </section>
@@ -2693,7 +3789,7 @@ Three-way choice:
 <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/markdown/markdown.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
 <script>
   mermaid.initialize({
     startOnLoad: false,
@@ -2724,16 +3820,19 @@ Three-way choice:
     maxScale: 1.5,
     plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ],
   });
-  // Render all mermaid diagrams once reveal is ready (markdown plugin processes async)
-  Reveal.on('ready', () => {
-    setTimeout(() => mermaid.run({ querySelector: '.mermaid' }), 200);
-  });
-  // Re-render on slide change in case a diagram is being seen first time
-  Reveal.on('slidechanged', () => {
-    document.querySelectorAll('.mermaid:not([data-processed])').forEach(el => {
+  // Render each diagram only when its slide is the current (visible) one.
+  // Rendering inside a display:none slide makes mermaid mis-measure text, so
+  // diagrams on non-current slides intermittently blank out or error. Scoping
+  // each render to the visible slide makes it deterministic.
+  function renderCurrentMermaid() {
+    const cur = Reveal.getCurrentSlide();
+    if (!cur) return;
+    cur.querySelectorAll('.mermaid:not([data-processed])').forEach(el => {
       try { mermaid.run({ nodes: [el] }); } catch (e) {}
     });
-  });
+  }
+  Reveal.on('ready', renderCurrentMermaid);
+  Reveal.on('slidechanged', renderCurrentMermaid);
 </script>
 <style>
   .mermaid { background: #1e1e1e; padding: 8px; border-radius: 6px; text-align: center; }
