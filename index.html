@@ -1199,23 +1199,26 @@ The **Adj-SID** is critical — it lets the PLR encode "go via *this specific li
   </section>
 
   <section>
-    <h3>TI-LFA P-space / Q-space — visual</h3>
+    <h3>TI-LFA on the square — what the repair actually does</h3>
     <div class="mermaid">
 graph LR
-  PE1[PE1] --- R1[R1 / PLR]
-  R1 -.->|"✗ failed link"| R2[R2]
-  R2 --- R3
-  R1 ===|"alt path"| R3[R3 / PQ-node]
-  R3 --- PE2[PE2]
-  style R1 fill:#6b3a1a,color:#fff,stroke:#ce9178
-  style R3 fill:#1e4620,color:#fff,stroke:#b5cea8
-  style R2 fill:#333,color:#888,stroke-dasharray:5 5
+  p1(("p1<br/>PLR"))
+  pe1(("pe1"))
+  p2(("p2"))
+  pe2(("pe2<br/>destination"))
+  p1 ---|"primary — FAILS"| pe2
+  p1 ---|"1"| pe1
+  pe1 ---|"2"| p2
+  p2 ---|"3"| pe2
+  linkStyle 0 stroke:#ce9178,stroke-width:3px,stroke-dasharray:6 4
+  linkStyle 1 stroke:#b5cea8,stroke-width:4px
+  linkStyle 2 stroke:#b5cea8,stroke-width:4px
+  linkStyle 3 stroke:#b5cea8,stroke-width:4px
     </div>
-    <p style="font-size: 0.7em; color: #ccc; text-align: center; margin-top: 10px;">
-      <b style="color:#ce9178">PLR (R1)</b> loses R1-R2. Primary nexthop to PE2 was R2.<br/>
-      <b>P-space of R1</b> (excluding failure) = {R3, PE1} reachable directly without crossing R1-R2.<br/>
-      <b>Q-space of PE2</b> (excluding failure) = {R3, R1} can reach PE2 without crossing R1-R2.<br/>
-      <b style="color:#b5cea8">PQ-node = R3</b>. Repair list at R1 = <code>[Node-SID(R3)]</code> — packet tunnels to R3, then native to PE2.
+    <p style="font-size: 0.78em; color: #ccc; text-align: center; margin-top: 10px;">
+      <b style="color:#ce9178">p1's direct link to pe2 (its primary) fails.</b> On a square there is <b>no loop-free LFA</b> — p1's only other neighbour is pe1, and sending there risks looping the packet straight back.<br/><br/>
+      So TI-LFA encodes the <b>post-convergence path as a SID list</b>: at p1, push <code>[Node-SID p2 = 900003, Node-SID pe2 = 900004]</code> and send out the pe1 link. Those labels steer the packet <b style="color:#b5cea8">p1 → pe1 → p2 → pe2</b> — the exact path IGP installs once it converges, so <b>no micro-loop</b>.<br/><br/>
+      Two SIDs, not one, because the square has <b>no single PQ-node</b> that sees both sides of the break. This is the lab's <code>repair = [p2, pe2]</code>.
     </p>
   </section>
 
