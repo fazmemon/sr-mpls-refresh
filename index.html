@@ -1130,23 +1130,6 @@ Sub-50ms switchover at the PLR. **State everywhere** — every transit holds byp
   </textarea>
   </section>
 
-  <section>
-    <h3>Gen 1 — RSVP-TE FRR: the pre-built bypass</h3>
-    <div class="mermaid">
-graph LR
-  HE(("Head-end")) ==> PLR(("PLR"))
-  PLR -. "protected link FAILS" .-> N(("next-hop"))
-  N ==> MP(("merge point"))
-  MP ==> TAIL(("tail"))
-  PLR == "pre-signalled bypass LSP" ==> MP
-  linkStyle 1 stroke:#ce9178,stroke-width:3px,stroke-dasharray:6 4
-  linkStyle 4 stroke:#b5cea8,stroke-width:4px
-    </div>
-    <p style="font-size: 0.78em; color: #ccc; text-align: center; margin-top: 10px;">
-      Before any failure, the <b>PLR</b> already holds a <b style="color:#b5cea8">pre-signalled bypass LSP</b> around the protected link to a downstream merge point. The link fails → the PLR splices traffic onto the bypass in <b>&lt;50 ms</b>. One bypass can protect many primaries sharing that link (<b>facility / 1:N backup</b>). Cost: every transit node carries RSVP bypass state.
-    </p>
-  </section>
-
   <section data-markdown>
   <textarea data-template>
 ### Gen 2 — IP LFA (Loop-Free Alternate)
@@ -1163,23 +1146,6 @@ Each router precomputes LFAs from IGP TE-DB.
 
 Operators wanted IP-FRR without RSVP, but topology often refused.
   </textarea>
-  </section>
-
-  <section>
-    <h3>Gen 2 — IP LFA: a loop-free neighbour</h3>
-    <div class="mermaid">
-graph LR
-  P(("P · PLR")) -. "primary link FAILS" .-> N(("N"))
-  N ==> D(("D · dest"))
-  P == "loop-free alternate" ==> A(("A"))
-  A ==> D
-  linkStyle 0 stroke:#ce9178,stroke-width:3px,stroke-dasharray:6 4
-  linkStyle 2 stroke:#b5cea8,stroke-width:4px
-  linkStyle 3 stroke:#b5cea8,stroke-width:4px
-    </div>
-    <p style="font-size: 0.78em; color: #ccc; text-align: center; margin-top: 10px;">
-      Pure IP, no tunnel. Neighbour <b>A</b> is a loop-free alternate only if <code>dist(A,D) &lt; dist(A,P) + dist(P,D)</code> — i.e. A's own shortest path to D does <b>not</b> come back through P. If it does, the packet loops. On rings and squares no neighbour satisfies it → <b>coverage only 50-80%</b>.
-    </p>
   </section>
 
   <section data-markdown>
@@ -1200,22 +1166,6 @@ Coverage 90–99% — most topologies have a PQ-node somewhere.
   </textarea>
   </section>
 
-  <section>
-    <h3>Gen 3 — Remote LFA: tunnel to a PQ-node</h3>
-    <div class="mermaid">
-graph LR
-  PLR(("PLR")) -. "no LFA — link FAILS" .-> X(("next-hop"))
-  PLR == "tunnel (T-LDP)" ==> PQ(("PQ-node<br/>in P and Q space"))
-  PQ ==> D(("D · dest"))
-  linkStyle 0 stroke:#ce9178,stroke-width:3px,stroke-dasharray:6 4
-  linkStyle 1 stroke:#b5cea8,stroke-width:4px
-  linkStyle 2 stroke:#b5cea8,stroke-width:4px
-    </div>
-    <p style="font-size: 0.78em; color: #ccc; text-align: center; margin-top: 10px;">
-      When <b>no direct neighbour</b> qualifies, the PLR tunnels (T-LDP) to a <b>PQ-node</b> — one both in the PLR's <b>P-space</b> (reachable without the failed link) and the destination's <b>Q-space</b> (can reach D without it). From there it's native forwarding to D. Covers <b>90-99%</b>; fails when P ∩ Q is empty.
-    </p>
-  </section>
-
   <section data-markdown>
   <textarea data-template>
 ### Gen 4 — TI-LFA (Topology-Independent LFA)
@@ -1230,24 +1180,6 @@ Three key properties:
 Repair list = stack of SIDs that bypasses the failure and lands on the post-convergence next-hop.
 Typically **1–3 SIDs deep**.
   </textarea>
-  </section>
-
-  <section>
-    <h3>Gen 4 — TI-LFA: the repair is a SID list</h3>
-    <div class="mermaid">
-graph LR
-  PLR(("PLR")) -. "link FAILS" .-> N(("next-hop"))
-  PLR == "push SID list" ==> T1(("transit"))
-  T1 ==> T2(("transit"))
-  T2 ==> D(("D · dest"))
-  linkStyle 0 stroke:#ce9178,stroke-width:3px,stroke-dasharray:6 4
-  linkStyle 1 stroke:#b5cea8,stroke-width:4px
-  linkStyle 2 stroke:#b5cea8,stroke-width:4px
-  linkStyle 3 stroke:#b5cea8,stroke-width:4px
-    </div>
-    <p style="font-size: 0.78em; color: #ccc; text-align: center; margin-top: 10px;">
-      The PLR pushes a <b>SID list (1-3 labels)</b> that encodes the <b>post-convergence path</b> — the exact path IGP installs after it reconverges. Transit nodes do ordinary SR forwarding: <b>no bypass tunnels, no per-LSP state anywhere</b>. 100% coverage if any post-failure path exists, and because the repair already follows the post-convergence path there is <b>no micro-loop</b>.
-    </p>
   </section>
 
   <section data-markdown>
@@ -1267,42 +1199,23 @@ The **Adj-SID** is critical — it lets the PLR encode "go via *this specific li
   </section>
 
   <section>
-    <h3>How the repair list is computed — the decision</h3>
-    <div class="mermaid">
-graph TB
-  A["P-space of PLR<br/>(exclude failed link)"] --> C{"P and Q<br/>overlap?"}
-  B["Q-space of dest<br/>(exclude failed link)"] --> C
-  C -->|"yes: PQ-node exists"| D["repair = Node-SID(PQ)<br/>one SID"]
-  C -->|"no"| E["reach a P-node, then Adj-SID<br/>into a Q-node: two SIDs"]
-  E --> F["still nothing? add another<br/>Node-SID hop — stack grows"]
-  style D fill:#1e4620,color:#fff,stroke:#b5cea8
-    </div>
-    <p style="font-size: 0.78em; color: #ccc; text-align: center; margin-top: 10px;">
-      Best case is a single <b>PQ-node</b> (one Node-SID). No PQ-node → reach a P-node, then an <b>Adj-SID</b> forces the specific link into Q-space (two SIDs — the square case). The Adj-SID is what lets the PLR say "out <i>this</i> link" without disturbing the rest of the path.
-    </p>
-  </section>
-
-  <section>
-    <h3>TI-LFA on the square — what the repair actually does</h3>
+    <h3>TI-LFA P-space / Q-space — visual</h3>
     <div class="mermaid">
 graph LR
-  p1(("p1<br/>PLR"))
-  pe1(("pe1"))
-  p2(("p2"))
-  pe2(("pe2<br/>destination"))
-  p1 ---|"primary — FAILS"| pe2
-  p1 ---|"1"| pe1
-  pe1 ---|"2"| p2
-  p2 ---|"3"| pe2
-  linkStyle 0 stroke:#ce9178,stroke-width:3px,stroke-dasharray:6 4
-  linkStyle 1 stroke:#b5cea8,stroke-width:4px
-  linkStyle 2 stroke:#b5cea8,stroke-width:4px
-  linkStyle 3 stroke:#b5cea8,stroke-width:4px
+  PE1[PE1] --- R1[R1 / PLR]
+  R1 -.->|"✗ failed link"| R2[R2]
+  R2 --- R3
+  R1 ===|"alt path"| R3[R3 / PQ-node]
+  R3 --- PE2[PE2]
+  style R1 fill:#6b3a1a,color:#fff,stroke:#ce9178
+  style R3 fill:#1e4620,color:#fff,stroke:#b5cea8
+  style R2 fill:#333,color:#888,stroke-dasharray:5 5
     </div>
-    <p style="font-size: 0.78em; color: #ccc; text-align: center; margin-top: 10px;">
-      <b style="color:#ce9178">p1's direct link to pe2 (its primary) fails.</b> On a square there is <b>no loop-free LFA</b> — p1's only other neighbour is pe1, and sending there risks looping the packet straight back.<br/><br/>
-      So TI-LFA encodes the <b>post-convergence path as a SID list</b>: at p1, push <code>[Node-SID p2 = 900003, Node-SID pe2 = 900004]</code> and send out the pe1 link. Those labels steer the packet <b style="color:#b5cea8">p1 → pe1 → p2 → pe2</b> — the exact path IGP installs once it converges, so <b>no micro-loop</b>.<br/><br/>
-      Two SIDs, not one, because the square has <b>no single PQ-node</b> that sees both sides of the break. This is the lab's <code>repair = [p2, pe2]</code>.
+    <p style="font-size: 0.7em; color: #ccc; text-align: center; margin-top: 10px;">
+      <b style="color:#ce9178">PLR (R1)</b> loses R1-R2. Primary nexthop to PE2 was R2.<br/>
+      <b>P-space of R1</b> (excluding failure) = {R3, PE1} reachable directly without crossing R1-R2.<br/>
+      <b>Q-space of PE2</b> (excluding failure) = {R3, R1} can reach PE2 without crossing R1-R2.<br/>
+      <b style="color:#b5cea8">PQ-node = R3</b>. Repair list at R1 = <code>[Node-SID(R3)]</code> — packet tunnels to R3, then native to PE2.
     </p>
   </section>
 
@@ -3895,7 +3808,7 @@ Three-way choice:
   });
   Reveal.initialize({
     hash: true,
-    slideNumber: false,
+    slideNumber: 'c/t',
     controls: true,
     progress: true,
     transition: 'slide',
