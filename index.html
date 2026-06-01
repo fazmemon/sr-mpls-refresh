@@ -3476,18 +3476,6 @@ graph LR
     <p style="font-size: 0.7em; color: #888; text-align: center;">The spine is a pure IP router — it forwards on the outer VTEP-to-VTEP IP and is oblivious to tenants/VNIs. All the intelligence is at the leaves (the VTEPs). EVPN pre-populated Leaf1 with "MAC-B is behind Leaf3's loopback", so there's no flooding.</p>
   </section>
 
-  <section>
-    <h3>VXLAN dataplane — encapsulation</h3>
-    <div class="mermaid">
-graph LR
-  F["Original L2 frame"] --> V["+ VXLAN header (24-bit VNI)"]
-  V --> U["+ UDP (dst 4789, src = inner-flow hash)"]
-  U --> I["+ outer IP (src/dst = VTEP loopbacks)"]
-  I --> W(("underlay / ECMP"))
-    </div>
-    <p style="font-size: 0.7em; color: #888; text-align: center;">VTEP encaps/decaps. 24-bit VNI = 16M segments. Source UDP port = inner-flow hash → ECMP entropy across the fabric. +50B overhead → underlay needs jumbo MTU (~9000).</p>
-  </section>
-
   <section data-markdown>
   <textarea data-template>
 ### VNIs and why a control plane
