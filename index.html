@@ -1165,6 +1165,23 @@ Operators wanted IP-FRR without RSVP, but topology often refused.
   </textarea>
   </section>
 
+  <section>
+    <h3>Gen 2 — IP LFA: a loop-free neighbour</h3>
+    <div class="mermaid">
+graph LR
+  P(("P · PLR")) -. "primary link FAILS" .-> N(("N"))
+  N ==> D(("D · dest"))
+  P == "loop-free alternate" ==> A(("A"))
+  A ==> D
+  linkStyle 0 stroke:#ce9178,stroke-width:3px,stroke-dasharray:6 4
+  linkStyle 2 stroke:#b5cea8,stroke-width:4px
+  linkStyle 3 stroke:#b5cea8,stroke-width:4px
+    </div>
+    <p style="font-size: 0.78em; color: #ccc; text-align: center; margin-top: 10px;">
+      Pure IP, no tunnel. Neighbour <b>A</b> is a loop-free alternate only if <code>dist(A,D) &lt; dist(A,P) + dist(P,D)</code> — i.e. A's own shortest path to D does <b>not</b> come back through P. If it does, the packet loops. On rings and squares no neighbour satisfies it → <b>coverage only 50-80%</b>.
+    </p>
+  </section>
+
   <section data-markdown>
   <textarea data-template>
 ### Gen 3 — Remote LFA (RLFA)
@@ -1183,6 +1200,22 @@ Coverage 90–99% — most topologies have a PQ-node somewhere.
   </textarea>
   </section>
 
+  <section>
+    <h3>Gen 3 — Remote LFA: tunnel to a PQ-node</h3>
+    <div class="mermaid">
+graph LR
+  PLR(("PLR")) -. "no LFA — link FAILS" .-> X(("next-hop"))
+  PLR == "tunnel (T-LDP)" ==> PQ(("PQ-node<br/>in P and Q space"))
+  PQ ==> D(("D · dest"))
+  linkStyle 0 stroke:#ce9178,stroke-width:3px,stroke-dasharray:6 4
+  linkStyle 1 stroke:#b5cea8,stroke-width:4px
+  linkStyle 2 stroke:#b5cea8,stroke-width:4px
+    </div>
+    <p style="font-size: 0.78em; color: #ccc; text-align: center; margin-top: 10px;">
+      When <b>no direct neighbour</b> qualifies, the PLR tunnels (T-LDP) to a <b>PQ-node</b> — one both in the PLR's <b>P-space</b> (reachable without the failed link) and the destination's <b>Q-space</b> (can reach D without it). From there it's native forwarding to D. Covers <b>90-99%</b>; fails when P ∩ Q is empty.
+    </p>
+  </section>
+
   <section data-markdown>
   <textarea data-template>
 ### Gen 4 — TI-LFA (Topology-Independent LFA)
@@ -1199,6 +1232,24 @@ Typically **1–3 SIDs deep**.
   </textarea>
   </section>
 
+  <section>
+    <h3>Gen 4 — TI-LFA: the repair is a SID list</h3>
+    <div class="mermaid">
+graph LR
+  PLR(("PLR")) -. "link FAILS" .-> N(("next-hop"))
+  PLR == "push SID list" ==> T1(("transit"))
+  T1 ==> T2(("transit"))
+  T2 ==> D(("D · dest"))
+  linkStyle 0 stroke:#ce9178,stroke-width:3px,stroke-dasharray:6 4
+  linkStyle 1 stroke:#b5cea8,stroke-width:4px
+  linkStyle 2 stroke:#b5cea8,stroke-width:4px
+  linkStyle 3 stroke:#b5cea8,stroke-width:4px
+    </div>
+    <p style="font-size: 0.78em; color: #ccc; text-align: center; margin-top: 10px;">
+      The PLR pushes a <b>SID list (1-3 labels)</b> that encodes the <b>post-convergence path</b> — the exact path IGP installs after it reconverges. Transit nodes do ordinary SR forwarding: <b>no bypass tunnels, no per-LSP state anywhere</b>. 100% coverage if any post-failure path exists, and because the repair already follows the post-convergence path there is <b>no micro-loop</b>.
+    </p>
+  </section>
+
   <section data-markdown>
   <textarea data-template>
 ### How TI-LFA computes a repair list
@@ -1213,6 +1264,22 @@ The **Adj-SID** is critical — it lets the PLR encode "go via *this specific li
 
 <span class="tag ok">Result</span> repair list pushed at PLR, transit nodes execute as ordinary SR forwarding. **No bypass tunnels anywhere.**
   </textarea>
+  </section>
+
+  <section>
+    <h3>How the repair list is computed — the decision</h3>
+    <div class="mermaid">
+graph TB
+  A["P-space of PLR<br/>(exclude failed link)"] --> C{"P and Q<br/>overlap?"}
+  B["Q-space of dest<br/>(exclude failed link)"] --> C
+  C -->|"yes: PQ-node exists"| D["repair = Node-SID(PQ)<br/>one SID"]
+  C -->|"no"| E["reach a P-node, then Adj-SID<br/>into a Q-node: two SIDs"]
+  E --> F["still nothing? add another<br/>Node-SID hop — stack grows"]
+  style D fill:#1e4620,color:#fff,stroke:#b5cea8
+    </div>
+    <p style="font-size: 0.78em; color: #ccc; text-align: center; margin-top: 10px;">
+      Best case is a single <b>PQ-node</b> (one Node-SID). No PQ-node → reach a P-node, then an <b>Adj-SID</b> forces the specific link into Q-space (two SIDs — the square case). The Adj-SID is what lets the PLR say "out <i>this</i> link" without disturbing the rest of the path.
+    </p>
   </section>
 
   <section>
