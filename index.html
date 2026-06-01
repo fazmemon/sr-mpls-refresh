@@ -1130,6 +1130,23 @@ Sub-50ms switchover at the PLR. **State everywhere** — every transit holds byp
   </textarea>
   </section>
 
+  <section>
+    <h3>Gen 1 — RSVP-TE FRR: the pre-built bypass</h3>
+    <div class="mermaid">
+graph LR
+  HE(("Head-end")) ==> PLR(("PLR"))
+  PLR -. "protected link FAILS" .-> N(("next-hop"))
+  N ==> MP(("merge point"))
+  MP ==> TAIL(("tail"))
+  PLR == "pre-signalled bypass LSP" ==> MP
+  linkStyle 1 stroke:#ce9178,stroke-width:3px,stroke-dasharray:6 4
+  linkStyle 4 stroke:#b5cea8,stroke-width:4px
+    </div>
+    <p style="font-size: 0.78em; color: #ccc; text-align: center; margin-top: 10px;">
+      Before any failure, the <b>PLR</b> already holds a <b style="color:#b5cea8">pre-signalled bypass LSP</b> around the protected link to a downstream merge point. The link fails → the PLR splices traffic onto the bypass in <b>&lt;50 ms</b>. One bypass can protect many primaries sharing that link (<b>facility / 1:N backup</b>). Cost: every transit node carries RSVP bypass state.
+    </p>
+  </section>
+
   <section data-markdown>
   <textarea data-template>
 ### Gen 2 — IP LFA (Loop-Free Alternate)
