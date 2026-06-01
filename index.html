@@ -1758,16 +1758,49 @@ sequenceDiagram
 <section>
   <section data-markdown>
   <textarea data-template>
-## 7 · MPLS load-balancing — hashing, entropy labels, polarisation
+## 7 · Load-balancing — IP &amp; MPLS hashing, entropy labels, polarisation
 
 ECMP and UCMP both *assume* flows distribute reasonably across equal-cost paths. That distribution comes from the **hash function** at each LSR's forwarding engine — and it has limits worth understanding before we get into how ECMP/UCMP actually fail.
 
-Four slides:
-1. What LSRs hash on (and where it falls down)
-2. Entropy Label — the fix for deep stacks and non-IP payloads
-3. IPv6 flow label / SRv6 hashing
-4. Polarisation & mitigations
+Starts with **plain IP/L3 ECMP** (no MPLS), then the MPLS-specific machinery:
+1. IP/L3 ECMP — load-balancing without MPLS
+2. What an LSR hashes on under a label stack (and where it falls down)
+3. Entropy Label — the fix for deep stacks and non-IP payloads
+4. IPv6 flow label / SRv6 hashing
+5. Polarisation & mitigations
   </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### IP / L3 ECMP — load-balancing without MPLS
+
+Most enterprise &amp; DC fabrics load-balance on **plain IP**, no MPLS at all.
+
+- Equal-cost next-hops come from the IGP (OSPF/IS-IS equal metric) or **BGP multipath** (the eBGP-CLOS underlay)
+- The router hashes the **5-tuple** (src/dst IP, proto, src/dst port) → picks **one** next-hop **per flow** — every packet of a flow takes the same path, so no reordering
+- It reads the IP header **directly** — no label stack to peek under, so none of the MPLS "can't find the inner IP" problems
+- **Same failure modes still apply:** polarisation (fix = per-router hash seed), elephant flows (one 5-tuple can't be split), per-packet spray would reorder
+
+<span class="tag ok">This is the default in eBGP-CLOS DC fabrics and any IP core.</span> MPLS just adds the label-stack complication the next slides cover.
+  </textarea>
+  </section>
+
+  <section>
+    <h3>IP / L3 ECMP — flows spread across equal-cost paths</h3>
+    <div class="mermaid">
+graph LR
+  H(("hosts")) ==> R(("router<br/>5-tuple hash"))
+  R ==>|"flow A"| P1(("path 1"))
+  R ==>|"flow B"| P2(("path 2"))
+  R ==>|"flow C"| P3(("path 3"))
+  P1 ==> D(("dest"))
+  P2 ==> D
+  P3 ==> D
+    </div>
+    <p style="font-size: 0.78em; color: #ccc; text-align: center; margin-top: 10px;">
+      Equal-cost next-hops (IGP equal metric or BGP multipath). The router hashes each flow's 5-tuple to <b>one</b> path — per-flow, not per-packet, so packets stay in order. Plain IP: the router reads the inner IP header directly, no label stack involved.
+    </p>
   </section>
 
   <section data-markdown>
@@ -2018,6 +2051,21 @@ UCMP = weighted ECMP. FIB bucket table programmed proportional to weights.
   </textarea>
   </section>
 
+  <section>
+    <h3>Failure mode #1 — asymmetric capacity</h3>
+    <div class="mermaid">
+graph LR
+  R(("router<br/>ECMP 50/50")) ==>|"50%"| A(("400G link<br/>half idle"))
+  R ==>|"50%"| B(("100G link<br/>SATURATED"))
+  A ==> D(("dest"))
+  B ==> D
+  linkStyle 1 stroke:#ce9178,stroke-width:5px
+    </div>
+    <p style="font-size: 0.78em; color: #ccc; text-align: center; margin-top: 10px;">
+      ECMP splits flows <b>evenly by count</b> — it has no idea the links differ in capacity. A 400G + 100G pair gets 50/50: the <b style="color:#ce9178">100G link saturates</b> while the 400G sits ¾ idle. Equal-cost ≠ equal-capacity → you need to weight the split (UCMP).
+    </p>
+  </section>
+
   <section data-markdown>
   <textarea data-template>
 ### UCMP options — without SR
@@ -2032,6 +2080,22 @@ UCMP = weighted ECMP. FIB bucket table programmed proportional to weights.
 - **Static + weights** — doesn't scale
 
   </textarea>
+  </section>
+
+  <section>
+    <h3>The UCMP fix — weighted split via DMZ-Link-Bandwidth</h3>
+    <div class="mermaid">
+graph LR
+  R(("router<br/>UCMP 80/20")) ==>|"80%"| A(("400G link"))
+  R ==>|"20%"| B(("100G link"))
+  A ==> D(("dest"))
+  B ==> D
+  linkStyle 0 stroke:#b5cea8,stroke-width:6px
+  linkStyle 1 stroke:#b5cea8,stroke-width:2px
+    </div>
+    <p style="font-size: 0.78em; color: #ccc; text-align: center; margin-top: 10px;">
+      <b>BGP DMZ-Link-Bandwidth</b> tags each path with its capacity; the FIB programs <b>weighted</b> next-hops (here 4:1) → traffic splits <b>80/20</b>, matching the links. Both then run at the same % load — nothing saturates early. Pure BGP/IP, no MPLS or SR needed.
+    </p>
   </section>
 
   <section data-markdown>
