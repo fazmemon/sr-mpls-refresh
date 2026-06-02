@@ -2579,17 +2579,15 @@ graph LR
 <section>
   <section data-markdown>
   <textarea data-template>
-## 12 · Coverage matrix
+## 12 · Design decisions — choosing along each axis
 
-You'll be handed a topology, not a choice. Cover **both sides** of each axis.
+A real brief hands you a network and a goal, not a menu. These are the axes the design turns on, and the call each one forces:
 
-- Topology: greenfield vs brownfield
-- PCE: every strategy from "none" → controller-driven
-- Failure budget: N-1 vs N-2
-- UCMP trigger: full demand × tool matrix
-- Migration risk: going SR *or* staying classical
-
-↓ to drill each axis
+- **Topology** — greenfield vs brownfield
+- **PCE** — none → distributed CSPF → stateful → hierarchical → controller
+- **Failure budget** — N-1 vs N-2
+- **UCMP trigger** — match the demand to the right knob
+- **Migration** — go SR, or stay classical
   </textarea>
   </section>
 
@@ -2597,7 +2595,7 @@ You'll be handed a topology, not a choice. Cover **both sides** of each axis.
   <textarea data-template>
 ### Topology — greenfield vs brownfield
 
-**Greenfield (you draw it)**
+**Greenfield — design from scratch**
 - Traffic matrix → fibre availability → failure budget → topology. In that order.
 - Partial mesh with triangle clusters per region, hierarchical interconnect.
 - Provision ≤50% (N-1) or ≤33% (N-2) of capacity under normal load.
