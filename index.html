@@ -2612,6 +2612,55 @@ A real brief hands you a network and a goal, not a menu. These are the axes the 
 
   <section data-markdown>
   <textarea data-template>
+### Worked example — the traffic matrix
+
+"Traffic matrix" isn't a noun — it's a table of **peak demand (Gbps) between every PoP pair**:
+
+| Gbps | LON | AMS | FRA | PAR |
+|------|-----|-----|-----|-----|
+| **LON** | — | 200 | 150 | 100 |
+| **AMS** | 200 | — | **250** | 80 |
+| **FRA** | 150 | **250** | — | 120 |
+| **PAR** | 100 | 80 | 120 | — |
+
+**Read it:** the heavy corridors — **AMS–FRA 250, LON–AMS 200, LON–FRA 150** — earn *direct* links. PAR's light demand (80–120) can transit via FRA. That's your first-cut topology: a partial mesh, dense where the demand is.
+  </textarea>
+  </section>
+
+  <section>
+    <h3>Worked example — matrix → topology</h3>
+    <div class="mermaid">
+graph LR
+  LON((LON)) ===|"200"| AMS((AMS))
+  AMS ===|"250"| FRA((FRA))
+  LON ===|"150"| FRA
+  FRA ---|"120"| PAR((PAR))
+  LON ---|"100"| PAR
+    </div>
+    <p style="font-size: 0.72em; color: #888; text-align: center; margin-top: 14px;">
+      Thick = heavy corridor sized to its demand; thin = light, can ride 2 hops. The <b>LON–AMS–FRA triangle</b> carries the bulk, so it's the part that has to survive a failure — which is what the budget below sizes for.
+    </p>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Worked example — sizing for N-1
+
+Busiest corridor **AMS↔FRA = 250 G**, given **two diverse paths** (direct, and via LON), all **400 G** links:
+
+| Path | Normal load | After one path fails |
+|------|-------------|----------------------|
+| Direct AMS–FRA | 125 G (**31%**) | — |
+| Via LON | 125 G (**31%**) | inherits 250 G → **62%** |
+
+Survivor peaks at **62%** — under 100%, so **N-1 holds on 400 G links**.
+
+**The rule that drops out:** keep each path **≤50%** in normal state and it can swallow a peer's whole load on failure. **N-2** (two failures) → you need a **third** disjoint path and **≤33%** each. That's the arithmetic behind §9's "provision ≤50% / ≤33%."
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
 ### PCE — every strategy
 
 | Strategy | When |
