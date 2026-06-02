@@ -2631,67 +2631,102 @@ Peak demand (Gbps) between every pair. **Bold = heavy (≥150)** → earns a dir
 
   <section>
     <h3>Step 1 — heavy pairs become direct links</h3>
-    <svg viewBox="0 0 800 580" style="width: 74%; max-height: 500px; display:block; margin: 0 auto;">
-      <!-- ring edges (blue) -->
-      <line x1="400" y1="100" x2="573" y2="200" stroke="#5b9bd5" stroke-width="6"/>
-      <line x1="573" y1="200" x2="573" y2="400" stroke="#5b9bd5" stroke-width="6"/>
-      <line x1="573" y1="400" x2="400" y2="500" stroke="#5b9bd5" stroke-width="6"/>
-      <line x1="400" y1="500" x2="227" y2="400" stroke="#5b9bd5" stroke-width="6"/>
-      <line x1="227" y1="400" x2="227" y2="200" stroke="#5b9bd5" stroke-width="6"/>
-      <line x1="227" y1="200" x2="400" y2="100" stroke="#5b9bd5" stroke-width="6"/>
-      <!-- chords from LON (green) -->
-      <line x1="400" y1="100" x2="573" y2="400" stroke="#b5cea8" stroke-width="5"/>
-      <line x1="400" y1="100" x2="227" y2="400" stroke="#b5cea8" stroke-width="5"/>
-      <!-- edge demand labels -->
-      <g font-size="17" fill="#e6e6e6" text-anchor="middle" font-family="sans-serif">
-        <rect x="470" y="139" width="36" height="22" rx="3" fill="#0c0c0c"/><text x="488" y="155">220</text>
-        <rect x="555" y="289" width="36" height="22" rx="3" fill="#0c0c0c"/><text x="573" y="305">250</text>
-        <rect x="469" y="439" width="36" height="22" rx="3" fill="#0c0c0c"/><text x="487" y="455">190</text>
-        <rect x="295" y="439" width="36" height="22" rx="3" fill="#0c0c0c"/><text x="313" y="455">160</text>
-        <rect x="209" y="289" width="36" height="22" rx="3" fill="#0c0c0c"/><text x="227" y="305">150</text>
-        <rect x="295" y="139" width="36" height="22" rx="3" fill="#0c0c0c"/><text x="313" y="155">170</text>
-        <rect x="470" y="239" width="36" height="22" rx="3" fill="#0c0c0c"/><text x="488" y="255" fill="#b5cea8">200</text>
-        <rect x="295" y="239" width="36" height="22" rx="3" fill="#0c0c0c"/><text x="313" y="255" fill="#b5cea8">180</text>
+    <svg viewBox="0 0 800 470" style="width: 80%; max-height: 470px; display:block; margin: 0 auto;">
+      <!-- spokes from LON hub -->
+      <line x1="400" y1="380" x2="110" y2="240" stroke="#5b9bd5" stroke-width="6"/>
+      <line x1="400" y1="380" x2="250" y2="130" stroke="#5b9bd5" stroke-width="6"/>
+      <line x1="400" y1="380" x2="550" y2="130" stroke="#5b9bd5" stroke-width="6"/>
+      <line x1="400" y1="380" x2="690" y2="240" stroke="#5b9bd5" stroke-width="6"/>
+      <!-- outer chain AMS-FRA-MIL-PAR-MAD -->
+      <line x1="110" y1="240" x2="250" y2="130" stroke="#5b9bd5" stroke-width="6"/>
+      <line x1="250" y1="130" x2="400" y2="95" stroke="#5b9bd5" stroke-width="6"/>
+      <line x1="400" y1="95" x2="550" y2="130" stroke="#5b9bd5" stroke-width="6"/>
+      <line x1="550" y1="130" x2="690" y2="240" stroke="#5b9bd5" stroke-width="6"/>
+      <g font-size="16" fill="#e6e6e6" text-anchor="middle" font-family="sans-serif">
+        <rect x="237" y="299" width="34" height="21" rx="3" fill="#0c0c0c"/><text x="254" y="314">220</text>
+        <rect x="308" y="245" width="34" height="21" rx="3" fill="#0c0c0c"/><text x="325" y="260">200</text>
+        <rect x="458" y="245" width="34" height="21" rx="3" fill="#0c0c0c"/><text x="475" y="260">180</text>
+        <rect x="528" y="299" width="34" height="21" rx="3" fill="#0c0c0c"/><text x="545" y="314">170</text>
+        <rect x="163" y="174" width="34" height="21" rx="3" fill="#0c0c0c"/><text x="180" y="189">250</text>
+        <rect x="308" y="101" width="34" height="21" rx="3" fill="#0c0c0c"/><text x="325" y="116">190</text>
+        <rect x="458" y="101" width="34" height="21" rx="3" fill="#0c0c0c"/><text x="475" y="116">160</text>
+        <rect x="603" y="174" width="34" height="21" rx="3" fill="#0c0c0c"/><text x="620" y="189">150</text>
       </g>
-      <!-- nodes -->
-      <g font-size="17" font-weight="600" text-anchor="middle" font-family="sans-serif">
-        <circle cx="400" cy="100" r="33" fill="#222" stroke="#ddd" stroke-width="2"/><text x="400" y="106" fill="#fff">LON</text>
-        <circle cx="573" cy="200" r="33" fill="#222" stroke="#ddd" stroke-width="2"/><text x="573" y="206" fill="#fff">AMS</text>
-        <circle cx="573" cy="400" r="33" fill="#222" stroke="#ddd" stroke-width="2"/><text x="573" y="406" fill="#fff">FRA</text>
-        <circle cx="400" cy="500" r="33" fill="#222" stroke="#ddd" stroke-width="2"/><text x="400" y="506" fill="#fff">MIL</text>
-        <circle cx="227" cy="400" r="33" fill="#222" stroke="#ddd" stroke-width="2"/><text x="227" y="406" fill="#fff">PAR</text>
-        <circle cx="227" cy="200" r="33" fill="#222" stroke="#ddd" stroke-width="2"/><text x="227" y="206" fill="#fff">MAD</text>
+      <g font-size="16" font-weight="600" text-anchor="middle" font-family="sans-serif">
+        <circle cx="400" cy="380" r="37" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2.5"/><text x="400" y="385" fill="#fff">LON</text>
+        <circle cx="110" cy="240" r="31" fill="#222" stroke="#ccc" stroke-width="2"/><text x="110" y="245" fill="#fff">AMS</text>
+        <circle cx="250" cy="130" r="31" fill="#222" stroke="#ccc" stroke-width="2"/><text x="250" y="135" fill="#fff">FRA</text>
+        <circle cx="400" cy="95" r="31" fill="#222" stroke="#ccc" stroke-width="2"/><text x="400" y="100" fill="#fff">MIL</text>
+        <circle cx="550" cy="130" r="31" fill="#222" stroke="#ccc" stroke-width="2"/><text x="550" y="135" fill="#fff">PAR</text>
+        <circle cx="690" cy="240" r="31" fill="#222" stroke="#ccc" stroke-width="2"/><text x="690" y="245" fill="#fff">MAD</text>
       </g>
-      <text x="400" y="556" text-anchor="middle" font-size="14" fill="#888" font-family="sans-serif">blue = ring · green = LON chords · numbers = Gbps demand</text>
+      <text x="400" y="452" text-anchor="middle" font-size="13" fill="#888" font-family="sans-serif">LON = hub (4 links) · outer chain AMS–FRA–MIL–PAR–MAD · numbers = Gbps</text>
     </svg>
-    <p style="font-size: 0.72em; color: #888; text-align: center; margin-top: 12px;">
-      The 8 heavy pairs → a <b>6-node ring</b> (LON-AMS-FRA-MIL-PAR-MAD) plus <b>two LON chords</b> (LON–FRA 200, LON–PAR 180) where cross-demand is high. Every node keeps ≥2 links, so it <b>stays connected</b> through any single failure — but staying connected isn't the same as having the <b>capacity</b> for the reroute (that's Step 3). And it's <b>8 links, not the 15</b> of a full mesh.
+    <p style="font-size: 0.72em; color: #888; text-align: center; margin-top: 10px;">
+      The 8 heavy pairs → <b>LON as a hub</b> (4 links to its highest-demand cities: AMS, FRA, PAR, MAD) with an <b>outer chain</b> AMS–FRA–MIL–PAR–MAD carrying the rest. Every node has ≥2 links, so it <b>stays connected</b> through any single failure — though connected isn't the same as having the <b>capacity</b> for the reroute (Step 3). And it's <b>8 links, not the 15</b> of a full mesh.
     </p>
   </section>
 
   <section>
     <h3>Step 2 — light pairs don't get a link, they transit</h3>
-    <div class="mermaid">
-graph LR
-  AMS((AMS)) ==>|"40G transit"| LON((LON))
-  LON ==>|"40G transit"| MAD((MAD))
-  AMS -.->|"AMS–MAD 40G — no direct link"| MAD
-    </div>
-    <p style="font-size: 0.72em; color: #888; text-align: center; margin-top: 12px;">
-      AMS↔MAD is only 40G — not worth its own link. It rides links you already built: <b>AMS → LON → MAD</b>. Do that for all 7 light pairs and you carry every demand on <b>8 links instead of 15</b>; the heavy links you built absorb the transit. <b>That's the partial-mesh saving</b> — the matrix decided which links exist.
+    <svg viewBox="0 0 800 470" style="width: 80%; max-height: 470px; display:block; margin: 0 auto;">
+      <line x1="400" y1="380" x2="250" y2="130" stroke="#3a3a3a" stroke-width="5"/>
+      <line x1="400" y1="380" x2="550" y2="130" stroke="#3a3a3a" stroke-width="5"/>
+      <line x1="110" y1="240" x2="250" y2="130" stroke="#3a3a3a" stroke-width="5"/>
+      <line x1="250" y1="130" x2="400" y2="95" stroke="#3a3a3a" stroke-width="5"/>
+      <line x1="400" y1="95" x2="550" y2="130" stroke="#3a3a3a" stroke-width="5"/>
+      <line x1="550" y1="130" x2="690" y2="240" stroke="#3a3a3a" stroke-width="5"/>
+      <!-- highlighted transit path AMS-LON-MAD -->
+      <line x1="400" y1="380" x2="110" y2="240" stroke="#7ec97e" stroke-width="9"/>
+      <line x1="400" y1="380" x2="690" y2="240" stroke="#7ec97e" stroke-width="9"/>
+      <g font-size="15" text-anchor="middle" font-family="sans-serif">
+        <rect x="223" y="300" width="98" height="22" rx="3" fill="#0c0c0c"/><text x="272" y="315" fill="#9ada9a">40G via LON</text>
+        <rect x="478" y="300" width="98" height="22" rx="3" fill="#0c0c0c"/><text x="527" y="315" fill="#9ada9a">40G via LON</text>
+        <rect x="298" y="58" width="204" height="24" rx="3" fill="#0c0c0c"/><text x="400" y="75" fill="#c89393">AMS–MAD = 40G: no direct link</text>
+      </g>
+      <g font-size="16" font-weight="600" text-anchor="middle" font-family="sans-serif">
+        <circle cx="400" cy="380" r="37" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2.5"/><text x="400" y="385" fill="#fff">LON</text>
+        <circle cx="110" cy="240" r="31" fill="#2c4a2c" stroke="#7ec97e" stroke-width="2.5"/><text x="110" y="245" fill="#fff">AMS</text>
+        <circle cx="250" cy="130" r="31" fill="#1c1c1c" stroke="#666" stroke-width="2"/><text x="250" y="135" fill="#999">FRA</text>
+        <circle cx="400" cy="95" r="31" fill="#1c1c1c" stroke="#666" stroke-width="2"/><text x="400" y="100" fill="#999">MIL</text>
+        <circle cx="550" cy="130" r="31" fill="#1c1c1c" stroke="#666" stroke-width="2"/><text x="550" y="135" fill="#999">PAR</text>
+        <circle cx="690" cy="240" r="31" fill="#2c4a2c" stroke="#7ec97e" stroke-width="2.5"/><text x="690" y="245" fill="#fff">MAD</text>
+      </g>
+    </svg>
+    <p style="font-size: 0.72em; color: #888; text-align: center; margin-top: 10px;">
+      AMS↔MAD is only 40G — not worth its own link. It <b>rides links you already built</b>: AMS → LON → MAD (green). Do that for all 7 light pairs and every demand rides on <b>8 links, not 15</b> — the heavy links absorb the transit. The matrix decided which links exist.
     </p>
   </section>
 
   <section>
     <h3>Step 3 — the N-1 budget: a built link fails</h3>
-    <div class="mermaid">
-graph LR
-  AMS((AMS)) -.->|"AMS–FRA 250G — FAILS"| FRA((FRA))
-  AMS ==>|"220 own + 250 reroute"| LON((LON))
-  LON ==>|"200 own + 250 reroute"| FRA
-    </div>
-    <p style="font-size: 0.72em; color: #888; text-align: center; margin-top: 12px;">
-      Step 1 kept every node <b>connected</b> — but that's not enough on its own. Lose the 250G AMS–FRA link → its traffic reroutes <b>AMS → LON → FRA</b>. But LON–AMS already carries 220G, so it now needs <b>470G</b>; LON–FRA needs <b>450G</b>. On 400G links, <b>both overload</b>. N-1 isn't free: size each link for <b>own load + worst inherited reroute</b>, or split the 250G over two diverse paths (≤50% each). That's the "provision ≤50%" from §9, shown on a real mesh.
+    <svg viewBox="0 0 800 470" style="width: 80%; max-height: 470px; display:block; margin: 0 auto;">
+      <line x1="400" y1="380" x2="550" y2="130" stroke="#3a3a3a" stroke-width="5"/>
+      <line x1="400" y1="380" x2="690" y2="240" stroke="#3a3a3a" stroke-width="5"/>
+      <line x1="250" y1="130" x2="400" y2="95" stroke="#3a3a3a" stroke-width="5"/>
+      <line x1="400" y1="95" x2="550" y2="130" stroke="#3a3a3a" stroke-width="5"/>
+      <line x1="550" y1="130" x2="690" y2="240" stroke="#3a3a3a" stroke-width="5"/>
+      <!-- failed AMS-FRA (red dashed) -->
+      <line x1="110" y1="240" x2="250" y2="130" stroke="#d16b6b" stroke-width="4" stroke-dasharray="9 7"/>
+      <!-- reroute AMS-LON-FRA (orange) -->
+      <line x1="400" y1="380" x2="110" y2="240" stroke="#e0973c" stroke-width="9"/>
+      <line x1="400" y1="380" x2="250" y2="130" stroke="#e0973c" stroke-width="9"/>
+      <g font-size="15" text-anchor="middle" font-family="sans-serif">
+        <rect x="116" y="166" width="112" height="22" rx="3" fill="#0c0c0c"/><text x="172" y="181" fill="#e09b9b">AMS–FRA FAILS</text>
+        <rect x="204" y="302" width="96" height="22" rx="3" fill="#0c0c0c"/><text x="252" y="317" fill="#f0b060">now 470G</text>
+        <rect x="298" y="246" width="96" height="22" rx="3" fill="#0c0c0c"/><text x="346" y="261" fill="#f0b060">now 450G</text>
+      </g>
+      <g font-size="16" font-weight="600" text-anchor="middle" font-family="sans-serif">
+        <circle cx="400" cy="380" r="37" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2.5"/><text x="400" y="385" fill="#fff">LON</text>
+        <circle cx="110" cy="240" r="31" fill="#4a3320" stroke="#e0973c" stroke-width="2.5"/><text x="110" y="245" fill="#fff">AMS</text>
+        <circle cx="250" cy="130" r="31" fill="#4a3320" stroke="#e0973c" stroke-width="2.5"/><text x="250" y="135" fill="#fff">FRA</text>
+        <circle cx="400" cy="95" r="31" fill="#1c1c1c" stroke="#666" stroke-width="2"/><text x="400" y="100" fill="#999">MIL</text>
+        <circle cx="550" cy="130" r="31" fill="#1c1c1c" stroke="#666" stroke-width="2"/><text x="550" y="135" fill="#999">PAR</text>
+        <circle cx="690" cy="240" r="31" fill="#1c1c1c" stroke="#666" stroke-width="2"/><text x="690" y="245" fill="#999">MAD</text>
+      </g>
+    </svg>
+    <p style="font-size: 0.72em; color: #888; text-align: center; margin-top: 10px;">
+      Step 1 connected everyone — but connected isn't enough. <b>AMS–FRA (250G) fails</b> → reroutes AMS → LON → FRA (orange). LON–AMS already carries 220G → <b>now 470G</b>; LON–FRA 200G → <b>now 450G</b>. On 400G links, <b>both overload</b>. Size each link for <b>own load + worst inherited reroute</b>, or split over two diverse paths (≤50% each). The §9 "provision ≤50%" — on a real mesh.
     </p>
   </section>
 
@@ -3660,7 +3695,13 @@ Build a VPC + a public EC2 Linux box (the AWS lab), then run the Linux diagnose-
 - **Diagnose:** `netstat -su` / `ss -u` → **`RcvbufErrors`** climbing
 - **Fix:** raise `net.core.rmem_max` + set `SO_RCVBUF`; size to burst × rate
 
-*(capture tomorrow)*
+**Real capture — t3.micro AL2023 (`ip-172-31-1-10`), 300k-packet multicast burst:**
+```
+                         buffer     app received        RcvbufErrors Δ
+  tiny buf + slow read    16 KB     1,248 / 300,000        +298,752
+  32 MB buf + reader OK    64 MB    300,000 / 300,000             0
+```
+`OutDatagrams` climbed by **exactly 300,000** — the packets reached the host. The loss was the socket buffer overrunning, logged as `RcvbufErrors` (here `== InErrors`, so 100% buffer, not the wire). Lifting `net.core.rmem_max` (was 208 KB — it silently caps `SO_RCVBUF`) and keeping the reader up drives drops to **zero**.
   </textarea>
   </section>
 
