@@ -2086,15 +2086,14 @@ graph LR
     <h3>The UCMP fix — weighted split via DMZ-Link-Bandwidth</h3>
     <div class="mermaid">
 graph LR
-  R(("router<br/>UCMP 80/20")) ==>|"80%"| A(("400G link"))
-  R ==>|"20%"| B(("100G link"))
-  A ==> D(("dest"))
-  B ==> D
+  R(("R")) ==>|"eBGP over 400G link<br/>tag bw 400 - 80% of flows"| P(("upstream P"))
+  R ==>|"eBGP over 100G link<br/>tag bw 100 - 20% of flows"| P
+  P ==> D(("dest<br/>8.8.8.0/24"))
   linkStyle 0 stroke:#b5cea8,stroke-width:6px
   linkStyle 1 stroke:#b5cea8,stroke-width:2px
     </div>
     <p style="font-size: 0.78em; color: #ccc; text-align: center; margin-top: 10px;">
-      <b>BGP DMZ-Link-Bandwidth</b> tags each path with its capacity; the FIB programs <b>weighted</b> next-hops (here 4:1) → traffic splits <b>80/20</b>, matching the links. Both then run at the same % load — nothing saturates early. Pure BGP/IP, no MPLS or SR needed.
+      R reaches the destination over <b>two links</b> to its upstream — a 400G and a 100G — with an <b>eBGP session on each</b>, so it learns the prefix <b>twice</b>. <code>dmzlink-bw</code> stamps each path with <b>its own link's speed</b> (400, 100) — R reads that off its own interfaces, nothing is advertised to it. BGP multipath then splits the traffic in that ratio: <b>80% out the 400G, 20% out the 100G</b>. Per-flow hashing, just weighted.
     </p>
   </section>
 
