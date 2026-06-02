@@ -2184,16 +2184,25 @@ Past a handful of sites you **never** full-mesh. You build a **partial mesh** sh
 
   <section data-markdown>
   <textarea data-template>
-### Design principles
+### Design principles — what drives the shape
 
-1. **Diversity > redundancy.** Two links in same conduit ≠ two links.
-2. **Failure budget first.** Define N-1 / N-2 before drawing topology.
-3. **Latency-weighted, not just hop-weighted.** Flex-Algo expresses this.
-4. **Asymmetric capacity is normal.** Subsea > terrestrial > metro. UCMP exists because of this.
-5. **No "all eggs in one router"** failure domains. Two chassis per PoP for any role that matters.
+**1 · Diversity beats redundancy.** Two "diverse" links that share a duct, a building entrance, or a fibre span are **one** failure — a backhoe takes the "redundant" pair together. You only have the diversity you've **proven with SRLG modelling**; an unaudited pair is a latent single point of failure.
 
-Economic optimum is **never a regular polygon** — it's a partial mesh shaped by traffic matrix + fibre cost + failure budget.
-SR + flex-algo + UCMP is what lets you exploit irregular topologies efficiently.
+**2 · Failure budget before topology.** Decide N-1 vs N-2 *first* — it fixes both the path count and the headroom (N-1 → ≤50% on two paths; N-2 → ≥3 disjoint paths at ≤33%). Draw the map first and you either overbuild or find the gap mid-incident.
+
+**3 · Cost is one integer — latency isn't.** A single IGP metric can't carry latency *and* bandwidth *and* price. **Flex-Algo** separates them: a delay-minimising algo for the latency-sensitive class, a capacity algo for bulk — one fibre plant, two logical planes.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Design principles — operational reality
+
+**4 · Asymmetric capacity is the norm.** Subsea ≫ terrestrial ≫ metro, and 400G runs beside legacy 100G. Equal-cost ECMP strands the fat pipe — **UCMP** (BGP DMZ-link-bandwidth, or SR-TE weighted candidate paths) is mandatory on a real backbone, not an optional tweak.
+
+**5 · No single-chassis failure domains.** Two chassis per PoP for any role that matters — route-reflector, PE, AS-border. A lone router is a failure domain *and* a maintenance outage; redundancy you must schedule downtime to touch isn't redundancy.
+
+**Takeaway:** the economic optimum is **never a regular polygon.** It's a partial mesh shaped by **traffic matrix × fibre cost × failure budget** — and SR + Flex-Algo + UCMP are exactly what let you run that irregular mesh efficiently instead of overbuilding a symmetric one.
   </textarea>
   </section>
 </section>
