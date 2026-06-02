@@ -2769,6 +2769,35 @@ Peak demand (Gbps) between every pair. **Bold = heavy (≥150)** → earns a dir
   </textarea>
   </section>
 
+  <section>
+    <h3>UCMP scenario — per-service engineering</h3>
+    <svg viewBox="0 0 800 430" style="width: 78%; max-height: 430px; display:block; margin: 0 auto;">
+      <!-- low-latency path (red) -->
+      <line x1="150" y1="240" x2="312" y2="125" stroke="#d97b7b" stroke-width="6"/>
+      <line x1="312" y1="125" x2="488" y2="125" stroke="#d97b7b" stroke-width="6"/>
+      <line x1="488" y1="125" x2="650" y2="240" stroke="#d97b7b" stroke-width="6"/>
+      <!-- high-capacity path (green) -->
+      <line x1="150" y1="240" x2="312" y2="355" stroke="#7ec97e" stroke-width="6"/>
+      <line x1="312" y1="355" x2="488" y2="355" stroke="#7ec97e" stroke-width="6"/>
+      <line x1="488" y1="355" x2="650" y2="240" stroke="#7ec97e" stroke-width="6"/>
+      <g font-size="15" text-anchor="middle" font-family="sans-serif">
+        <rect x="296" y="94" width="208" height="22" rx="3" fill="#0c0c0c"/><text x="400" y="109" fill="#e8a0a0">trading / voice → low-latency (Flex-Algo)</text>
+        <rect x="320" y="364" width="160" height="22" rx="3" fill="#0c0c0c"/><text x="400" y="379" fill="#9ada9a">bulk / backup → fat path</text>
+      </g>
+      <g font-size="17" font-weight="600" text-anchor="middle" font-family="sans-serif">
+        <circle cx="110" cy="240" r="33" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2.5"/><text x="110" y="246" fill="#fff">A</text>
+        <circle cx="690" cy="240" r="33" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2.5"/><text x="690" y="246" fill="#fff">B</text>
+        <circle cx="312" cy="125" r="25" fill="#222" stroke="#ccc" stroke-width="2"/><text x="312" y="131" fill="#fff" font-size="13">P1</text>
+        <circle cx="488" cy="125" r="25" fill="#222" stroke="#ccc" stroke-width="2"/><text x="488" y="131" fill="#fff" font-size="13">P2</text>
+        <circle cx="312" cy="355" r="25" fill="#222" stroke="#ccc" stroke-width="2"/><text x="312" y="361" fill="#fff" font-size="13">P3</text>
+        <circle cx="488" cy="355" r="25" fill="#222" stroke="#ccc" stroke-width="2"/><text x="488" y="361" fill="#fff" font-size="13">P4</text>
+      </g>
+    </svg>
+    <p style="font-size: 0.72em; color: #888; text-align: center; margin-top: 8px;">
+      <b>Trigger:</b> A→B has two paths — one short-but-low-latency, one fatter. <b>One IGP metric can't serve both classes.</b> Give the latency-sensitive traffic (trading, voice) a <b>min-delay Flex-Algo</b> path and steer it there with an <b>SR-TE colour</b>; bulk rides the capacity path. <span style="color:#aaa">Non-SR equivalent: parallel RSVP-TE meshes — far more state.</span>
+    </p>
+  </section>
+
   <section data-markdown>
   <textarea data-template>
 ### UCMP trigger — full matrix (1/2)
