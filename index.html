@@ -3701,7 +3701,16 @@ Build a VPC + a public EC2 Linux box (the AWS lab), then run the Linux diagnose-
 4. **Key pair** (`chmod 400 key.pem`) → launch **t3.micro** (AL2023), public IP on
 5. `ssh -i key.pem ec2-user@<ip>` → `curl -s https://ifconfig.me ; ping -c2 8.8.8.8`
 
-*(capture: console + SSH session — tomorrow)*
+**Real run — `i-0d4fce8faa32eb151`, eu-west-2c, `18.133.204.34`. IMDSv2 + the attached role, end-to-end:**
+```
+curl .../latest/meta-data/                          → HTTP 401   ← no token, no answer
+TOKEN=$(curl -X PUT .../latest/api/token  -H "…ttl-seconds: 300")
+curl -H "…token: $TOKEN" .../iam/security-credentials/        → ec2-lab-role
+curl -H "…token: $TOKEN" .../iam/security-credentials/ec2-lab-role
+  { "Code":"Success", "AccessKeyId":"ASIA****", "SecretAccessKey":"****",
+    "Token":"IQoJb3…", "Expiration":"2026-06-02T21:51:50Z" }
+```
+The **401 with no token** is IMDSv2's whole point — it defeats the SSRF attack that blindly GETs `169.254.169.254`. With the token you pull **temporary, auto-rotating role creds** off the box — no static keys to leak.
   </textarea>
   </section>
 
@@ -3748,7 +3757,73 @@ One at a time; only the symptom given, Faz drives:
 - **Can't reach host** → **`ip route get`** vs **`nft list ruleset`**
 - **NIC counters** → `ethtool -S`, `ip -s link`
 
-*(captures filled tomorrow, one per scenario)*
+**Real captures from the live t3.micro follow →**
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Diagnose-it captures (1) — netem &amp; disk
+
+**`tc netem` on `lo` — ping to localhost goes lossy &amp; slow:**
+```
+qdisc netem 8001: root ... delay 100ms loss 10%     ← tc -s qdisc show dev lo
+10 packets transmitted, 8 received, 20% loss, rtt avg 200 ms
+```
+A stray qdisc — not routing, not the app. `tc qdisc del dev lo root` → 0% loss, 0.03 ms. (RTT is 200 ms not 100: a loopback ping crosses the qdisc both ways.)
+
+**Disk: `df` says full, `du` says empty —**
+```
+df /     → 2.2 GB used    (a 500 MB file, deleted but still held open)
+du       → "No such file"
+lsof +L1 → /home/ec2-user/ghost.bin (deleted)  500M  held by: sleep
+```
+A deleted-but-open file isn't freed until its holder exits → **fix = restart the process** (classic: an app logging to a deleted logfile).
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Diagnose-it captures (2) — systemd &amp; runaway load
+
+**systemd unit won't start — `status` says *failed*, `journalctl -u` says *why*:**
+```
+Active: failed (Result: exit-code)   ExecStart=/usr/local/bin/myapp (status=203/EXEC)
+journalctl -u badsvc → Failed to locate executable /usr/local/bin/myapp: No such file
+```
+`203/EXEC` = binary missing or not executable. Provide it → `active`.
+
+**Runaway load — CPU-bound or I/O-bound? `mpstat` + process state split them:**
+```
+CPU-bound (2× yes):   %usr 56  %iowait 0    → 2 threads at ~88% in top -bH, state R
+I/O-bound (dd dsync):  %usr 0  %iowait 35   → dd in state D (uninterruptible wait)
+```
+%usr + **R** = a CPU hog (find it in `top -H`); %iowait + **D** = storage wait — more cores won't help. (Load-average *lagged* the truth — it's a 1-min decaying avg; trust `mpstat`/`top`.)
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Diagnose-it captures (3) — perms, reachability &amp; NIC
+
+**Perms — file is 644 but a service user gets *Permission denied*. `namei -l` walks the path:**
+```
+namei -l …/private/secret.txt → drwx------ … private   ← parent dir has no o+x = can't traverse
+```
+Fix = `chmod o+x` the **directory**, not the file.
+
+**Can't reach a host — routing vs firewall:**
+```
+ip route get 8.8.8.8 → via 172.31.0.1 dev ens5 src 172.31.1.10   ← routing is fine
+nft list ruleset     → chain out { ip daddr 8.8.8.8 drop }       ← the real cause
+```
+
+**NIC — `ip -s link` looks clean but EC2 is silently throttling:**
+```
+ip -s link ens5 → errors 0, dropped 0              (looks fine!)
+ethtool -S ens5 → bw_in_allowance_exceeded: 498    ← AWS shaped you at the hypervisor
+```
+On EC2, "0 drops but losing packets" → check the ENA `*_allowance_exceeded` counters.
   </textarea>
   </section>
 
