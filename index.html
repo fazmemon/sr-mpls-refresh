@@ -2612,51 +2612,65 @@ A real brief hands you a network and a goal, not a menu. These are the axes the 
 
   <section data-markdown>
   <textarea data-template>
-### Worked example — the traffic matrix
+### Worked example — the traffic matrix (6 PoPs)
 
-"Traffic matrix" isn't a noun — it's a table of **peak demand (Gbps) between every PoP pair**:
+Peak demand (Gbps) between every pair. **Bold = heavy (≥150)** → earns a direct link; the rest **transit**.
 
-| Gbps | LON | AMS | FRA | PAR |
-|------|-----|-----|-----|-----|
-| **LON** | — | 200 | 150 | 100 |
-| **AMS** | 200 | — | **250** | 80 |
-| **FRA** | 150 | **250** | — | 120 |
-| **PAR** | 100 | 80 | 120 | — |
+| Gbps | LON | AMS | FRA | PAR | MIL | MAD |
+|------|-----|-----|-----|-----|-----|-----|
+| **LON** | — | **220** | **200** | **180** | 60 | **170** |
+| **AMS** | **220** | — | **250** | 90 | 70 | 40 |
+| **FRA** | **200** | **250** | — | 110 | **190** | 50 |
+| **PAR** | **180** | 90 | 110 | — | **160** | **150** |
+| **MIL** | 60 | 70 | **190** | **160** | — | 80 |
+| **MAD** | **170** | 40 | 50 | **150** | 80 | — |
 
-**Read it:** the heavy corridors — **AMS–FRA 250, LON–AMS 200, LON–FRA 150** — earn *direct* links. PAR's light demand (80–120) can transit via FRA. That's your first-cut topology: a partial mesh, dense where the demand is.
+8 pairs are heavy → **8 direct links**; the other 7 pairs transit. Next three slides: what that builds, how a light pair rides it, and how it survives a failure.
   </textarea>
   </section>
 
   <section>
-    <h3>Worked example — matrix → topology</h3>
+    <h3>Step 1 — heavy pairs become direct links</h3>
     <div class="mermaid">
 graph LR
-  LON((LON)) ===|"200"| AMS((AMS))
+  AMS((AMS)) ===|"220"| LON((LON))
   AMS ===|"250"| FRA((FRA))
-  LON ===|"150"| FRA
-  FRA ---|"120"| PAR((PAR))
-  LON ---|"100"| PAR
+  FRA ===|"190"| MIL((MIL))
+  MIL ===|"160"| PAR((PAR))
+  PAR ===|"150"| MAD((MAD))
+  MAD ===|"170"| LON
+  LON ===|"200"| FRA
+  LON ===|"180"| PAR
     </div>
-    <p style="font-size: 0.72em; color: #888; text-align: center; margin-top: 14px;">
-      Thick = heavy corridor sized to its demand; thin = light, can ride 2 hops. The <b>LON–AMS–FRA triangle</b> carries the bulk, so it's the part that has to survive a failure — which is what the budget below sizes for.
+    <p style="font-size: 0.72em; color: #888; text-align: center; margin-top: 12px;">
+      The 8 heavy pairs → a <b>6-node ring</b> (LON-AMS-FRA-MIL-PAR-MAD) plus <b>two LON chords</b> (LON–FRA 200, LON–PAR 180) where cross-demand is high. Every node keeps ≥2 links, so it survives any single failure — and it's <b>8 links, not the 15 of a full mesh</b>.
     </p>
   </section>
 
-  <section data-markdown>
-  <textarea data-template>
-### Worked example — sizing for N-1
+  <section>
+    <h3>Step 2 — light pairs don't get a link, they transit</h3>
+    <div class="mermaid">
+graph LR
+  AMS((AMS)) ==>|"40G transit"| LON((LON))
+  LON ==>|"40G transit"| MAD((MAD))
+  AMS -.->|"AMS–MAD 40G — no direct link"| MAD
+    </div>
+    <p style="font-size: 0.72em; color: #888; text-align: center; margin-top: 12px;">
+      AMS↔MAD is only 40G — not worth its own link. It rides links you already built: <b>AMS → LON → MAD</b>. Do that for all 7 light pairs and you carry every demand on <b>8 links instead of 15</b>; the heavy links you built absorb the transit. <b>That's the partial-mesh saving</b> — the matrix decided which links exist.
+    </p>
+  </section>
 
-Busiest corridor **AMS↔FRA = 250 G**, given **two diverse paths** (direct, and via LON), all **400 G** links:
-
-| Path | Normal load | After one path fails |
-|------|-------------|----------------------|
-| Direct AMS–FRA | 125 G (**31%**) | — |
-| Via LON | 125 G (**31%**) | inherits 250 G → **62%** |
-
-Survivor peaks at **62%** — under 100%, so **N-1 holds on 400 G links**.
-
-**The rule that drops out:** keep each path **≤50%** in normal state and it can swallow a peer's whole load on failure. **N-2** (two failures) → you need a **third** disjoint path and **≤33%** each. That's the arithmetic behind §9's "provision ≤50% / ≤33%."
-  </textarea>
+  <section>
+    <h3>Step 3 — the N-1 budget: a built link fails</h3>
+    <div class="mermaid">
+graph LR
+  AMS((AMS)) -.->|"AMS–FRA 250G — FAILS"| FRA((FRA))
+  AMS ==>|"220 own + 250 reroute"| LON((LON))
+  LON ==>|"200 own + 250 reroute"| FRA
+    </div>
+    <p style="font-size: 0.72em; color: #888; text-align: center; margin-top: 12px;">
+      Lose the 250G AMS–FRA link → its traffic reroutes <b>AMS → LON → FRA</b>. But LON–AMS already carries 220G, so it now needs <b>470G</b>; LON–FRA needs <b>450G</b>. On 400G links, <b>both overload</b>. N-1 isn't free: size each link for <b>own load + worst inherited reroute</b>, or split the 250G over two diverse paths (≤50% each). That's the "provision ≤50%" from §9, shown on a real mesh.
+    </p>
   </section>
 
   <section data-markdown>
