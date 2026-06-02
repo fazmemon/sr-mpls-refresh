@@ -2139,30 +2139,63 @@ A 3-node ring already *is* a full mesh — cheapest **and** single-failure-proof
 
   <section>
     <h3>Topology shapes — visual</h3>
-    <div class="mermaid" style="display: flex; gap: 20px; justify-content: space-around;">
-graph LR
-  subgraph Triangle
-    TA((A)) --- TB((B))
-    TB --- TC((C))
-    TC --- TA
-  end
-  subgraph Square
-    SA((A)) --- SB((B))
-    SB --- SC((C))
-    SC --- SD((D))
-    SD --- SA
-  end
-  subgraph SquareDiag[Square+diagonals]
-    DA((A)) --- DB((B))
-    DB --- DC((C))
-    DC --- DD((D))
-    DD --- DA
-    DA --- DC
-    DB --- DD
-  end
-    </div>
+    <svg viewBox="0 0 900 470" style="width: 92%; max-height: 430px; display:block; margin: 0 auto;" font-family="sans-serif">
+      <!-- legend -->
+      <g font-size="13">
+        <line x1="300" y1="26" x2="332" y2="26" stroke="#d16b6b" stroke-width="4" stroke-dasharray="8 6"/><text x="338" y="30" fill="#e09b9b">A–B fails</text>
+        <line x1="448" y1="26" x2="480" y2="26" stroke="#7ec97e" stroke-width="7"/><text x="486" y="30" fill="#9ada9a">reroute</text>
+      </g>
+
+      <!-- ===== Triangle (centre 150) ===== -->
+      <line x1="150" y1="95" x2="75" y2="235" stroke="#d16b6b" stroke-width="4" stroke-dasharray="8 6"/>
+      <line x1="75" y1="235" x2="225" y2="235" stroke="#4a6f93" stroke-width="4"/>
+      <line x1="225" y1="235" x2="150" y2="95" stroke="#4a6f93" stroke-width="4"/>
+      <line x1="150" y1="95" x2="225" y2="235" stroke="#7ec97e" stroke-width="7"/>
+      <line x1="225" y1="235" x2="75" y2="235" stroke="#7ec97e" stroke-width="7"/>
+      <g font-size="15" font-weight="600" text-anchor="middle">
+        <circle cx="150" cy="95" r="19" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/><text x="150" y="100" fill="#fff">A</text>
+        <circle cx="75" cy="235" r="19" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/><text x="75" y="240" fill="#fff">B</text>
+        <circle cx="225" cy="235" r="19" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/><text x="225" y="240" fill="#fff">C</text>
+      </g>
+      <text x="150" y="300" text-anchor="middle" font-size="15" fill="#e6e6e6" font-weight="600">Triangle · 3 links</text>
+      <text x="150" y="322" text-anchor="middle" font-size="13" fill="#9ada9a">reroute A→C→B = 2 hops</text>
+
+      <!-- ===== Ring / square (centre 450) ===== -->
+      <line x1="390" y1="95" x2="510" y2="95" stroke="#d16b6b" stroke-width="4" stroke-dasharray="8 6"/>
+      <line x1="510" y1="95" x2="510" y2="235" stroke="#4a6f93" stroke-width="4"/>
+      <line x1="510" y1="235" x2="390" y2="235" stroke="#4a6f93" stroke-width="4"/>
+      <line x1="390" y1="235" x2="390" y2="95" stroke="#4a6f93" stroke-width="4"/>
+      <line x1="390" y1="95" x2="390" y2="235" stroke="#7ec97e" stroke-width="7"/>
+      <line x1="390" y1="235" x2="510" y2="235" stroke="#7ec97e" stroke-width="7"/>
+      <line x1="510" y1="235" x2="510" y2="95" stroke="#7ec97e" stroke-width="7"/>
+      <g font-size="15" font-weight="600" text-anchor="middle">
+        <circle cx="390" cy="95" r="19" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/><text x="390" y="100" fill="#fff">A</text>
+        <circle cx="510" cy="95" r="19" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/><text x="510" y="100" fill="#fff">B</text>
+        <circle cx="510" cy="235" r="19" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/><text x="510" y="240" fill="#fff">C</text>
+        <circle cx="390" cy="235" r="19" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/><text x="390" y="240" fill="#fff">D</text>
+      </g>
+      <text x="450" y="300" text-anchor="middle" font-size="15" fill="#e6e6e6" font-weight="600">Ring (square) · 4 links</text>
+      <text x="450" y="322" text-anchor="middle" font-size="13" fill="#9ada9a">reroute A→D→C→B = 3 hops</text>
+
+      <!-- ===== Full mesh (centre 750) ===== -->
+      <line x1="690" y1="95" x2="810" y2="95" stroke="#d16b6b" stroke-width="4" stroke-dasharray="8 6"/>
+      <line x1="810" y1="95" x2="810" y2="235" stroke="#4a6f93" stroke-width="4"/>
+      <line x1="810" y1="235" x2="690" y2="235" stroke="#4a6f93" stroke-width="4"/>
+      <line x1="690" y1="235" x2="690" y2="95" stroke="#4a6f93" stroke-width="4"/>
+      <line x1="810" y1="95" x2="690" y2="235" stroke="#4a6f93" stroke-width="4"/>
+      <line x1="690" y1="95" x2="810" y2="235" stroke="#7ec97e" stroke-width="7"/>
+      <line x1="810" y1="235" x2="810" y2="95" stroke="#7ec97e" stroke-width="7"/>
+      <g font-size="15" font-weight="600" text-anchor="middle">
+        <circle cx="690" cy="95" r="19" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/><text x="690" y="100" fill="#fff">A</text>
+        <circle cx="810" cy="95" r="19" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/><text x="810" y="100" fill="#fff">B</text>
+        <circle cx="810" cy="235" r="19" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/><text x="810" y="240" fill="#fff">C</text>
+        <circle cx="690" cy="235" r="19" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/><text x="690" y="240" fill="#fff">D</text>
+      </g>
+      <text x="750" y="300" text-anchor="middle" font-size="15" fill="#e6e6e6" font-weight="600">Full mesh · 6 links</text>
+      <text x="750" y="322" text-anchor="middle" font-size="13" fill="#9ada9a">reroute A→C→B = 2 hops</text>
+    </svg>
     <p style="font-size: 0.7em; color: #888; text-align: center; margin-top: 10px;">
-      Triangle = N-1 only · Square = brittle on failure · Square+diagonals = real N-1, possible N-2
+      Lose the <b>A–B</b> link: the <b>triangle</b> and <b>full mesh</b> both reroute in 2 hops, but the <b>ring</b> detours 3 (and +1 for every node you add to the ring). Same spend, very different failure behaviour — the diagonals are what keep the mesh's reroutes short.
     </p>
   </section>
 
