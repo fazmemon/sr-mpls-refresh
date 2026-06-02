@@ -2713,8 +2713,8 @@ Peak demand (Gbps) between every pair. **Bold = heavy (≥150)** → earns a dir
       <line x1="400" y1="380" x2="250" y2="130" stroke="#e0973c" stroke-width="9"/>
       <g font-size="15" text-anchor="middle" font-family="sans-serif">
         <rect x="116" y="166" width="112" height="22" rx="3" fill="#0c0c0c"/><text x="172" y="181" fill="#e09b9b">AMS–FRA FAILS</text>
-        <rect x="204" y="302" width="96" height="22" rx="3" fill="#0c0c0c"/><text x="252" y="317" fill="#f0b060">now 470G</text>
-        <rect x="298" y="246" width="96" height="22" rx="3" fill="#0c0c0c"/><text x="346" y="261" fill="#f0b060">now 450G</text>
+        <rect x="198" y="302" width="108" height="22" rx="3" fill="#0c0c0c"/><text x="252" y="317" fill="#f0b060">350→670G</text>
+        <rect x="292" y="246" width="108" height="22" rx="3" fill="#0c0c0c"/><text x="346" y="261" fill="#f0b060">335→620G</text>
       </g>
       <g font-size="16" font-weight="600" text-anchor="middle" font-family="sans-serif">
         <circle cx="400" cy="380" r="37" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2.5"/><text x="400" y="385" fill="#fff">LON</text>
@@ -2726,7 +2726,7 @@ Peak demand (Gbps) between every pair. **Bold = heavy (≥150)** → earns a dir
       </g>
     </svg>
     <p style="font-size: 0.72em; color: #888; text-align: center; margin-top: 10px;">
-      Step 1 connected everyone — but connected isn't enough. <b>AMS–FRA (250G) fails</b> → reroutes AMS → LON → FRA (orange). LON–AMS already carries 220G → <b>now 470G</b>; LON–FRA 200G → <b>now 450G</b>. On 400G links, <b>both overload</b>. Size each link for <b>own load + worst inherited reroute</b>, or split over two diverse paths (≤50% each). The §9 "provision ≤50%" — on a real mesh.
+      The <b>220</b> on a link is the <i>demand</i>, not the <i>load</i>. LON–AMS actually carries <b>350G</b> at rest — 220 direct + 90 (AMS–PAR) + 40 (AMS–MAD) transiting it. <b>AMS–FRA (250G) fails</b> → AMS reaches everything only via LON, dumping AMS–FRA's 250 + AMS–MIL's 70 onto LON–AMS → <b>670G</b>; LON–FRA 335 → <b>620G</b>. Both ~1.6× over a 400G link. Normal peaked at 355G, so <b>the topology passes at rest and collapses on a single failure</b> — which is why you fix the N-1 budget <i>before</i> the topology and size for own load + worst inherited reroute.
     </p>
   </section>
 
