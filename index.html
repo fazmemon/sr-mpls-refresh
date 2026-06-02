@@ -2384,6 +2384,31 @@ SR-MPLS doesn't change the rule — buffer architecture is dataplane, orthogonal
 <span class="tag warn">Cage ≠ optic speed</span> QSFP-DD cage takes 400G now, can take 800G when ASIC + host support it. Check the card datasheet, not the port cage shape.
   </textarea>
   </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Pluggable optics &amp; transponders
+
+**Form factor = lane count, not reach:**
+
+| Module | Lanes | Speeds |
+|--------|-------|--------|
+| SFP+ / SFP28 | 1 | 10 / 25G |
+| QSFP28 | 4 | 100G |
+| QSFP-DD / OSFP | 8 | 400 / 800G (OSFP runs cooler) |
+
+**Grey vs coherent — two worlds:**
+- **Grey (client):** direct-detect, 1 λ, SR/LR/ER (~100m–40km), ~3–8 W. Intra-DC / intra-PoP.
+- **Coherent:** DSP, phase + polarisation, tunable DWDM, long reach, ~15–25 W — runs hot, so it caps ports-per-card.
+
+**Transponder collapse (IPoDWDM):**
+- **Old:** router grey optic → **separate transponder shelf** → coloured DWDM wavelength. Two boxes, two teams.
+- **Now:** a **coherent pluggable (400ZR / OpenZR+)** *is* the DWDM optic, sitting in the router's QSFP-DD — plug straight into the ROADM, no shelf. Big capex / power / space win.
+- **Reach:** 400ZR ~80–120 km (metro / DCI); OpenZR+ up to ~1,000 km; beyond that, or 800G long-haul, you still need a **dedicated transponder + ROADM line system**.
+
+<span class="tag warn">Org boundary</span> IPoDWDM moves the wavelength into the IP team's box — saves money, but blurs the IP/optical demarcation and who owns a failure.
+  </textarea>
+  </section>
 </section>
 
 <!-- ============ SECTION 6 — INTER-AS ============ -->
