@@ -2086,8 +2086,8 @@ graph LR
     <h3>The UCMP fix — weighted split via DMZ-Link-Bandwidth</h3>
     <div class="mermaid">
 graph LR
-  R(("R")) ==>|"eBGP over 400G link<br/>tag bw 400 - 80% of flows"| P(("upstream P"))
-  R ==>|"eBGP over 100G link<br/>tag bw 100 - 20% of flows"| P
+  R(("R<br/>your edge router")) ==>|"eBGP session over 400G link<br/>bw 400 - 80% of flows"| P(("P<br/>upstream BGP peer"))
+  R ==>|"eBGP session over 100G link<br/>bw 100 - 20% of flows"| P
   P ==> D(("dest<br/>8.8.8.0/24"))
   linkStyle 0 stroke:#b5cea8,stroke-width:6px
   linkStyle 1 stroke:#b5cea8,stroke-width:2px
