@@ -2163,6 +2163,27 @@ graph LR
 
   <section data-markdown>
   <textarea data-template>
+### Scaling past 4 nodes — link economics
+
+Full-mesh links grow **N(N-1)/2** — the cost wall:
+
+| PoPs | Full-mesh links |
+|------|-----------------|
+| 4 | 6 |
+| 8 | 28 |
+| 12 | 66 |
+| 20 | 190 |
+
+Past a handful of sites you **never** full-mesh. You build a **partial mesh** shaped by the traffic matrix — dense where the big flows are, sparse elsewhere.
+
+- **Dual-plane core** — two physically disjoint planes; every PoP homes to both, so a whole plane can fail and you still hold N-1. SP backbones (Sky-style) are built this way.
+- **Hub-and-spoke** — cheapest links, but the hub is a failure domain and detours are long. Edge/access only, never the core.
+- **Ring-of-rings** — metro rings stitched onto a meshed core; common in carrier regional design.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
 ### Design principles
 
 1. **Diversity > redundancy.** Two links in same conduit ≠ two links.
