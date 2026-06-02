@@ -2625,7 +2625,7 @@ Peak demand (Gbps) between every pair. **Bold = heavy (≥150)** → earns a dir
 | **MIL** | 60 | 70 | **190** | **160** | — | 80 |
 | **MAD** | **170** | 40 | 50 | **150** | 80 | — |
 
-8 pairs are heavy → **8 direct links**; the other 7 pairs transit. Next three slides: what that builds, how a light pair rides it, and how it survives a failure.
+8 pairs are heavy → **8 direct links**; the other 7 pairs transit. Next four slides: what it builds, how a light pair rides it, whether it survives a failure — and what N-1 really costs.
   </textarea>
   </section>
 
@@ -2727,6 +2727,40 @@ Peak demand (Gbps) between every pair. **Bold = heavy (≥150)** → earns a dir
     </svg>
     <p style="font-size: 0.72em; color: #888; text-align: center; margin-top: 10px;">
       The <b>220</b> on a link is the <i>demand</i>, not the <i>load</i>. LON–AMS actually carries <b>350G</b> at rest — 220 direct + 90 (AMS–PAR) + 40 (AMS–MAD) transiting it. <b>AMS–FRA (250G) fails</b> → AMS reaches everything only via LON, dumping AMS–FRA's 250 + AMS–MIL's 70 onto LON–AMS → <b>670G</b>; LON–FRA 335 → <b>620G</b>. Both ~1.6× over a 400G link. Normal peaked at 355G, so <b>the topology passes at rest and collapses on a single failure</b> — which is why you fix the N-1 budget <i>before</i> the topology and size for own load + worst inherited reroute.
+    </p>
+  </section>
+
+  <section>
+    <h3>Step 4 — what N-1 actually costs</h3>
+    <svg viewBox="0 0 800 430" style="width: 88%; max-height: 430px; display:block; margin: 0 auto;">
+      <!-- 400G ceiling -->
+      <line x1="486" y1="50" x2="486" y2="392" stroke="#d16b6b" stroke-width="2" stroke-dasharray="6 5"/>
+      <text x="486" y="42" text-anchor="middle" font-size="13" fill="#e09b9b" font-family="sans-serif">400G link ceiling</text>
+      <g font-family="sans-serif" font-size="13">
+        <!-- Row1 LON-PAR 355/700 -->
+        <rect x="130" y="64"  width="622" height="22" rx="2" fill="#333"/><rect x="486" y="64"  width="266" height="22" fill="#5a2b2b"/><rect x="130" y="64"  width="316" height="22" rx="2" fill="#5b9bd5"/><text x="122" y="80"  text-anchor="end" fill="#ccc">LON–PAR</text><text x="744" y="80"  text-anchor="end" fill="#eee">355 / 700</text>
+        <!-- Row2 LON-AMS 350/670 -->
+        <rect x="130" y="107" width="596" height="22" rx="2" fill="#333"/><rect x="486" y="107" width="240" height="22" fill="#5a2b2b"/><rect x="130" y="107" width="311" height="22" rx="2" fill="#5b9bd5"/><text x="122" y="123" text-anchor="end" fill="#ccc">LON–AMS</text><text x="718" y="123" text-anchor="end" fill="#eee">350 / 670</text>
+        <!-- Row3 AMS-FRA 320/670 -->
+        <rect x="130" y="150" width="596" height="22" rx="2" fill="#333"/><rect x="486" y="150" width="240" height="22" fill="#5a2b2b"/><rect x="130" y="150" width="284" height="22" rx="2" fill="#5b9bd5"/><text x="122" y="166" text-anchor="end" fill="#ccc">AMS–FRA</text><text x="718" y="166" text-anchor="end" fill="#eee">320 / 670</text>
+        <!-- Row4 LON-FRA 335/660 -->
+        <rect x="130" y="193" width="587" height="22" rx="2" fill="#333"/><rect x="486" y="193" width="231" height="22" fill="#5a2b2b"/><rect x="130" y="193" width="298" height="22" rx="2" fill="#5b9bd5"/><text x="122" y="209" text-anchor="end" fill="#ccc">LON–FRA</text><text x="709" y="209" text-anchor="end" fill="#eee">335 / 660</text>
+        <!-- Row5 FRA-MIL 345/560 -->
+        <rect x="130" y="236" width="498" height="22" rx="2" fill="#333"/><rect x="486" y="236" width="142" height="22" fill="#5a2b2b"/><rect x="130" y="236" width="307" height="22" rx="2" fill="#5b9bd5"/><text x="122" y="252" text-anchor="end" fill="#ccc">FRA–MIL</text><text x="620" y="252" text-anchor="end" fill="#eee">345 / 560</text>
+        <!-- Row6 MIL-PAR 325/560 -->
+        <rect x="130" y="279" width="498" height="22" rx="2" fill="#333"/><rect x="486" y="279" width="142" height="22" fill="#5a2b2b"/><rect x="130" y="279" width="289" height="22" rx="2" fill="#5b9bd5"/><text x="122" y="295" text-anchor="end" fill="#ccc">MIL–PAR</text><text x="620" y="295" text-anchor="end" fill="#eee">325 / 560</text>
+        <!-- Row7 LON-MAD 260/490 -->
+        <rect x="130" y="322" width="436" height="22" rx="2" fill="#333"/><rect x="486" y="322" width="80"  height="22" fill="#5a2b2b"/><rect x="130" y="322" width="231" height="22" rx="2" fill="#5b9bd5"/><text x="122" y="338" text-anchor="end" fill="#ccc">LON–MAD</text><text x="558" y="338" text-anchor="end" fill="#eee">260 / 490</text>
+        <!-- Row8 PAR-MAD 230/490 -->
+        <rect x="130" y="365" width="436" height="22" rx="2" fill="#333"/><rect x="486" y="365" width="80"  height="22" fill="#5a2b2b"/><rect x="130" y="365" width="204" height="22" rx="2" fill="#5b9bd5"/><text x="122" y="381" text-anchor="end" fill="#ccc">PAR–MAD</text><text x="558" y="381" text-anchor="end" fill="#eee">230 / 490</text>
+      </g>
+      <g font-size="12.5" font-family="sans-serif">
+        <rect x="150" y="404" width="14" height="12" fill="#5b9bd5"/><text x="170" y="414" fill="#aaa">carried at rest</text>
+        <rect x="320" y="404" width="14" height="12" fill="#333"/><text x="340" y="414" fill="#aaa">must provision for worst single failure</text>
+      </g>
+    </svg>
+    <p style="font-size: 0.7em; color: #888; text-align: center; margin-top: 8px;">
+      Each link must hold its own load <b>plus the worst reroute it inherits</b> — the grey bar (<b>490–700G</b>). At rest (blue) nothing tops 355G, so to survive a single failure you buy <b>~1.9× the bandwidth you use</b> (4800G of link to carry 2520G). Two ways out: <b>(1)</b> buy the capacity — fat links, half-idle; <b>(2)</b> give each node a second disjoint exit and use <b>UCMP / SR-TE weighted paths</b> to <i>split</i> the reroute across the short <i>and</i> long path — IGP shortest-path alone dumps it all on the short hop (the 670G). Real backbones do (2) as a <b>dual plane + UCMP</b>. The matrix gave you the links; the <b>failure budget gave you the capacity and the mesh</b> — you can't read topology off demand alone.
     </p>
   </section>
 
