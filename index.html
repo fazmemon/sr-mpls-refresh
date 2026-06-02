@@ -2631,19 +2631,41 @@ Peak demand (Gbps) between every pair. **Bold = heavy (≥150)** → earns a dir
 
   <section>
     <h3>Step 1 — heavy pairs become direct links</h3>
-    <div class="mermaid">
-graph LR
-  AMS((AMS)) ===|"220"| LON((LON))
-  AMS ===|"250"| FRA((FRA))
-  FRA ===|"190"| MIL((MIL))
-  MIL ===|"160"| PAR((PAR))
-  PAR ===|"150"| MAD((MAD))
-  MAD ===|"170"| LON
-  LON ===|"200"| FRA
-  LON ===|"180"| PAR
-    </div>
+    <svg viewBox="0 0 800 580" style="width: 74%; max-height: 500px; display:block; margin: 0 auto;">
+      <!-- ring edges (blue) -->
+      <line x1="400" y1="100" x2="573" y2="200" stroke="#5b9bd5" stroke-width="6"/>
+      <line x1="573" y1="200" x2="573" y2="400" stroke="#5b9bd5" stroke-width="6"/>
+      <line x1="573" y1="400" x2="400" y2="500" stroke="#5b9bd5" stroke-width="6"/>
+      <line x1="400" y1="500" x2="227" y2="400" stroke="#5b9bd5" stroke-width="6"/>
+      <line x1="227" y1="400" x2="227" y2="200" stroke="#5b9bd5" stroke-width="6"/>
+      <line x1="227" y1="200" x2="400" y2="100" stroke="#5b9bd5" stroke-width="6"/>
+      <!-- chords from LON (green) -->
+      <line x1="400" y1="100" x2="573" y2="400" stroke="#b5cea8" stroke-width="5"/>
+      <line x1="400" y1="100" x2="227" y2="400" stroke="#b5cea8" stroke-width="5"/>
+      <!-- edge demand labels -->
+      <g font-size="17" fill="#e6e6e6" text-anchor="middle" font-family="sans-serif">
+        <rect x="470" y="139" width="36" height="22" rx="3" fill="#0c0c0c"/><text x="488" y="155">220</text>
+        <rect x="555" y="289" width="36" height="22" rx="3" fill="#0c0c0c"/><text x="573" y="305">250</text>
+        <rect x="469" y="439" width="36" height="22" rx="3" fill="#0c0c0c"/><text x="487" y="455">190</text>
+        <rect x="295" y="439" width="36" height="22" rx="3" fill="#0c0c0c"/><text x="313" y="455">160</text>
+        <rect x="209" y="289" width="36" height="22" rx="3" fill="#0c0c0c"/><text x="227" y="305">150</text>
+        <rect x="295" y="139" width="36" height="22" rx="3" fill="#0c0c0c"/><text x="313" y="155">170</text>
+        <rect x="470" y="239" width="36" height="22" rx="3" fill="#0c0c0c"/><text x="488" y="255" fill="#b5cea8">200</text>
+        <rect x="295" y="239" width="36" height="22" rx="3" fill="#0c0c0c"/><text x="313" y="255" fill="#b5cea8">180</text>
+      </g>
+      <!-- nodes -->
+      <g font-size="17" font-weight="600" text-anchor="middle" font-family="sans-serif">
+        <circle cx="400" cy="100" r="33" fill="#222" stroke="#ddd" stroke-width="2"/><text x="400" y="106" fill="#fff">LON</text>
+        <circle cx="573" cy="200" r="33" fill="#222" stroke="#ddd" stroke-width="2"/><text x="573" y="206" fill="#fff">AMS</text>
+        <circle cx="573" cy="400" r="33" fill="#222" stroke="#ddd" stroke-width="2"/><text x="573" y="406" fill="#fff">FRA</text>
+        <circle cx="400" cy="500" r="33" fill="#222" stroke="#ddd" stroke-width="2"/><text x="400" y="506" fill="#fff">MIL</text>
+        <circle cx="227" cy="400" r="33" fill="#222" stroke="#ddd" stroke-width="2"/><text x="227" y="406" fill="#fff">PAR</text>
+        <circle cx="227" cy="200" r="33" fill="#222" stroke="#ddd" stroke-width="2"/><text x="227" y="206" fill="#fff">MAD</text>
+      </g>
+      <text x="400" y="556" text-anchor="middle" font-size="14" fill="#888" font-family="sans-serif">blue = ring · green = LON chords · numbers = Gbps demand</text>
+    </svg>
     <p style="font-size: 0.72em; color: #888; text-align: center; margin-top: 12px;">
-      The 8 heavy pairs → a <b>6-node ring</b> (LON-AMS-FRA-MIL-PAR-MAD) plus <b>two LON chords</b> (LON–FRA 200, LON–PAR 180) where cross-demand is high. Every node keeps ≥2 links, so it survives any single failure — and it's <b>8 links, not the 15 of a full mesh</b>.
+      The 8 heavy pairs → a <b>6-node ring</b> (LON-AMS-FRA-MIL-PAR-MAD) plus <b>two LON chords</b> (LON–FRA 200, LON–PAR 180) where cross-demand is high. Every node keeps ≥2 links, so it <b>stays connected</b> through any single failure — but staying connected isn't the same as having the <b>capacity</b> for the reroute (that's Step 3). And it's <b>8 links, not the 15</b> of a full mesh.
     </p>
   </section>
 
@@ -2669,7 +2691,7 @@ graph LR
   LON ==>|"200 own + 250 reroute"| FRA
     </div>
     <p style="font-size: 0.72em; color: #888; text-align: center; margin-top: 12px;">
-      Lose the 250G AMS–FRA link → its traffic reroutes <b>AMS → LON → FRA</b>. But LON–AMS already carries 220G, so it now needs <b>470G</b>; LON–FRA needs <b>450G</b>. On 400G links, <b>both overload</b>. N-1 isn't free: size each link for <b>own load + worst inherited reroute</b>, or split the 250G over two diverse paths (≤50% each). That's the "provision ≤50%" from §9, shown on a real mesh.
+      Step 1 kept every node <b>connected</b> — but that's not enough on its own. Lose the 250G AMS–FRA link → its traffic reroutes <b>AMS → LON → FRA</b>. But LON–AMS already carries 220G, so it now needs <b>470G</b>; LON–FRA needs <b>450G</b>. On 400G links, <b>both overload</b>. N-1 isn't free: size each link for <b>own load + worst inherited reroute</b>, or split the 250G over two diverse paths (≤50% each). That's the "provision ≤50%" from §9, shown on a real mesh.
     </p>
   </section>
 
