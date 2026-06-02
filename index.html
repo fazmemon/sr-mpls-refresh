@@ -2397,6 +2397,8 @@ SR-MPLS doesn't change the rule — buffer architecture is dataplane, orthogonal
 | QSFP28 | 4 | 100G |
 | QSFP-DD / OSFP | 8 | 400 / 800G (OSFP runs cooler) |
 
+A **lane** = one electrical SerDes channel between ASIC and optic. **Speed = lanes × per-lane rate** (25G → 50G → 100G PAM4), and independent lanes give **breakout** — one 400G QSFP-DD → 4×100G.
+
 **Grey vs coherent — two worlds:**
 - **Grey (client):** direct-detect, 1 λ, SR/LR/ER (~100m–40km), ~3–8 W. Intra-DC / intra-PoP.
 - **Coherent:** DSP, phase + polarisation, tunable DWDM, long reach, ~15–25 W — runs hot, so it caps ports-per-card.
@@ -2543,6 +2545,33 @@ graph LR
 - **Per-VRF vs per-prefix label** — per-prefix = finer ECMP/UCMP spread, per-VRF = label-table savings
 
   </textarea>
+  </section>
+
+  <section>
+    <h3>Putting it together — one inter-AS network, everything on</h3>
+    <div class="mermaid">
+graph LR
+  subgraph AS1[AS 64500 — SR domain]
+    PE1[PE1<br/>head-end] --- P1[P]
+    P1 --- ASBR1[ASBR-1]
+  end
+  subgraph AS2[AS 64501 — SR domain]
+    ASBR2[ASBR-2] --- PE2[PE2]
+  end
+  ASBR1 ==>|"Option C: BGP-LU + multi-hop eBGP VPNv4"| ASBR2
+  ASBR2 ==>|"EPE PeerNode-SID"| PeerA[Peer A<br/>transit]
+  ASBR2 ==>|"EPE PeerAdj-SID"| PeerB[Peer B<br/>private]
+  PCE[H-PCE<br/>BGP-LS in / SR Policy out]
+  ASBR1 -.->|"BGP-LS"| PCE
+  ASBR2 -.->|"BGP-LS"| PCE
+  PCE -.->|"SR Policy + BSID"| PE1
+  style PeerA fill:#6b3a1a
+  style PeerB fill:#1e4620
+  style PCE fill:#264f78
+    </div>
+    <p style="font-size: 0.7em; color: #888; text-align: center; margin-top: 10px;">
+      The whole section in one picture: <b>SR inside each AS</b>, <b>Option C / BGP-LU</b> stitching the boundary, an <b>H-PCE</b> learning both domains via <b>BGP-LS</b> and pushing an end-to-end <b>SR Policy</b> (binding-SID at the ASBR), and <b>EPE</b> steering egress per peer. Weighted UCMP across the inter-AS and peer links rides <b>BGP multipath + DMZ-Link-Bandwidth</b>.
+    </p>
   </section>
 </section>
 
