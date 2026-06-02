@@ -2120,19 +2120,13 @@ graph LR
   <textarea data-template>
 ## 9 · Physical topology economics
 
-For N PoPs: wire links so capacity is well-used, you survive failure, you don't overbuild.
+For N PoPs: connect them so capacity is used well, you survive failure, and you don't overbuild. **Cost ≈ number of links/transponders; resilience ≈ how short the detour is when one fails.** The shapes just trade those two off.
 
-**Triangle (3 nodes, 3 links)** — full mesh of 3
-- Failure: 2-hop path absorbs full load → provision ≤50% under normal
-- Economic at small N
+**Triangle — 3 nodes, 3 links.** For 3 nodes a ring *is* the full mesh, so it's the cheapest **and** fully resilient at once: lose any link and the other two carry the load on a 2-hop path. Provision ≤50%. Ideal at small N.
 
-**Square (4 nodes, 4 links — ring)** — cheap, bad resilience
-- Failure: traffic goes 3 hops the long way
-- Avoid pure rings beyond 4 nodes
+**Square / ring — 4 nodes, 4 links.** The **fewest links** that still give 4 nodes redundancy → the cheapest way to wire *those four*. The catch: lose one link and traffic takes the **3-hop long way round**, and that detour only grows as the ring gets bigger — so avoid pure rings past ~4 nodes. *(Not "cheaper than a triangle" — it has more nodes and links; it's cheapest only for its own node count.)*
 
-**Square + diagonals (4 nodes, 6 links — full mesh of 4)**
-- Single failure barely moves utilisation
-- UCMP useful because surviving paths are 1-hop vs 2-hop
+**Square + diagonals — 4 nodes, 6 links (full mesh).** Most links, most cost, best resilience: a single failure barely moves utilisation, and surviving paths are 1-hop vs 2-hop — which is where UCMP earns its keep.
 
 ↓ for design principles
   </textarea>
