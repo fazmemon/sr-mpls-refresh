@@ -2120,15 +2120,20 @@ graph LR
   <textarea data-template>
 ## 9 · Physical topology economics
 
-For N PoPs: connect them so capacity is used well, you survive failure, and you don't overbuild. **Cost ≈ number of links/transponders; resilience ≈ how short the detour is when one fails.** The shapes just trade those two off.
+Connecting N PoPs trades two things off:
 
-**Triangle — 3 nodes, 3 links.** For 3 nodes a ring *is* the full mesh, so it's the cheapest **and** fully resilient at once: lose any link and the other two carry the load on a 2-hop path. Provision ≤50%. Ideal at small N.
+- **Cost** — how many links / transponders you buy.
+- **Resilience** — on a link failure: do you stay connected, and how far is the reroute? A longer reroute means more latency and more load dumped onto the surviving links.
 
-**Square / ring — 4 nodes, 4 links.** The **fewest links** that still give 4 nodes redundancy → the cheapest way to wire *those four*. The catch: lose one link and traffic takes the **3-hop long way round**, and that detour only grows as the ring gets bigger — so avoid pure rings past ~4 nodes. *(Not "cheaper than a triangle" — it has more nodes and links; it's cheapest only for its own node count.)*
+What each shape does when **one link (A–B) fails** — diagram on the next slide:
 
-**Square + diagonals — 4 nodes, 6 links (full mesh).** Most links, most cost, best resilience: a single failure barely moves utilisation, and surviving paths are 1-hop vs 2-hop — which is where UCMP earns its keep.
+| Shape | Nodes · Links | Lose A–B → reroute |
+|-------|---------------|--------------------|
+| **Triangle** | 3 · 3 | A→C→B = **2 hops** — the only backup |
+| **Ring (square)** | 4 · 4 | A→D→C→B = **3 hops**, +1 hop per node added |
+| **Full mesh** | 4 · 6 | **2 hops**, utilisation barely moves — many backups |
 
-↓ for design principles
+A 3-node ring already *is* a full mesh — cheapest **and** single-failure-proof at once. Rings stop scaling once that reroute gets long (avoid past ~4 nodes); full mesh keeps reroutes short but costs the most links — and its mix of a 1-hop direct path and longer alternates is what UCMP weights across.
   </textarea>
   </section>
 
