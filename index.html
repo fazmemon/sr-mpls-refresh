@@ -2658,12 +2658,46 @@ Peak demand (Gbps) between every pair. **Bold = heavy (≥150)** → earns a dir
 | **MIL** | 60 | 70 | **190** | **160** | — | 80 |
 | **MAD** | **170** | 40 | 50 | **150** | 80 | — |
 
-8 pairs are heavy → **8 direct links**; the other 7 pairs transit. Next four slides: what it builds, how a light pair rides it, whether it survives a failure — and what N-1 really costs.
+8 pairs are heavy → **8 direct links** — *if* the fibre exists and is diverse. Next five slides: what fibre you can actually get, what it builds, how a light pair rides it, whether it survives a failure — and what N-1 really costs.
   </textarea>
   </section>
 
   <section>
-    <h3>Step 1 — heavy pairs become direct links</h3>
+    <h3>Step 1 — fibre availability &amp; diversity</h3>
+    <svg viewBox="0 0 800 470" style="width: 82%; max-height: 470px; display:block; margin: 0 auto;" font-family="sans-serif">
+      <g font-size="13">
+        <line x1="58" y1="30" x2="90" y2="30" stroke="#4fc3d4" stroke-width="6"/><text x="96" y="34" fill="#9fdbe6">subsea — scarce, costly, few landings</text>
+        <line x1="58" y1="52" x2="90" y2="52" stroke="#cdab6e" stroke-width="6"/><text x="96" y="56" fill="#d9c08c">terrestrial — diverse, cheaper</text>
+      </g>
+      <!-- subsea / cross-Channel spokes from LON -->
+      <line x1="400" y1="380" x2="110" y2="240" stroke="#4fc3d4" stroke-width="6"/>
+      <line x1="400" y1="380" x2="250" y2="130" stroke="#4fc3d4" stroke-width="6"/>
+      <line x1="400" y1="380" x2="550" y2="130" stroke="#4fc3d4" stroke-width="6"/>
+      <line x1="400" y1="380" x2="690" y2="240" stroke="#4fc3d4" stroke-width="6"/>
+      <!-- terrestrial chain -->
+      <line x1="110" y1="240" x2="250" y2="130" stroke="#cdab6e" stroke-width="6"/>
+      <line x1="250" y1="130" x2="400" y2="95" stroke="#cdab6e" stroke-width="6"/>
+      <line x1="400" y1="95" x2="550" y2="130" stroke="#cdab6e" stroke-width="6"/>
+      <line x1="550" y1="130" x2="690" y2="240" stroke="#cdab6e" stroke-width="6"/>
+      <!-- SRLG warning on the two LON->continent spokes used by the Step 4 reroute -->
+      <ellipse cx="332" cy="312" rx="80" ry="36" fill="none" stroke="#d16b6b" stroke-width="2.5" stroke-dasharray="7 5" transform="rotate(-33 332 312)"/>
+      <rect x="118" y="398" width="372" height="22" rx="3" fill="#0c0c0c"/><text x="126" y="414" font-size="13.5" fill="#e09b9b">LON–AMS &amp; LON–FRA share a Channel landing/duct? 1 cut = both gone</text>
+      <g font-size="16" font-weight="600" text-anchor="middle">
+        <circle cx="400" cy="380" r="34" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2.5"/><text x="400" y="385" fill="#fff">LON</text>
+        <circle cx="110" cy="240" r="29" fill="#222" stroke="#ccc" stroke-width="2"/><text x="110" y="245" fill="#fff">AMS</text>
+        <circle cx="250" cy="130" r="29" fill="#222" stroke="#ccc" stroke-width="2"/><text x="250" y="135" fill="#fff">FRA</text>
+        <circle cx="400" cy="95" r="29" fill="#222" stroke="#ccc" stroke-width="2"/><text x="400" y="100" fill="#fff">MIL</text>
+        <circle cx="550" cy="130" r="29" fill="#222" stroke="#ccc" stroke-width="2"/><text x="550" y="135" fill="#fff">PAR</text>
+        <circle cx="690" cy="240" r="29" fill="#222" stroke="#ccc" stroke-width="2"/><text x="690" y="245" fill="#fff">MAD</text>
+      </g>
+    </svg>
+    <p style="font-size: 0.7em; color: #888; text-align: center; margin-top: 8px;">
+      Demand wants 8 links — but you build only where fibre runs, and cost is <b>subsea ≫ terrestrial ≫ metro</b>. The trap is diversity: every path you lean on for N-1 must be <b>physically separate</b>. LON's links to AMS and FRA both cross to the continent — if they share a <b>Channel duct or landing station</b>, one anchor-drag or backhoe cuts both at once and Step 4's <b>AMS→LON→FRA reroute never happens</b>. "Diverse" counts only after you've <b>SRLG-audited the ducts and landings</b> — not when it merely looks separate on the map.
+    </p>
+  </section>
+
+  <section>
+    <h3>Step 2 — heavy pairs become direct links</h3>
     <svg viewBox="0 0 800 470" style="width: 80%; max-height: 470px; display:block; margin: 0 auto;">
       <!-- spokes from LON hub -->
       <line x1="400" y1="380" x2="110" y2="240" stroke="#5b9bd5" stroke-width="6"/>
@@ -2701,7 +2735,7 @@ Peak demand (Gbps) between every pair. **Bold = heavy (≥150)** → earns a dir
   </section>
 
   <section>
-    <h3>Step 2 — light pairs don't get a link, they transit</h3>
+    <h3>Step 3 — light pairs don't get a link, they transit</h3>
     <svg viewBox="0 0 800 470" style="width: 80%; max-height: 470px; display:block; margin: 0 auto;">
       <line x1="400" y1="380" x2="250" y2="130" stroke="#3a3a3a" stroke-width="5"/>
       <line x1="400" y1="380" x2="550" y2="130" stroke="#3a3a3a" stroke-width="5"/>
@@ -2732,7 +2766,7 @@ Peak demand (Gbps) between every pair. **Bold = heavy (≥150)** → earns a dir
   </section>
 
   <section>
-    <h3>Step 3 — the N-1 budget: a built link fails</h3>
+    <h3>Step 4 — the N-1 budget: a built link fails</h3>
     <svg viewBox="0 0 800 470" style="width: 80%; max-height: 470px; display:block; margin: 0 auto;">
       <line x1="400" y1="380" x2="550" y2="130" stroke="#3a3a3a" stroke-width="5"/>
       <line x1="400" y1="380" x2="690" y2="240" stroke="#3a3a3a" stroke-width="5"/>
@@ -2764,7 +2798,7 @@ Peak demand (Gbps) between every pair. **Bold = heavy (≥150)** → earns a dir
   </section>
 
   <section>
-    <h3>Step 4 — what N-1 actually costs</h3>
+    <h3>Step 5 — what N-1 actually costs</h3>
     <svg viewBox="0 0 800 430" style="width: 88%; max-height: 430px; display:block; margin: 0 auto;">
       <!-- 400G ceiling -->
       <line x1="486" y1="50" x2="486" y2="392" stroke="#d16b6b" stroke-width="2" stroke-dasharray="6 5"/>
