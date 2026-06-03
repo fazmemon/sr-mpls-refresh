@@ -2827,7 +2827,7 @@ Peak demand (Gbps) between every pair. **Bold = heavy (≥150)** → earns a dir
       </g>
     </svg>
     <p style="font-size: 0.7em; color: #888; text-align: center; margin-top: 8px;">
-      Each link must hold its own load <b>plus the worst reroute it inherits</b> — the grey bar (<b>490–700G</b>). At rest (blue) nothing tops 355G, so to survive a single failure you buy <b>~1.9× the bandwidth you use</b> (4800G of link to carry 2520G). Two ways out: <b>(1)</b> buy the capacity — fat links, half-idle; <b>(2)</b> give each node a second disjoint exit and use <b>UCMP / SR-TE weighted paths</b> to <i>split</i> the reroute across the short <i>and</i> long path — IGP shortest-path alone dumps it all on the short hop (the 670G). Real backbones do (2) as a <b>dual plane + UCMP</b>. The matrix gave you the links; the <b>failure budget gave you the capacity and the mesh</b> — you can't read topology off demand alone.
+      Each link must hold its own load <b>plus the worst reroute it inherits</b> — the grey bar (<b>490–700G</b>). At rest nothing tops 355G, so to survive one failure you buy <b>~1.9× the bandwidth you use</b> (4800G of link to carry 2520G). Backbones absorb this with <b>dual planes</b> — every PoP homes to two disjoint planes, so a whole plane can fail and you still hold N-1. <b>That part is universal — every tier-1 runs it.</b> What differs is how the reroute <i>splits</i> across the planes: today it's mostly <b>IGP/ECMP even-split + capacity headroom</b>; <b>SR-TE / UCMP weighted paths</b> split it <i>proportionally</i> so no fat pipe sits idle — the efficiency win, but <b>most operators haven't deployed SR yet</b>. The matrix gave you the links; the failure budget gave you the capacity and the planes.
     </p>
   </section>
 
