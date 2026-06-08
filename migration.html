@@ -105,6 +105,45 @@
   </svg>
 </section>
 
+<!-- ============ STAY ON OSPF — NO FORKLIFT ============ -->
+<section>
+  <h3>Stay on OSPF &mdash; SR rides it, no IGP forklift</h3>
+  <svg viewBox="0 0 1240 470" style="width: 96%; max-height: 540px; display:block; margin: 0 auto;" font-family="sans-serif">
+    <!-- divider -->
+    <line x1="620" y1="60" x2="620" y2="350" stroke="#555" stroke-width="2" stroke-dasharray="6 6"/>
+
+    <!-- ===== LEFT: the migration you avoid ===== -->
+    <rect x="40" y="78" width="540" height="262" rx="8" fill="#1a0f0f" stroke="#5a2b2b" stroke-width="1.5"/>
+    <text x="310" y="56" text-anchor="middle" font-size="17" font-weight="600" fill="#e09b9b">Migrate OSPF &rarr; IS-IS, worldwide</text>
+    <text x="310" y="106" text-anchor="middle" font-size="13" fill="#9a6b6b">the expensive path &mdash; what someone else proposes</text>
+    <g font-size="15.5" fill="#d9d9d9">
+      <text x="74" y="150"><tspan fill="#d16b6b" font-weight="700">&#10007;</tspan>  Forklift every router's IGP</text>
+      <text x="74" y="190"><tspan fill="#d16b6b" font-weight="700">&#10007;</tspan>  Retrain the whole ops team</text>
+      <text x="74" y="230"><tspan fill="#d16b6b" font-weight="700">&#10007;</tspan>  Migration risk on a live trading floor</text>
+      <text x="74" y="270"><tspan fill="#d16b6b" font-weight="700">&#10007;</tspan>  $$$ &mdash; "why are we paying for this?"</text>
+    </g>
+    <text x="310" y="316" text-anchor="middle" font-size="13.5" fill="#c89393">SR purity you're not being paid to chase</text>
+
+    <!-- ===== RIGHT: run SR on the OSPF you have ===== -->
+    <rect x="660" y="78" width="540" height="262" rx="8" fill="#0f1a0f" stroke="#2c4a2c" stroke-width="1.5"/>
+    <text x="930" y="56" text-anchor="middle" font-size="17" font-weight="600" fill="#9ada9a">Run SR on the OSPF you have</text>
+    <text x="930" y="106" text-anchor="middle" font-size="13" fill="#6b9a6b">Arista EOS &mdash; verified against the feature index</text>
+    <g font-size="14.5" fill="#e6e6e6">
+      <text x="690" y="146"><tspan fill="#7ec97e" font-weight="700">&#10003;</tspan>  Prefix-SID / Adj-SID &mdash; OSPF-SR <tspan fill="#888">(4.31.1F)</tspan></text>
+      <text x="690" y="182"><tspan fill="#7ec97e" font-weight="700">&#10003;</tspan>  TI-LFA, sub-50 ms &mdash; OSPF-SR <tspan fill="#888">(4.33.1F)</tspan></text>
+      <text x="690" y="218"><tspan fill="#7ec97e" font-weight="700">&#10003;</tspan>  SR-TE colour steering <tspan fill="#888">&mdash; IGP-agnostic</tspan></text>
+      <text x="690" y="254"><tspan fill="#7ec97e" font-weight="700">&#10003;</tspan>  BGP-LS &mdash; controller / PCE feed</text>
+      <text x="690" y="294"><tspan fill="#d9c08c" font-weight="700">&#10007;</tspan>  Flex-Algo &mdash; IS-IS only <tspan fill="#d9c08c">&rarr; use SR-TE colour</tspan></text>
+    </g>
+    <text x="930" y="330" text-anchor="middle" font-size="13" fill="#888">one feature lost &mdash; and steering doesn't need it</text>
+
+    <!-- punchline -->
+    <rect x="120" y="378" width="1000" height="68" rx="6" fill="#14110a" stroke="#5a4d2a"/>
+    <text x="620" y="402" text-anchor="middle" font-size="14.5" fill="#dcdcaa">The migration is the spend you avoid &mdash; OSPF-SR costs a version check (EOS &ge; 4.33), not a re-architecture.</text>
+    <text x="620" y="428" text-anchor="middle" font-size="14" fill="#cfe3f5">"IS-IS is the SR-native IGP" is true &mdash; and <tspan fill="#9ada9a">not worth a worldwide forklift nobody's funding.</tspan></text>
+  </svg>
+</section>
+
 </div>
 </div>
 
