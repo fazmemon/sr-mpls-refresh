@@ -2899,18 +2899,63 @@ Peak demand (Gbps) between every pair. **Bold = heavy (≥150)** → earns a dir
     </p>
   </section>
 
-  <section data-markdown>
-  <textarea data-template>
-### UCMP trigger — full matrix (1/2)
+  <section>
+    <h3>UCMP trigger — full matrix (1/2)</h3>
+    <svg viewBox="0 0 820 400" style="width: 78%; max-height: 320px; display:block; margin: 0 auto;" font-family="sans-serif">
+      <!-- divider -->
+      <line x1="410" y1="44" x2="410" y2="300" stroke="#555" stroke-width="2" stroke-dasharray="6 6"/>
+      <text x="410" y="28" text-anchor="middle" font-size="13" fill="#999">same trigger — the knob depends on which side the asymmetry sits</text>
 
-| Trigger | Non-SR tool | SR tool |
-|---------|------------|---------|
-| Asymmetric link capacity (intra-AS) | DMZ-LB on labelled underlay | IGP weighted SPF *or* SR-TE weighted candidate paths |
-| Asymmetric capacity inter-AS | BGP multipath + DMZ-LB | Same — SR no help |
-| Post-failure rebalancing intra-AS | RSVP-TE auto-bandwidth | SR-TE recompute via PCE |
-| Post-failure rebalancing inter-AS | Hard — BGP-LB shifts but doesn't engineer | H-PCE + SR Policy |
-| Elephant flow polarisation | Hash seed tuning, entropy label | Hash + Flowspec-style steer to dedicated SR Policy |
-  </textarea>
+      <!-- ===== LEFT: intra-AS ===== -->
+      <text x="205" y="58" text-anchor="middle" font-size="15" font-weight="600" fill="#9cd1ef">INTRA-AS · you own both ends</text>
+      <!-- fat top path A-B -->
+      <line x1="90" y1="150" x2="220" y2="92" stroke="#5b9bd5" stroke-width="9"/>
+      <line x1="220" y1="92" x2="350" y2="150" stroke="#5b9bd5" stroke-width="9"/>
+      <!-- thin bottom path A-B -->
+      <line x1="90" y1="150" x2="220" y2="208" stroke="#5b9bd5" stroke-width="3"/>
+      <line x1="220" y1="208" x2="350" y2="150" stroke="#5b9bd5" stroke-width="3"/>
+      <g font-size="13" text-anchor="middle">
+        <rect x="184" y="74" width="72" height="20" rx="3" fill="#0c0c0c"/><text x="220" y="89" fill="#cfe3f5">400G · ~80%</text>
+        <rect x="184" y="210" width="72" height="20" rx="3" fill="#0c0c0c"/><text x="220" y="225" fill="#cfe3f5">100G · ~20%</text>
+      </g>
+      <g font-size="15" font-weight="600" text-anchor="middle">
+        <circle cx="90" cy="150" r="26" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2.5"/><text x="90" y="156" fill="#fff">A</text>
+        <circle cx="350" cy="150" r="26" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2.5"/><text x="350" y="156" fill="#fff">B</text>
+      </g>
+      <text x="205" y="278" text-anchor="middle" font-size="13.5" fill="#9ada9a">→ SR-TE weighted / IGP weighted SPF</text>
+      <text x="205" y="298" text-anchor="middle" font-size="13" fill="#888">post-failure rebalance → PCE recompute</text>
+
+      <!-- ===== RIGHT: inter-AS ===== -->
+      <text x="615" y="58" text-anchor="middle" font-size="15" font-weight="600" fill="#d9c08c">INTER-AS · far end isn't yours</text>
+      <line x1="500" y1="150" x2="690" y2="110" stroke="#5b9bd5" stroke-width="9"/>
+      <line x1="500" y1="150" x2="690" y2="190" stroke="#5b9bd5" stroke-width="3"/>
+      <g font-size="13" text-anchor="middle">
+        <rect x="566" y="96" width="54" height="20" rx="3" fill="#0c0c0c"/><text x="593" y="111" fill="#cfe3f5">400G</text>
+        <rect x="566" y="186" width="54" height="20" rx="3" fill="#0c0c0c"/><text x="593" y="201" fill="#cfe3f5">100G</text>
+      </g>
+      <g font-size="15" font-weight="600" text-anchor="middle">
+        <circle cx="500" cy="150" r="26" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2.5"/><text x="500" y="156" fill="#fff">R</text>
+        <rect x="690" y="120" width="92" height="60" rx="8" fill="#332b18" stroke="#d9c08c" stroke-width="2"/><text x="736" y="155" fill="#fff" font-size="13">peer AS</text>
+      </g>
+      <text x="615" y="278" text-anchor="middle" font-size="13.5" fill="#e0973c">→ BGP multipath + DMZ-LB</text>
+      <text x="615" y="298" text-anchor="middle" font-size="13" fill="#888">SR can't engineer across the boundary</text>
+
+      <!-- elephant strip -->
+      <rect x="60" y="342" width="700" height="42" rx="5" fill="#16120c" stroke="#3a3a3a"/>
+      <text x="410" y="360" text-anchor="middle" font-size="12.5" fill="#c89393">Elephant-flow polarisation is the exception — a hash problem, not a path one:</text>
+      <text x="410" y="378" text-anchor="middle" font-size="12.5" fill="#aaa">fix the hash (per-node seed / entropy label), or pin the elephant to its own SR Policy.</text>
+    </svg>
+
+    <table style="font-size: 0.58em; margin: 6px auto 0; width: 94%;">
+      <thead><tr><th>Trigger</th><th>Non-SR tool</th><th>SR tool</th></tr></thead>
+      <tbody>
+        <tr><td>Asymmetric link capacity (intra-AS)</td><td>DMZ-LB on labelled underlay</td><td>IGP weighted SPF <em>or</em> SR-TE weighted candidate paths</td></tr>
+        <tr><td>Asymmetric capacity inter-AS</td><td>BGP multipath + DMZ-LB</td><td>Same — SR no help</td></tr>
+        <tr><td>Post-failure rebalancing intra-AS</td><td>RSVP-TE auto-bandwidth</td><td>SR-TE recompute via PCE</td></tr>
+        <tr><td>Post-failure rebalancing inter-AS</td><td>Hard — BGP-LB shifts but doesn't engineer</td><td>H-PCE + SR Policy</td></tr>
+        <tr><td>Elephant flow polarisation</td><td>Hash seed tuning, entropy label</td><td>Hash + Flowspec-style steer to dedicated SR Policy</td></tr>
+      </tbody>
+    </table>
   </section>
 
   <section data-markdown>
