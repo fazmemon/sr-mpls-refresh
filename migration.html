@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0">
-  <title>IP → SR-MPLS Migration — Faz</title>
+  <title>IP → SR-TE — UCMP &amp; traffic steering — Faz</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/black.css">
@@ -46,108 +46,63 @@
 
 <!-- ============ COVER ============ -->
 <section class="center">
-  <h1>IP &rarr; SR-MPLS Migration</h1>
-  <h3>A strawman for a financial network &middot; over Arista</h3>
-  <p style="margin-top:1.6em; color:#9cdcfe;">Start: plain IP + IGP &nbsp;&rarr;&nbsp; Target: IS-IS SR-MPLS, Arista R-series</p>
-  <p style="margin-top:0.4em; color:#888;">No LDP &middot; no RSVP &middot; no SRMS</p>
-  <p style="margin-top:2em; font-size:0.7em; color:#666;">Swipe right &rarr; next &nbsp;|&nbsp; <code>Esc</code> for the overview</p>
+  <h1>IP &rarr; SR-TE</h1>
+  <h3>UCMP &amp; traffic steering for a trading network &middot; over Arista</h3>
+  <p style="margin-top:1.8em; color:#888;">The honest case for segment routing &mdash; where BGP stops being enough</p>
 </section>
 
-<!-- ============ ROADMAP ============ -->
+<!-- ============ UCMP vs STEERING ============ -->
 <section>
-  <h3>The migration in one picture</h3>
-  <svg viewBox="0 0 1240 380" style="width: 96%; max-height: 560px; display:block; margin: 0 auto;" font-family="sans-serif">
-    <!-- premise banner -->
-    <text x="620" y="26" text-anchor="middle" font-size="16" fill="#9cdcfe">Plain IP + IGP &nbsp;&rarr;&nbsp; SR-MPLS on Arista R-series &nbsp;&middot;&nbsp; no LDP &middot; no RSVP &middot; no SRMS</text>
+  <h3>Two problems, not one: UCMP vs traffic steering</h3>
+  <svg viewBox="0 0 1240 460" style="width: 96%; max-height: 540px; display:block; margin: 0 auto;" font-family="sans-serif">
+    <!-- divider -->
+    <line x1="620" y1="58" x2="620" y2="330" stroke="#555" stroke-width="2" stroke-dasharray="6 6"/>
 
-    <!-- spine arrows between boxes -->
-    <g fill="#9cd1ef">
-      <path d="M206 135 L218 143 L206 151 Z"/>
-      <path d="M410 135 L422 143 L410 151 Z"/>
-      <path d="M614 135 L626 143 L614 151 Z"/>
-      <path d="M818 135 L830 143 L818 151 Z"/>
-      <path d="M1022 135 L1034 143 L1022 151 Z"/>
+    <!-- ===== LEFT: UCMP ===== -->
+    <text x="320" y="50" text-anchor="middle" font-size="16" font-weight="600" fill="#9cd1ef">UCMP &mdash; use unequal links in proportion</text>
+    <!-- fat top link A-B -->
+    <line x1="150" y1="195" x2="320" y2="120" stroke="#5b9bd5" stroke-width="9"/>
+    <line x1="320" y1="120" x2="490" y2="195" stroke="#5b9bd5" stroke-width="9"/>
+    <!-- thin bottom link A-B -->
+    <line x1="150" y1="195" x2="320" y2="270" stroke="#5b9bd5" stroke-width="3"/>
+    <line x1="320" y1="270" x2="490" y2="195" stroke="#5b9bd5" stroke-width="3"/>
+    <g font-size="13" text-anchor="middle">
+      <rect x="282" y="100" width="76" height="20" rx="3" fill="#0c0c0c"/><text x="320" y="115" fill="#cfe3f5">400G &middot; 80%</text>
+      <rect x="282" y="272" width="76" height="20" rx="3" fill="#0c0c0c"/><text x="320" y="287" fill="#cfe3f5">100G &middot; 20%</text>
     </g>
-
-    <!-- PHASE 0 -->
-    <g>
-      <rect x="20" y="78" width="180" height="130" rx="8" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
-      <text x="110" y="100" text-anchor="middle" font-size="13" fill="#9cdcfe" font-weight="600">PHASE 0</text>
-      <text x="110" y="123" text-anchor="middle" font-size="15.5" fill="#fff" font-weight="600">Discover &amp; justify</text>
-      <line x1="40" y1="132" x2="180" y2="132" stroke="#33526e" stroke-width="1"/>
-      <text x="110" y="152" text-anchor="middle" font-size="12" fill="#b5cea8">why SR here:</text>
-      <text x="110" y="168" text-anchor="middle" font-size="12" fill="#b5cea8">determinism + latency,</text>
-      <text x="110" y="184" text-anchor="middle" font-size="12" fill="#b5cea8">not bandwidth TE</text>
+    <g font-size="16" font-weight="600" text-anchor="middle">
+      <circle cx="150" cy="195" r="27" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2.5"/><text x="150" y="201" fill="#fff">A</text>
+      <circle cx="490" cy="195" r="27" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2.5"/><text x="490" y="201" fill="#fff">B</text>
     </g>
+    <text x="320" y="354" text-anchor="middle" font-size="14.5" fill="#9ada9a">&rarr; BGP DMZ-Link-Bandwidth</text>
+    <text x="320" y="376" text-anchor="middle" font-size="13" fill="#888">plain IP, no SR &mdash; just weight the split</text>
 
-    <!-- PHASE 1 -->
-    <g>
-      <rect x="224" y="78" width="180" height="130" rx="8" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
-      <text x="314" y="100" text-anchor="middle" font-size="13" fill="#9cdcfe" font-weight="600">PHASE 1</text>
-      <text x="314" y="123" text-anchor="middle" font-size="15.5" fill="#fff" font-weight="600">Label plan</text>
-      <line x1="244" y1="132" x2="384" y2="132" stroke="#33526e" stroke-width="1"/>
-      <text x="314" y="152" text-anchor="middle" font-size="12" fill="#b5cea8">domain-wide SRGB</text>
-      <text x="314" y="168" text-anchor="middle" font-size="12" fill="#b5cea8">+ node-SID scheme</text>
-      <text x="314" y="184" text-anchor="middle" font-size="11.5" fill="#888">the foundation</text>
+    <!-- ===== RIGHT: steering ===== -->
+    <text x="930" y="50" text-anchor="middle" font-size="16" font-weight="600" fill="#d9c08c">Traffic steering &mdash; pin a class to a path</text>
+    <!-- low-latency path (red) -->
+    <line x1="780" y1="195" x2="930" y2="118" stroke="#d97b7b" stroke-width="6"/>
+    <line x1="930" y1="118" x2="1080" y2="195" stroke="#d97b7b" stroke-width="6"/>
+    <!-- capacity path (green) -->
+    <line x1="780" y1="195" x2="930" y2="272" stroke="#7ec97e" stroke-width="6"/>
+    <line x1="930" y1="272" x2="1080" y2="195" stroke="#7ec97e" stroke-width="6"/>
+    <g font-size="13" text-anchor="middle">
+      <rect x="848" y="72" width="164" height="20" rx="3" fill="#0c0c0c"/><text x="930" y="87" fill="#e8a0a0">market-data &rarr; min-delay</text>
+      <rect x="858" y="300" width="144" height="20" rx="3" fill="#0c0c0c"/><text x="930" y="315" fill="#9ada9a">bulk / backup &rarr; fat path</text>
     </g>
-
-    <!-- PHASE 2 -->
-    <g>
-      <rect x="428" y="78" width="180" height="130" rx="8" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
-      <text x="518" y="100" text-anchor="middle" font-size="13" fill="#9cdcfe" font-weight="600">PHASE 2</text>
-      <text x="518" y="123" text-anchor="middle" font-size="15.5" fill="#fff" font-weight="600">Turn on IS-IS SR</text>
-      <line x1="448" y1="132" x2="588" y2="132" stroke="#33526e" stroke-width="1"/>
-      <text x="518" y="152" text-anchor="middle" font-size="12" fill="#b5cea8">per node, in the IGP</text>
-      <text x="518" y="168" text-anchor="middle" font-size="12" fill="#b5cea8">no LDP &rArr; no SRMS,</text>
-      <text x="518" y="184" text-anchor="middle" font-size="12" fill="#b5cea8">no flag-day</text>
+    <g font-size="16" font-weight="600" text-anchor="middle">
+      <circle cx="780" cy="195" r="27" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2.5"/><text x="780" y="201" fill="#fff">A</text>
+      <circle cx="1080" cy="195" r="27" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2.5"/><text x="1080" y="201" fill="#fff">B</text>
+      <circle cx="930" cy="118" r="17" fill="#222" stroke="#ccc" stroke-width="1.5"/><text x="930" y="123" fill="#fff" font-size="12">P1</text>
+      <circle cx="930" cy="272" r="17" fill="#222" stroke="#ccc" stroke-width="1.5"/><text x="930" y="277" fill="#fff" font-size="12">P2</text>
     </g>
+    <text x="930" y="354" text-anchor="middle" font-size="14.5" fill="#e0973c">&rarr; SR-TE SID-list / Flex-Algo min-delay</text>
+    <text x="930" y="376" text-anchor="middle" font-size="13" fill="#888">source-routed &mdash; BGP can't express this</text>
 
-    <!-- PHASE 3 (payoff) -->
-    <g>
-      <rect x="632" y="78" width="180" height="130" rx="8" fill="#1c3a1c" stroke="#7ec97e" stroke-width="2.5"/>
-      <text x="722" y="100" text-anchor="middle" font-size="13" fill="#9ada9a" font-weight="600">PHASE 3</text>
-      <text x="722" y="123" text-anchor="middle" font-size="15.5" fill="#fff" font-weight="600">Fast protect</text>
-      <line x1="652" y1="132" x2="792" y2="132" stroke="#3a5e3a" stroke-width="1"/>
-      <text x="722" y="152" text-anchor="middle" font-size="12" fill="#b5cea8">TI-LFA: sub-50 ms,</text>
-      <text x="722" y="168" text-anchor="middle" font-size="12" fill="#b5cea8">100% coverage</text>
-      <text x="722" y="184" text-anchor="middle" font-size="11.5" fill="#9ada9a">first real payoff</text>
-    </g>
-
-    <!-- PHASE 4 (differentiator, open caveats) -->
-    <g>
-      <rect x="836" y="78" width="180" height="130" rx="8" fill="#2a2414" stroke="#d9c08c" stroke-width="2"/>
-      <text x="926" y="100" text-anchor="middle" font-size="13" fill="#d9c08c" font-weight="600">PHASE 4</text>
-      <text x="926" y="123" text-anchor="middle" font-size="15.5" fill="#fff" font-weight="600">Engineer paths</text>
-      <line x1="856" y1="132" x2="996" y2="132" stroke="#5a4d2a" stroke-width="1"/>
-      <text x="926" y="152" text-anchor="middle" font-size="12" fill="#b5cea8">SR-TE / Flex-Algo</text>
-      <text x="926" y="168" text-anchor="middle" font-size="12" fill="#b5cea8">for latency classes</text>
-      <text x="926" y="184" text-anchor="middle" font-size="11.5" fill="#d9c08c">EOS support: confirm</text>
-    </g>
-
-    <!-- PHASE 5 -->
-    <g>
-      <rect x="1040" y="78" width="180" height="130" rx="8" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
-      <text x="1130" y="100" text-anchor="middle" font-size="13" fill="#9cdcfe" font-weight="600">PHASE 5</text>
-      <text x="1130" y="123" text-anchor="middle" font-size="15.5" fill="#fff" font-weight="600">Verify &amp; operate</text>
-      <line x1="1060" y1="132" x2="1200" y2="132" stroke="#33526e" stroke-width="1"/>
-      <text x="1130" y="152" text-anchor="middle" font-size="12" fill="#b5cea8">SID / MSD checks</text>
-      <text x="1130" y="168" text-anchor="middle" font-size="12" fill="#b5cea8">rollback &rarr; plain IP</text>
-      <text x="1130" y="184" text-anchor="middle" font-size="11.5" fill="#888">reversible by design</text>
-    </g>
-
-    <!-- ordering note (left) -->
-    <rect x="20" y="248" width="588" height="44" rx="5" fill="#16120c" stroke="#3a3a3a"/>
-    <text x="40" y="268" font-size="13" fill="#cfe3f5">Order matters: the <tspan fill="#dcdcaa">label plan comes before you enable anything</tspan> &mdash; an SRGB</text>
-    <text x="40" y="285" font-size="13" fill="#cfe3f5">mismatch is a domain-wide re-do, not a per-node fix.</text>
-
-    <!-- SRv6 appendix (right) -->
-    <rect x="836" y="248" width="384" height="44" rx="5" fill="#140f16" stroke="#5a3a6b" stroke-dasharray="6 5"/>
-    <text x="1028" y="268" text-anchor="middle" font-size="13" fill="#c9a6e0" font-weight="600">Appendix &middot; SRv6</text>
-    <text x="1028" y="285" text-anchor="middle" font-size="12.5" fill="#aaa">design-only, feasibility TBD</text>
+    <!-- punchline -->
+    <rect x="120" y="400" width="1000" height="50" rx="6" fill="#14110a" stroke="#5a4d2a"/>
+    <text x="620" y="420" text-anchor="middle" font-size="14" fill="#dcdcaa">They want both &mdash; and that's the tell. UCMP alone, DMZ-LB handles. Add steering and you need source-routed paths.</text>
+    <text x="620" y="440" text-anchor="middle" font-size="14" fill="#cfe3f5">In a domain you own, one SR-TE policy gives engineered steering <tspan fill="#9ada9a">and</tspan> weighted (UCMP) candidates together &mdash; the case BGP can't make.</text>
   </svg>
-  <p style="font-size: 0.62em; color: #888; text-align: center; margin-top: 6px;">
-    The whole strawman: <b>justify &rarr; plan labels &rarr; turn SR on in the IGP &rarr; get sub-50 ms protection &rarr; engineer the latency-sensitive classes &rarr; verify</b>. The plain-IP start is the <b>easy</b> case &mdash; no LDP means no mapping server and no ships-in-the-night cutover.
-  </p>
 </section>
 
 </div>
