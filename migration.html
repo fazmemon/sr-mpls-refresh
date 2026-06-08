@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0">
+  <title>IP → SR-MPLS Migration — Faz</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/black.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/monokai.css">
+  <style>
+    :root { --r-main-font-size: 32px; }
+    .reveal { font-size: 26px; }
+    .reveal h1 { font-size: 1.6em; color: #4ec9b0; }
+    .reveal h2 { font-size: 1.3em; color: #4ec9b0; }
+    .reveal h3 { font-size: 1.1em; color: #9cdcfe; }
+    .reveal h4 { color: #dcdcaa; }
+    .reveal section { text-align: left; padding-top: 0 !important; }
+    .reveal section.center { text-align: center; }
+    .reveal ul { display: block; }
+    .reveal ul li { margin-bottom: 0.25em; line-height: 1.25; }
+    .reveal pre { font-size: 0.55em; box-shadow: none; }
+    .reveal pre code { padding: 12px; max-height: 500px; }
+    .reveal code { background: #1e1e1e; padding: 2px 6px; border-radius: 3px; color: #ce9178; }
+    .reveal table { font-size: 0.65em; margin: 0.5em 0; border-collapse: collapse; }
+    .reveal table th, .reveal table td { padding: 3px 6px; border: 1px solid #444; vertical-align: top; }
+    .reveal table th { background: #2d2d2d; color: #4ec9b0; }
+    .reveal strong { color: #dcdcaa; }
+    .reveal em { color: #9cdcfe; font-style: normal; }
+    .reveal a { color: #569cd6; }
+    .reveal blockquote { border-left: 4px solid #4ec9b0; padding-left: 12px; font-style: normal; }
+    .tag { display: inline-block; padding: 2px 8px; margin: 2px; background: #264f78; color: #9cdcfe; border-radius: 4px; font-size: 0.7em; }
+    .tag.warn { background: #6b3a1a; color: #ce9178; }
+    .tag.ok { background: #1e4620; color: #b5cea8; }
+    @media (max-width: 900px) {
+      .reveal { font-size: 22px; }
+      .reveal h1 { font-size: 1.4em; }
+      .reveal h2 { font-size: 1.15em; }
+      .reveal table { font-size: 0.55em; }
+    }
+  </style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ============ COVER ============ -->
+<section class="center">
+  <h1>IP &rarr; SR-MPLS Migration</h1>
+  <h3>A strawman for a financial network &middot; over Arista</h3>
+  <p style="margin-top:1.6em; color:#9cdcfe;">Start: plain IP + IGP &nbsp;&rarr;&nbsp; Target: IS-IS SR-MPLS, Arista R-series</p>
+  <p style="margin-top:0.4em; color:#888;">No LDP &middot; no RSVP &middot; no SRMS</p>
+  <p style="margin-top:2em; font-size:0.7em; color:#666;">Swipe right &rarr; next &nbsp;|&nbsp; <code>Esc</code> for the overview</p>
+</section>
+
+<!-- ============ ROADMAP ============ -->
+<section>
+  <h3>The migration in one picture</h3>
+  <svg viewBox="0 0 1240 380" style="width: 96%; max-height: 560px; display:block; margin: 0 auto;" font-family="sans-serif">
+    <!-- premise banner -->
+    <text x="620" y="26" text-anchor="middle" font-size="16" fill="#9cdcfe">Plain IP + IGP &nbsp;&rarr;&nbsp; SR-MPLS on Arista R-series &nbsp;&middot;&nbsp; no LDP &middot; no RSVP &middot; no SRMS</text>
+
+    <!-- spine arrows between boxes -->
+    <g fill="#9cd1ef">
+      <path d="M206 135 L218 143 L206 151 Z"/>
+      <path d="M410 135 L422 143 L410 151 Z"/>
+      <path d="M614 135 L626 143 L614 151 Z"/>
+      <path d="M818 135 L830 143 L818 151 Z"/>
+      <path d="M1022 135 L1034 143 L1022 151 Z"/>
+    </g>
+
+    <!-- PHASE 0 -->
+    <g>
+      <rect x="20" y="78" width="180" height="130" rx="8" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
+      <text x="110" y="100" text-anchor="middle" font-size="13" fill="#9cdcfe" font-weight="600">PHASE 0</text>
+      <text x="110" y="123" text-anchor="middle" font-size="15.5" fill="#fff" font-weight="600">Discover &amp; justify</text>
+      <line x1="40" y1="132" x2="180" y2="132" stroke="#33526e" stroke-width="1"/>
+      <text x="110" y="152" text-anchor="middle" font-size="12" fill="#b5cea8">why SR here:</text>
+      <text x="110" y="168" text-anchor="middle" font-size="12" fill="#b5cea8">determinism + latency,</text>
+      <text x="110" y="184" text-anchor="middle" font-size="12" fill="#b5cea8">not bandwidth TE</text>
+    </g>
+
+    <!-- PHASE 1 -->
+    <g>
+      <rect x="224" y="78" width="180" height="130" rx="8" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
+      <text x="314" y="100" text-anchor="middle" font-size="13" fill="#9cdcfe" font-weight="600">PHASE 1</text>
+      <text x="314" y="123" text-anchor="middle" font-size="15.5" fill="#fff" font-weight="600">Label plan</text>
+      <line x1="244" y1="132" x2="384" y2="132" stroke="#33526e" stroke-width="1"/>
+      <text x="314" y="152" text-anchor="middle" font-size="12" fill="#b5cea8">domain-wide SRGB</text>
+      <text x="314" y="168" text-anchor="middle" font-size="12" fill="#b5cea8">+ node-SID scheme</text>
+      <text x="314" y="184" text-anchor="middle" font-size="11.5" fill="#888">the foundation</text>
+    </g>
+
+    <!-- PHASE 2 -->
+    <g>
+      <rect x="428" y="78" width="180" height="130" rx="8" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
+      <text x="518" y="100" text-anchor="middle" font-size="13" fill="#9cdcfe" font-weight="600">PHASE 2</text>
+      <text x="518" y="123" text-anchor="middle" font-size="15.5" fill="#fff" font-weight="600">Turn on IS-IS SR</text>
+      <line x1="448" y1="132" x2="588" y2="132" stroke="#33526e" stroke-width="1"/>
+      <text x="518" y="152" text-anchor="middle" font-size="12" fill="#b5cea8">per node, in the IGP</text>
+      <text x="518" y="168" text-anchor="middle" font-size="12" fill="#b5cea8">no LDP &rArr; no SRMS,</text>
+      <text x="518" y="184" text-anchor="middle" font-size="12" fill="#b5cea8">no flag-day</text>
+    </g>
+
+    <!-- PHASE 3 (payoff) -->
+    <g>
+      <rect x="632" y="78" width="180" height="130" rx="8" fill="#1c3a1c" stroke="#7ec97e" stroke-width="2.5"/>
+      <text x="722" y="100" text-anchor="middle" font-size="13" fill="#9ada9a" font-weight="600">PHASE 3</text>
+      <text x="722" y="123" text-anchor="middle" font-size="15.5" fill="#fff" font-weight="600">Fast protect</text>
+      <line x1="652" y1="132" x2="792" y2="132" stroke="#3a5e3a" stroke-width="1"/>
+      <text x="722" y="152" text-anchor="middle" font-size="12" fill="#b5cea8">TI-LFA: sub-50 ms,</text>
+      <text x="722" y="168" text-anchor="middle" font-size="12" fill="#b5cea8">100% coverage</text>
+      <text x="722" y="184" text-anchor="middle" font-size="11.5" fill="#9ada9a">first real payoff</text>
+    </g>
+
+    <!-- PHASE 4 (differentiator, open caveats) -->
+    <g>
+      <rect x="836" y="78" width="180" height="130" rx="8" fill="#2a2414" stroke="#d9c08c" stroke-width="2"/>
+      <text x="926" y="100" text-anchor="middle" font-size="13" fill="#d9c08c" font-weight="600">PHASE 4</text>
+      <text x="926" y="123" text-anchor="middle" font-size="15.5" fill="#fff" font-weight="600">Engineer paths</text>
+      <line x1="856" y1="132" x2="996" y2="132" stroke="#5a4d2a" stroke-width="1"/>
+      <text x="926" y="152" text-anchor="middle" font-size="12" fill="#b5cea8">SR-TE / Flex-Algo</text>
+      <text x="926" y="168" text-anchor="middle" font-size="12" fill="#b5cea8">for latency classes</text>
+      <text x="926" y="184" text-anchor="middle" font-size="11.5" fill="#d9c08c">EOS support: confirm</text>
+    </g>
+
+    <!-- PHASE 5 -->
+    <g>
+      <rect x="1040" y="78" width="180" height="130" rx="8" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
+      <text x="1130" y="100" text-anchor="middle" font-size="13" fill="#9cdcfe" font-weight="600">PHASE 5</text>
+      <text x="1130" y="123" text-anchor="middle" font-size="15.5" fill="#fff" font-weight="600">Verify &amp; operate</text>
+      <line x1="1060" y1="132" x2="1200" y2="132" stroke="#33526e" stroke-width="1"/>
+      <text x="1130" y="152" text-anchor="middle" font-size="12" fill="#b5cea8">SID / MSD checks</text>
+      <text x="1130" y="168" text-anchor="middle" font-size="12" fill="#b5cea8">rollback &rarr; plain IP</text>
+      <text x="1130" y="184" text-anchor="middle" font-size="11.5" fill="#888">reversible by design</text>
+    </g>
+
+    <!-- ordering note (left) -->
+    <rect x="20" y="248" width="588" height="44" rx="5" fill="#16120c" stroke="#3a3a3a"/>
+    <text x="40" y="268" font-size="13" fill="#cfe3f5">Order matters: the <tspan fill="#dcdcaa">label plan comes before you enable anything</tspan> &mdash; an SRGB</text>
+    <text x="40" y="285" font-size="13" fill="#cfe3f5">mismatch is a domain-wide re-do, not a per-node fix.</text>
+
+    <!-- SRv6 appendix (right) -->
+    <rect x="836" y="248" width="384" height="44" rx="5" fill="#140f16" stroke="#5a3a6b" stroke-dasharray="6 5"/>
+    <text x="1028" y="268" text-anchor="middle" font-size="13" fill="#c9a6e0" font-weight="600">Appendix &middot; SRv6</text>
+    <text x="1028" y="285" text-anchor="middle" font-size="12.5" fill="#aaa">design-only, feasibility TBD</text>
+  </svg>
+  <p style="font-size: 0.62em; color: #888; text-align: center; margin-top: 6px;">
+    The whole strawman: <b>justify &rarr; plan labels &rarr; turn SR on in the IGP &rarr; get sub-50 ms protection &rarr; engineer the latency-sensitive classes &rarr; verify</b>. The plain-IP start is the <b>easy</b> case &mdash; no LDP means no mapping server and no ships-in-the-night cutover.
+  </p>
+</section>
+
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/markdown/markdown.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    slideNumber: 'c/t',
+    controls: true,
+    progress: true,
+    transition: 'slide',
+    touch: true,
+    width: 1280,
+    height: 800,
+    margin: 0.06,
+    minScale: 0.2,
+    maxScale: 1.5,
+    plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ],
+  });
+</script>
+</body>
+</html>
