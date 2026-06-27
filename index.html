@@ -3781,7 +3781,7 @@ Exchanges push prices as **UDP multicast** — one stream, every subscriber rece
 - **The socket recipe:** `IP_ADD_SOURCE_MEMBERSHIP` to join the (S,G); **`SO_REUSEADDR`/`SO_REUSEPORT`** so multiple processes can bind the same group/port; and size **`SO_RCVBUF`** (capped by `net.core.rmem_max`) for the burst — market-data bursts are spiky.
 - **A/B arbitration:** feeds carry **sequence numbers**; you take whichever of A/B delivers each sequence first and detect a **gap** when a number is missing.
 
-<span class="tag warn">"Gapping" — the interview scenario</span> a gap is almost **never the network** — it's the **receiver's socket buffer overrunning** under a burst: packets arrive fine, the app reads too slowly, the buffer fills, UDP drops them → missing sequence → you must re-request / fail over to the B feed. The fingerprint is **`RcvbufErrors` in `netstat -su`**, not interface errors. Fix = bigger `SO_RCVBUF`/`rmem_max` + a faster reader (or kernel bypass). This ties straight back to the receive-path slide — gapping *is* a socket-buffer drop.
+<span class="tag warn">"Gapping" — the interview scenario</span> a gap is almost **never the network** — it's the **receiver's socket buffer overrunning** under a burst: packets arrive fine, the app reads too slowly, the buffer fills, UDP drops them → missing sequence → you must re-request / fail over to the B feed. The fingerprint is **`RcvbufErrors` in `netstat -su`**, not interface errors. Fix = bigger `SO_RCVBUF`/`rmem_max` + a faster reader (or kernel bypass) — though a bigger buffer only absorbs a **burst**; against a **sustained** arrival-faster-than-drain it always fills, so the faster reader / bypass is the real fix. This ties straight back to the receive-path slide — gapping *is* a socket-buffer drop.
   </textarea>
   </section>
 
@@ -3803,7 +3803,7 @@ Exchanges push prices as **UDP multicast** — one stream, every subscriber rece
 
 - **Sockets** — `ss -tanp` (states, queues), `ss -i` (rtt / retrans / cwnd)
 - **NIC** — `ethtool -S` (drops/overruns), `-g` (ring), `-c` (coalescing), `ip -s link`
-- **Counters** — `/proc/net/snmp`, `/proc/net/softnet_stat` (backlog drops), `netstat -su` (`RcvbufErrors`)
+- **Counters** — `/proc/net/snmp`, `/proc/net/softnet_stat` (**col2 `dropped` = backlog full · col3 `time_squeeze` = NAPI ran out of budget → CPU can't keep up**), `netstat -su` (`RcvbufErrors`; **`InErrors` ≥ `RcvbufErrors`** — a buffer-full drop charges both, so `InErrors` rising *without* `RcvbufErrors` = corrupt / no-listening-port, not gapping)
 - **Live** — `perf top`, `bpftrace`, `tcpdump`/`tshark`, `mtr` for the path
 - **Overrun signature:** rising `rx_dropped` + `RcvbufErrors` under load while CPU sits idle → ring/backlog/socket, not bandwidth
   </textarea>
