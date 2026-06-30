@@ -35,61 +35,60 @@ pre { color:#ccc; }
 <p style="margin-top:1.4em;color:#888;font-size:0.8em;">Stay on OSPF &middot; per-domain OSPF-SR &middot; binding-SID stitch &middot; controller-driven SR-TE over BGP</p>
 </section>
 <section data-auto-animate>
-  <h3>What we have now &mdash; Strawman A: in-domain dual-plane core (addressing + metrics on the topology)</h3>
-  <svg viewBox="0 0 1240 560" style="width:100%;max-height:560px;" font-family="Segoe UI, sans-serif">
-    <!-- area label -->
-    <rect x="60" y="70" width="1120" height="430" rx="12" fill="none" stroke="#5b9bd5" stroke-dasharray="6 4"/>
-    <text x="620" y="58" fill="#9cd1ef" font-size="16" text-anchor="middle">Single OSPFv2 area 0 &mdash; Arista R-series &mdash; SRGB 900000&ndash;965535</text>
+  <h3>What we have now &mdash; Strawman A: in-domain dual-plane core</h3>
+  <svg viewBox="0 0 1240 540" style="width:100%;max-height:470px;" font-family="Segoe UI, sans-serif">
+    <rect x="60" y="68" width="1120" height="412" rx="12" fill="none" stroke="#5b9bd5" stroke-dasharray="6 4"/>
+    <text x="620" y="50" fill="#9cd1ef" font-size="21" text-anchor="middle">Single OSPFv2 area 0  &middot;  Arista R-series  &middot;  SRGB 900000&ndash;965535</text>
 
-    <!-- nodes: PE1 (mkt-data) left, PE2 (trading) right, P1 top (low-latency 400G), P2 bottom (high-cap 100G) -->
-    <circle cx="200" cy="280" r="34" fill="#1f3a52" stroke="#9cd1ef"/>
-    <text x="200" y="276" fill="#cfeaff" font-size="14" text-anchor="middle">PE1</text>
-    <text x="200" y="293" fill="#9ec9e8" font-size="10" text-anchor="middle">mkt-data</text>
-    <text x="200" y="340" fill="#7ec97e" font-size="11" text-anchor="middle">Lo0 10.255.0.1/32</text>
-    <text x="200" y="356" fill="#888" font-size="10" text-anchor="middle">prefix-SID idx 1</text>
+    <!-- legend (matches link colours) -->
+    <line x1="92" y1="100" x2="134" y2="100" stroke="#7ec97e" stroke-width="4"/>
+    <text x="142" y="105" fill="#bff0c6" font-size="15" text-anchor="start">P1 plane = low-latency (short fibre)</text>
+    <line x1="92" y1="126" x2="134" y2="126" stroke="#d9c08c" stroke-width="3.5"/>
+    <text x="142" y="131" fill="#e8d6a8" font-size="15" text-anchor="start">P2 plane = high-capacity (long fibre)</text>
 
-    <circle cx="1040" cy="280" r="34" fill="#1f3a52" stroke="#9cd1ef"/>
-    <text x="1040" y="276" fill="#cfeaff" font-size="14" text-anchor="middle">PE2</text>
-    <text x="1040" y="293" fill="#9ec9e8" font-size="10" text-anchor="middle">trading</text>
-    <text x="1040" y="340" fill="#7ec97e" font-size="11" text-anchor="middle">Lo0 10.255.0.2/32</text>
-    <text x="1040" y="356" fill="#888" font-size="10" text-anchor="middle">prefix-SID idx 2</text>
+    <!-- P1 plane links GREEN = low-latency 400G metric10 -->
+    <line x1="236" y1="250" x2="586" y2="180" stroke="#7ec97e" stroke-width="4"/>
+    <line x1="654" y1="180" x2="1004" y2="250" stroke="#7ec97e" stroke-width="4"/>
+    <text x="372" y="196" fill="#7ec97e" font-size="16" text-anchor="middle">400G &middot; metric 10</text>
+    <text x="868" y="196" fill="#7ec97e" font-size="16" text-anchor="middle">400G &middot; metric 10</text>
 
-    <circle cx="620" cy="150" r="34" fill="#1f3a52" stroke="#9cd1ef"/>
-    <text x="620" y="146" fill="#cfeaff" font-size="14" text-anchor="middle">P1</text>
-    <text x="620" y="163" fill="#7ec97e" font-size="9"  text-anchor="middle">low-latency plane</text>
-    <text x="620" y="118" fill="#7ec97e" font-size="11" text-anchor="middle">Lo0 10.255.0.3/32 &mdash; SID idx 3</text>
+    <!-- P2 plane links AMBER = high-capacity 100G metric40 -->
+    <line x1="236" y1="300" x2="586" y2="390" stroke="#d9c08c" stroke-width="3.5"/>
+    <line x1="654" y1="390" x2="1004" y2="300" stroke="#d9c08c" stroke-width="3.5"/>
+    <text x="372" y="372" fill="#d9c08c" font-size="16" text-anchor="middle">100G &middot; metric 40</text>
+    <text x="868" y="372" fill="#d9c08c" font-size="16" text-anchor="middle">100G &middot; metric 40</text>
 
-    <circle cx="620" cy="430" r="34" fill="#1f3a52" stroke="#9cd1ef"/>
-    <text x="620" y="426" fill="#cfeaff" font-size="14" text-anchor="middle">P2</text>
-    <text x="620" y="443" fill="#9ec9e8" font-size="9" text-anchor="middle">high-capacity plane</text>
-    <text x="620" y="478" fill="#7ec97e" font-size="11" text-anchor="middle">Lo0 10.255.0.4/32 &mdash; SID idx 4</text>
+    <!-- cross-link -->
+    <line x1="620" y1="197" x2="620" y2="373" stroke="#d9c08c" stroke-width="2" stroke-dasharray="6 4"/>
+    <text x="700" y="289" fill="#d9c08c" font-size="14" text-anchor="middle">100G &middot; m40 (cross)</text>
 
-    <!-- P1 plane links (400G, low metric) -->
-    <line x1="228" y1="262" x2="592" y2="168" stroke="#5b9bd5" stroke-width="2.5"/>
-    <line x1="648" y1="168" x2="1012" y2="262" stroke="#5b9bd5" stroke-width="2.5"/>
-    <text x="380" y="198" fill="#7ec97e" font-size="11" text-anchor="middle">400G / metric 10 (static)</text>
-    <text x="380" y="213" fill="#888" font-size="9" text-anchor="middle">10.0.13.0/31</text>
-    <text x="860" y="198" fill="#7ec97e" font-size="11" text-anchor="middle">400G / metric 10 (static)</text>
-    <text x="860" y="213" fill="#888" font-size="9" text-anchor="middle">10.0.32.0/31</text>
+    <!-- PE1 -->
+    <circle cx="200" cy="275" r="42" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
+    <text x="200" y="270" fill="#cfeaff" font-size="22" text-anchor="middle">PE1</text>
+    <text x="200" y="292" fill="#9ec9e8" font-size="15" text-anchor="middle">mkt-data</text>
+    <text x="200" y="348" fill="#7ec97e" font-size="15" text-anchor="middle">Lo0 .1/32 &middot; SID 1</text>
 
-    <!-- P2 plane links (100G, high metric) -->
-    <line x1="228" y1="298" x2="592" y2="412" stroke="#5b9bd5" stroke-width="2.5"/>
-    <line x1="648" y1="412" x2="1012" y2="298" stroke="#5b9bd5" stroke-width="2.5"/>
-    <text x="380" y="372" fill="#9ec9e8" font-size="11" text-anchor="middle">100G / metric 40 (static)</text>
-    <text x="380" y="387" fill="#888" font-size="9" text-anchor="middle">10.0.14.0/31</text>
-    <text x="860" y="372" fill="#9ec9e8" font-size="11" text-anchor="middle">100G / metric 40 (static)</text>
-    <text x="860" y="387" fill="#888" font-size="9" text-anchor="middle">10.0.42.0/31</text>
+    <!-- PE2 -->
+    <circle cx="1040" cy="275" r="42" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
+    <text x="1040" y="270" fill="#cfeaff" font-size="22" text-anchor="middle">PE2</text>
+    <text x="1040" y="292" fill="#9ec9e8" font-size="15" text-anchor="middle">trading</text>
+    <text x="1040" y="348" fill="#7ec97e" font-size="15" text-anchor="middle">Lo0 .2/32 &middot; SID 2</text>
 
-    <!-- P1-P2 inter-plane link -->
-    <line x1="620" y1="184" x2="620" y2="396" stroke="#5b9bd5" stroke-width="2" stroke-dasharray="6 4"/>
-    <text x="700" y="288" fill="#9ec9e8" font-size="11" text-anchor="middle">100G / metric 40</text>
-    <text x="700" y="303" fill="#888" font-size="9" text-anchor="middle">10.0.34.0/31</text>
+    <!-- P1 -->
+    <circle cx="620" cy="155" r="42" fill="#1f3a52" stroke="#7ec97e" stroke-width="2.5"/>
+    <text x="620" y="161" fill="#cfeaff" font-size="22" text-anchor="middle">P1</text>
+    <text x="620" y="112" fill="#7ec97e" font-size="15" text-anchor="middle">low-latency &middot; Lo0 .3/32 &middot; SID 3</text>
 
-    <!-- legend -->
-    <rect x="84" y="438" width="14" height="14" fill="none" stroke="#7ec97e"/><text x="104" y="450" fill="#bff0c6" font-size="11" text-anchor="start">low-latency (short fibre)</text>
-    <rect x="84" y="460" width="14" height="14" fill="none" stroke="#9ec9e8"/><text x="104" y="472" fill="#9ec9e8" font-size="11" text-anchor="start">high-capacity (longer fibre)</text>
+    <!-- P2 -->
+    <circle cx="620" cy="415" r="42" fill="#1f3a52" stroke="#d9c08c" stroke-width="2.5"/>
+    <text x="620" y="421" fill="#cfeaff" font-size="22" text-anchor="middle">P2</text>
+    <text x="620" y="474" fill="#d9c08c" font-size="15" text-anchor="middle">high-capacity &middot; Lo0 .4/32 &middot; SID 4</text>
   </svg>
-  <p class="cap">Dual-plane core, one OSPFv2 area 0, Arista R-series. PE1 (market-data edge) and PE2 (trading edge) are each dual-homed to P1 and P2. The P1 plane is the short-fibre 400G low-latency path; the P2 plane is the longer-fibre 100G high-capacity path, with a P1&ndash;P2 cross-link for the failure cases. The OSPF metrics here are <em>statically set</em> to encode latency, not auto-cost: 10 on the short-fibre plane, 40 on the long-fibre/cross plane &mdash; deliberately, because reference-bandwidth auto-cost would make the 400G links cheaper than the 100G links anyway and we want latency, not bandwidth, to pick the plane. Links are /31s (RFC 3021), loopbacks are /32s in 10.255.0.0/24, prefix-SID indices 1&ndash;4 map to the four nodes. Default SPF then picks the metric-10 plane for the latency-sensitive flows; the metric-40 plane is where UCMP and SR-TE colour steering (Sections 2&ndash;3) put the rest. Metrics/addresses are design choices in this strawman; the SRGB value and the index&rarr;label rule are Arista/RFC-deterministic.</p>
+  <div style="font-size:0.82em;line-height:1.45;margin-top:0.25em;">
+    <p style="margin:0.18em 0;"><strong>Topology:</strong> PE1 (mkt-data) and PE2 (trading), each dual-homed to plane P1 and plane P2.</p>
+    <p style="margin:0.18em 0;"><strong>Metric by latency, not bandwidth:</strong> 10 on the 400G short-fibre plane, 40 on the 100G long-fibre plane &mdash; so SPF puts trading flows on the low-latency plane and leaves the capacity plane for UCMP / SR-TE steering (&sect;2&ndash;3). Auto-cost would wrongly make the 400G links cheapest.</p>
+    <p style="margin:0.18em 0;color:#8a97a3;">/31 links, /32 loopbacks in 10.255.0.0/24, SID idx 1&ndash;4. SRGB + index&rarr;label are Arista/RFC-deterministic; metrics &amp; addresses are strawman choices.</p>
+  </div>
 </section>
 
 <section data-auto-animate>
