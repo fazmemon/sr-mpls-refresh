@@ -38,7 +38,7 @@ pre { color:#ccc; }
   <h3>What we have now &mdash; Strawman A: in-domain dual-plane core</h3>
   <svg viewBox="0 0 1240 540" style="width:100%;max-height:470px;" font-family="Segoe UI, sans-serif">
     <rect x="60" y="68" width="1120" height="412" rx="12" fill="none" stroke="#5b9bd5" stroke-dasharray="6 4"/>
-    <text x="620" y="50" fill="#9cd1ef" font-size="21" text-anchor="middle">Single OSPFv2 area 0  &middot;  Arista R-series  &middot;  SRGB 900000&ndash;965535</text>
+    <text x="620" y="50" fill="#9cd1ef" font-size="21" text-anchor="middle">Single OSPFv2 area 0  &middot;  Arista R-series</text>
 
     <!-- legend (matches link colours) -->
     <line x1="92" y1="100" x2="134" y2="100" stroke="#7ec97e" stroke-width="4"/>
@@ -66,116 +66,28 @@ pre { color:#ccc; }
     <circle cx="200" cy="275" r="42" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
     <text x="200" y="270" fill="#cfeaff" font-size="22" text-anchor="middle">PE1</text>
     <text x="200" y="292" fill="#9ec9e8" font-size="15" text-anchor="middle">mkt-data</text>
-    <text x="200" y="348" fill="#7ec97e" font-size="15" text-anchor="middle">Lo0 .1/32 &middot; SID 1</text>
+    <text x="200" y="348" fill="#7ec97e" font-size="15" text-anchor="middle">Lo0 .1/32</text>
 
     <!-- PE2 -->
     <circle cx="1040" cy="275" r="42" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
     <text x="1040" y="270" fill="#cfeaff" font-size="22" text-anchor="middle">PE2</text>
     <text x="1040" y="292" fill="#9ec9e8" font-size="15" text-anchor="middle">trading</text>
-    <text x="1040" y="348" fill="#7ec97e" font-size="15" text-anchor="middle">Lo0 .2/32 &middot; SID 2</text>
+    <text x="1040" y="348" fill="#7ec97e" font-size="15" text-anchor="middle">Lo0 .2/32</text>
 
     <!-- P1 -->
     <circle cx="620" cy="155" r="42" fill="#1f3a52" stroke="#7ec97e" stroke-width="2.5"/>
     <text x="620" y="161" fill="#cfeaff" font-size="22" text-anchor="middle">P1</text>
-    <text x="620" y="112" fill="#7ec97e" font-size="15" text-anchor="middle">low-latency &middot; Lo0 .3/32 &middot; SID 3</text>
+    <text x="620" y="112" fill="#7ec97e" font-size="15" text-anchor="middle">low-latency &middot; Lo0 .3/32</text>
 
     <!-- P2 -->
     <circle cx="620" cy="415" r="42" fill="#1f3a52" stroke="#d9c08c" stroke-width="2.5"/>
     <text x="620" y="421" fill="#cfeaff" font-size="22" text-anchor="middle">P2</text>
-    <text x="620" y="474" fill="#d9c08c" font-size="15" text-anchor="middle">high-capacity &middot; Lo0 .4/32 &middot; SID 4</text>
+    <text x="620" y="474" fill="#d9c08c" font-size="15" text-anchor="middle">high-capacity &middot; Lo0 .4/32</text>
   </svg>
   <div style="font-size:0.82em;line-height:1.45;margin-top:0.25em;">
     <p style="margin:0.18em 0;"><strong>Topology:</strong> PE1 (mkt-data) and PE2 (trading), each dual-homed to plane P1 and plane P2.</p>
-    <p style="margin:0.18em 0;"><strong>Metric by latency, not bandwidth:</strong> 10 on the 400G short-fibre plane, 40 on the 100G long-fibre plane &mdash; so SPF puts trading flows on the low-latency plane and leaves the capacity plane for UCMP / SR-TE steering (&sect;2&ndash;3). Auto-cost would wrongly make the 400G links cheapest.</p>
-    <p style="margin:0.18em 0;color:#8a97a3;">/31 links, /32 loopbacks in 10.255.0.0/24, SID idx 1&ndash;4. SRGB + index&rarr;label are Arista/RFC-deterministic; metrics &amp; addresses are strawman choices.</p>
-  </div>
-</section>
-
-<section data-auto-animate>
-  <h3>What we have now &mdash; Strawman A: the prefix-SID plan, derived to labels</h3>
-  <div style="display:flex;gap:18px;align-items:flex-start;">
-    <svg viewBox="0 0 560 360" style="width:46%;max-height:360px;" font-family="Segoe UI, sans-serif">
-      <!-- arithmetic: label = SRGB base + index -->
-      <text x="280" y="36" fill="#9cd1ef" font-size="16" text-anchor="middle">label = SRGB.base + prefix-SID index</text>
-      <text x="280" y="62" fill="#cfeaff" font-size="14" text-anchor="middle">SRGB.base = 900000 (EOS default)</text>
-      <rect x="40" y="90" width="480" height="44" rx="6" fill="#15191e" stroke="#5b9bd5"/>
-      <text x="60" y="118" fill="#bff0c6" font-size="13" text-anchor="start">PE1  idx 1 &rarr; 900000 + 1 = 900001</text>
-      <rect x="40" y="142" width="480" height="44" rx="6" fill="#15191e" stroke="#5b9bd5"/>
-      <text x="60" y="170" fill="#bff0c6" font-size="13" text-anchor="start">PE2  idx 2 &rarr; 900000 + 2 = 900002</text>
-      <rect x="40" y="194" width="480" height="44" rx="6" fill="#15191e" stroke="#5b9bd5"/>
-      <text x="60" y="222" fill="#bff0c6" font-size="13" text-anchor="start">P1   idx 3 &rarr; 900000 + 3 = 900003</text>
-      <rect x="40" y="246" width="480" height="44" rx="6" fill="#15191e" stroke="#5b9bd5"/>
-      <text x="60" y="274" fill="#bff0c6" font-size="13" text-anchor="start">P2   idx 4 &rarr; 900000 + 4 = 900004</text>
-      <text x="280" y="324" fill="#888" font-size="11" text-anchor="middle">Index is advertised in OSPF (V=0, L=0); each node</text>
-      <text x="280" y="342" fill="#888" font-size="11" text-anchor="middle">offsets it onto its own SRGB to get the local label.</text>
-    </svg>
-    <div style="width:54%;">
-      <table style="font-size:0.62em;border-collapse:collapse;width:100%;">
-        <tr style="color:#9cd1ef;border-bottom:1px solid #5b9bd5;">
-          <th style="text-align:left;padding:4px;">Node</th><th style="padding:4px;">Loopback</th><th style="padding:4px;">SID idx</th><th style="padding:4px;">MPLS label</th><th style="padding:4px;">Role</th>
-        </tr>
-        <tr><td style="padding:4px;">PE1</td><td>10.255.0.1/32</td><td style="text-align:center;">1</td><td style="text-align:center;color:#bff0c6;">900001</td><td>mkt-data edge</td></tr>
-        <tr><td style="padding:4px;">PE2</td><td>10.255.0.2/32</td><td style="text-align:center;">2</td><td style="text-align:center;color:#bff0c6;">900002</td><td>trading edge</td></tr>
-        <tr><td style="padding:4px;">P1</td><td>10.255.0.3/32</td><td style="text-align:center;">3</td><td style="text-align:center;color:#bff0c6;">900003</td><td>low-latency P</td></tr>
-        <tr><td style="padding:4px;">P2</td><td>10.255.0.4/32</td><td style="text-align:center;">4</td><td style="text-align:center;color:#bff0c6;">900004</td><td>high-cap P</td></tr>
-      </table>
-      <pre style="font-size:0.5em;background:#15191e;padding:8px;margin-top:10px;">! PE1, Arista R-series -- OSPF-SR turn-on + node prefix-SID index
-! Verified EOS keyword: 'node-segment ipv4 index N' under the loopback.
-! Exact placement under an OSPF (vs IS-IS) instance to confirm on 4.31.1F+.
-router ospf 1
-   router-id 10.255.0.1
-   segment-routing mpls
-!
-interface Loopback0
-   ip address 10.255.0.1/32
-   node-segment ipv4 index 1        ! prefix/node-SID index for PE1's Lo0
-!
-! Resulting global-segment label installed for PE1's Lo0 = 900000 + 1 = 900001
-! (V=0, L=0 in the advertised Prefix-SID => index, not absolute label)</pre>
-    </div>
-  </div>
-  <p class="cap">The plan that gets drawn on the topology, derived rather than asserted: OSPF-SR advertises a prefix-SID <em>index</em> (V-flag and L-flag clear, RFC 8665), and every node computes the local label as SRGB.base + index. With the EOS default base 900000 that yields 900001&ndash;900004 for indices 1&ndash;4 &mdash; the exact label plan in the brief. The index&rarr;label arithmetic and flag semantics are deterministic; the EOS default base 900000 and the <code>node-segment ipv4 index</code> keyword are Arista-verified; the exact placement of that statement under an OSPF (rather than IS-IS) instance on 4.31.1F is marked to-confirm rather than fabricated.</p>
-</section>
-
-<section data-auto-animate>
-  <h3>What we have now &mdash; Strawman A: what PE1's prefix-SID actually looks like on the wire (LSA/TLV)</h3>
-  <div style="display:flex;gap:18px;align-items:flex-start;">
-    <svg viewBox="0 0 520 380" style="width:42%;max-height:380px;" font-family="Segoe UI, sans-serif">
-      <text x="260" y="28" fill="#9cd1ef" font-size="15" text-anchor="middle">PE1 floods this for Lo0 10.255.0.1/32</text>
-      <!-- nested LSA -> TLV -> sub-TLV -->
-      <rect x="20" y="44" width="480" height="312" rx="8" fill="none" stroke="#5b9bd5"/>
-      <text x="40" y="66" fill="#cfeaff" font-size="12" text-anchor="start">Opaque LSA &mdash; LS type 10 (area-scoped)</text>
-      <text x="40" y="84" fill="#888"    font-size="11" text-anchor="start">Opaque Type 7 = Extended Prefix Opaque LSA</text>
-      <rect x="40" y="98" width="440" height="240" rx="6" fill="#15191e" stroke="#5b9bd5"/>
-      <text x="58" y="120" fill="#cfeaff" font-size="12" text-anchor="start">OSPFv2 Extended Prefix TLV</text>
-      <text x="58" y="138" fill="#888" font-size="11" text-anchor="start">Route Type = 1 (Intra-Area)</text>
-      <text x="58" y="155" fill="#888" font-size="11" text-anchor="start">Prefix Len = 32, AF = 0 (IPv4)</text>
-      <text x="58" y="172" fill="#888" font-size="11" text-anchor="start">Prefix = 10.255.0.1</text>
-      <rect x="58" y="186" width="404" height="138" rx="6" fill="#0f1318" stroke="#7ec97e"/>
-      <text x="74" y="206" fill="#bff0c6" font-size="12" text-anchor="start">Prefix-SID Sub-TLV</text>
-      <text x="74" y="224" fill="#888" font-size="11" text-anchor="start">Flags: NP=1 (no-PHP) M=0 E=0</text>
-      <text x="74" y="241" fill="#888" font-size="11" text-anchor="start">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; V=0 L=0  =&gt; value is an INDEX</text>
-      <text x="74" y="258" fill="#888" font-size="11" text-anchor="start">MT-ID = 0</text>
-      <text x="74" y="275" fill="#888" font-size="11" text-anchor="start">Algorithm = 0 (SPF)</text>
-      <text x="74" y="296" fill="#bff0c6" font-size="12" text-anchor="start">SID/Index = 1</text>
-      <text x="74" y="314" fill="#7ec97e" font-size="11" text-anchor="start">receiver: label = 900000 + 1 = 900001</text>
-    </svg>
-    <div style="width:58%;">
-      <table style="font-size:0.58em;border-collapse:collapse;width:100%;">
-        <tr style="color:#9cd1ef;border-bottom:1px solid #5b9bd5;"><th style="text-align:left;padding:3px;">Object</th><th style="text-align:left;padding:3px;">Carries</th><th style="text-align:left;padding:3px;">RFC</th></tr>
-        <tr><td style="padding:3px;">Router Information Opaque LSA</td><td>SR-Algorithm TLV (type 8): {0=SPF, 1=Strict-SPF}; SID/Label Range TLV (type 9): base 900000 / size 65536</td><td>7770 / 8665</td></tr>
-        <tr><td style="padding:3px;">Extended Prefix Opaque LSA (Opaque Type 7)</td><td>Extended Prefix TLV &rarr; Prefix-SID Sub-TLV (index 1, algo 0)</td><td>7684 / 8665</td></tr>
-        <tr><td style="padding:3px;">Extended Link Opaque LSA (Opaque Type 8)</td><td>Adj-SID Sub-TLV: flags B/V/L/G/P, Weight, local label (dynamic, V=1 L=1)</td><td>7684 / 8665</td></tr>
-      </table>
-      <pre style="font-size:0.5em;background:#15191e;padding:8px;margin-top:10px;">! What each node derives from the flooded LSAs above:
-!   Node-SID(PE1)  = SRGB.base(900000) + index(1) = label 900001  [global, persists hop-to-hop]
-!   Adj-SID(P1->PE1) = dynamically-allocated LOCAL label from the device's
-!                      dynamic label pool (below the SRGB)  [V=1, L=1, single-hop pop]
-!
-! Adj-SIDs are LOCAL to the advertising router and dynamic -- exact value comes from the device,
-! so it is NOT asserted here. Node-SID 900001 IS deterministic (index+SRGB) and is asserted.</pre>
-      <p class="cap">This is the on-the-wire content behind the SID plan, drawn at the flag level rather than summarised. The node-SID label 900001 is fully determined by the advertised index (1) plus the verified default SRGB base (900000), so it is stated with confidence. The adjacency-SID is a dynamically-allocated <em>local</em> label (V=1, L=1), so its exact value is deliberately not invented &mdash; it would come from the live device. Algorithm 0 = SPF and 1 = Strict-SPF are the only OSPF-SR algorithms (RFC 8665); note Flex-Algo is IS-IS-only on EOS, which is why per-class steering on OSPF later uses SR-TE colour policies, not Flex-Algo. NP=1 (no-PHP) is a design choice here so the egress always receives its own node label; it is not forced by the protocol.</p>
-    </div>
+    <p style="margin:0.18em 0;"><strong>Metric by latency, not bandwidth:</strong> 10 on the 400G short-fibre plane, 40 on the 100G long-fibre plane &mdash; so SPF puts trading flows on the low-latency plane and leaves the capacity plane for the UCMP / steering questions (&sect;2&ndash;3). Auto-cost would wrongly make the 400G links cheapest.</p>
+    <p style="margin:0.18em 0;color:#8a97a3;">/31 links, /32 loopbacks in 10.255.0.0/24. Plain OSPFv2 today &mdash; no SR yet; metrics &amp; addresses are strawman choices.</p>
   </div>
 </section>
 
@@ -230,47 +142,7 @@ interface Loopback0
     <line x1="88" y1="206" x2="92" y2="210" stroke="#7ec97e"/>
     <rect x="1150" y="186" width="52" height="40" rx="6" fill="#402a2a" stroke="#d16b6b"/><text x="1176" y="202" fill="#f0c6c6" font-size="9" text-anchor="middle">TRADE</text><text x="1176" y="214" fill="#f0c6c6" font-size="9" text-anchor="middle">DESK</text>
   </svg>
-  <p class="cap">Three administrative domains, each its own OSPFv2 area 0 and its own BGP AS (65000/65001/65002 &mdash; private-ASN space for this strawman, real deployment would use the firm's allocated public ASNs). The admin boundaries are the gold eBGP links at the ASBRs &mdash; that is where label continuity breaks today. Beneath each edge domain sits an eBGP-CLOS fabric of leaf/spine switches running 100s of private ASNs (16-bit private range 64512&ndash;65534), which is what inflates the ASN count into the hundreds while the number of <em>IGP domains</em> stays at three. Market-data exchange feeds enter at NYC; the trading desk lives behind LON. The Section-2/3 question this frames: consolidate the three OSPF domains into one IGP, or keep the boundaries and stitch label paths across them with binding-SIDs.</p>
-</section>
-
-<section data-auto-animate>
-  <h3>What we have now &mdash; Strawman B: why the boundary matters (no end-to-end label path today)</h3>
-  <svg viewBox="0 0 1240 360" style="width:100%;max-height:360px;" font-family="Segoe UI, sans-serif">
-    <!-- three IGP islands as horizontal bands -->
-    <rect x="40"  y="60" width="360" height="120" rx="8" fill="none" stroke="#5b9bd5"/>
-    <text x="220" y="50" fill="#9cd1ef" font-size="15" text-anchor="middle">NYC IGP island (area 0)</text>
-    <rect x="440" y="60" width="360" height="120" rx="8" fill="none" stroke="#5b9bd5"/>
-    <text x="620" y="50" fill="#9cd1ef" font-size="15" text-anchor="middle">CORE IGP island (area 0)</text>
-    <rect x="840" y="60" width="360" height="120" rx="8" fill="none" stroke="#5b9bd5"/>
-    <text x="1020" y="50" fill="#9cd1ef" font-size="15" text-anchor="middle">LON IGP island (area 0)</text>
-
-    <text x="220" y="120" fill="#cfeaff" font-size="13" text-anchor="middle">SRGB 900000&ndash;965535</text>
-    <text x="220" y="140" fill="#888"    font-size="11" text-anchor="middle">prefix-SIDs locally meaningful</text>
-    <text x="620" y="120" fill="#cfeaff" font-size="13" text-anchor="middle">SRGB 900000&ndash;965535</text>
-    <text x="620" y="140" fill="#888"    font-size="11" text-anchor="middle">independent label space</text>
-    <text x="1020" y="120" fill="#cfeaff" font-size="13" text-anchor="middle">SRGB 900000&ndash;965535</text>
-    <text x="1020" y="140" fill="#888"   font-size="11" text-anchor="middle">independent label space</text>
-
-    <!-- broken label path across boundary -->
-    <line x1="400" y1="120" x2="440" y2="120" stroke="#d16b6b" stroke-width="3" stroke-dasharray="5 4"/>
-    <text x="420" y="200" fill="#d16b6b" font-size="11" text-anchor="middle">eBGP &mdash; LSDB stops here</text>
-    <line x1="800" y1="120" x2="840" y2="120" stroke="#d16b6b" stroke-width="3" stroke-dasharray="5 4"/>
-    <text x="820" y="200" fill="#d16b6b" font-size="11" text-anchor="middle">eBGP &mdash; LSDB stops here</text>
-
-    <text x="620" y="250" fill="#d9c08c" font-size="14" text-anchor="middle">An OSPF LSDB &mdash; and therefore an SR label-switched path &mdash; does not cross an OSPF domain boundary.</text>
-    <text x="620" y="275" fill="#888" font-size="12" text-anchor="middle">Prefix-SID index 1 in NYC and index 1 in CORE resolve to label 900001 in each, but they are different forwarding objects. End-to-end TE must be re-glued at each ASBR.</text>
-  </svg>
-  <pre style="font-size:0.5em;background:#15191e;padding:8px;">! Each domain runs its own OSPFv2 instance + SR. Same SRGB number, three separate label scopes.
-router ospf 1
-   segment-routing mpls            ! OSPF-SR: EOS 4.31.1F (prefix-SID/adj-SID); TI-LFA over OSPF-SR: 4.33.1F
-   !  SRGB default = 900000 .. 965535 (size 65536) -- Arista EOS default, no override needed
-!
-! ASBR-NY <-> ASBR-W1 is eBGP between AS65001 and AS65000 -- OSPF/SR does NOT run on this link.
-router bgp 65001
-   neighbor 10.0.0.1 remote-as 65000      ! the admin boundary
-   address-family ipv4
-      neighbor 10.0.0.1 activate</pre>
-  <p class="cap">The strawman names the constraint precisely: SR labels are an IGP-scoped construct. The default SRGB (900000&ndash;965535) is identical in all three domains, but each is an independent label space, so a forwarding path computed in one LSDB cannot be continued verbatim across an ASBR &mdash; the same index resolves to the same label number but to a different next-hop object in each domain. Inter-domain SR-TE either (a) collapses the islands into one IGP so a single LSDB and one continuous label path exist, or (b) keeps the islands and stitches them with a per-policy binding-SID at each ASBR &mdash; both arms are detailed in the design sections. SRGB default is Arista-verified; everything else here is RFC-deterministic protocol behaviour.</p>
+  <p class="cap">Three administrative domains, each its own OSPFv2 area 0 and its own BGP AS (65000/65001/65002 &mdash; private-ASN space for this strawman, real deployment would use the firm's allocated public ASNs). The admin boundaries are the gold eBGP links at the ASBRs &mdash; that is where end-to-end traffic engineering breaks today. Beneath each edge domain sits an eBGP-CLOS fabric of leaf/spine switches running 100s of private ASNs (16-bit private range 64512&ndash;65534), which is what inflates the ASN count into the hundreds while the number of <em>IGP domains</em> stays at three. Market-data exchange feeds enter at NYC; the trading desk lives behind LON. The Section 2&ndash;3 question this frames: on plain IP/eBGP there is no end-to-end path control across these boundaries today.</p>
 </section>
 
 <section data-auto-animate>
