@@ -4414,6 +4414,96 @@ Three-way choice:
   </section>
 </section>
 
+<!-- ============ SECTION 22 — TRADING INFRA DOMAIN LAYER ============ -->
+<section>
+  <section data-markdown>
+  <textarea data-template>
+## 22 · Trading infrastructure — the domain layer
+
+The subject matter of the trading design rounds — the layer that sits ON the network you already know. HRT know this isn't your native ground; the bar here is **credible + structured**, not native-expert recall.
+
+This drop: **order-entry path · pre-trade risk · kill switch** (the round-2 topic).
+Coming next: market-data end-to-end · exchange connectivity / colo.
+
+↓ for the order path
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### The order path — signal to matching engine
+
+**strategy host → pre-trade risk (inline) → order gateway → cross-connect → exchange**
+
+- **Strategy host** — decides to trade. Kernel-bypass NIC (§18), pinned cores, colo rack.
+- **Pre-trade risk gate** — INLINE, every order passes it (mandated — next slide). Fast because it only does stateless checks.
+- **Order gateway** — owns the **exchange session**: the protocol (generic **FIX**, or the exchange's native binary — Nasdaq **OUCH**, CME **iLink**, LSE Native), sequence numbers, heartbeats, throttles. One session = one choke point.
+- **Cross-connect** — fibre in the exchange colo, patch-panel distance.
+- Returns: **acks/fills** back to the strategy; **drop copy** (exchange's independent record of your executions) feeds the risk side — reconciliation truth that doesn't trust your own gateway.
+
+**Latency frame:** *tick-to-trade* = market-data in, order out, measured on the wire. Typical orders of magnitude: FPGA paths sub-µs, tuned software a few µs. The order leg is a hot path like the feed leg — same §18 host disciplines apply.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Pre-trade risk — the mandated layer
+
+Not optional, not culture — **regulation**:
+- **SEC 15c3-5** (US, "Market Access Rule", 2010) — anyone with market access must run **automated pre-trade risk controls** under the broker-dealer's **direct and exclusive control**, able to **cut access off immediately**.
+- **MiFID II RTS-6** (UK/EU — the local anchor for a City desk) — algo firms must have pre-trade **price collars, max order value/volume, message-rate limits**, real-time monitoring, and **kill functionality**.
+
+**The split — what runs where:**
+
+| Check | State needed | Where it lives |
+|-------|-------------|----------------|
+| Price collar (vs reference) | none | **inline** — NIC/FPGA or gateway, ~O(100 ns) |
+| Max order size / value | none | inline |
+| Message / order rate | counter | inline |
+| Restricted list, duplicate, self-match | small table | inline |
+| Net position, open exposure | **stateful, cross-order** | **software risk engine, beside the path** |
+| P&L / drawdown limits | stateful, needs marks | software, consuming drop copy + fills |
+
+<span class="tag ok">The design point</span> stateless checks are cheap enough to sit on the per-order hot path; aggregate risk is not — it watches a **copy** of the flow and acts through the kill path instead.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### The kill switch — where it sits, how it fires
+
+**What:** the emergency stop — take a strategy / session / firm out of the market NOW.
+
+**Where:** at the choke points — the **order gateway session**, and **exchange-side** (port/session kill, mass-cancel, **cancel-on-disconnect** as the backstop of last resort).
+
+**Firing sequence:** block new order entry → **mass-cancel resting orders** → verify via drop copy → comms. It's ONE control-plane action on the session, not per-order work — **milliseconds, off the hot path, and that's correct**: an emergency stop needs ms, the per-order path keeps its ns.
+
+**Triggers:** manual (the red button) · automated — position/loss limit breach, runaway message rate, **deadman**: the gateway requires a heartbeat from the risk engine; heartbeat lost = entry halts. **Fail-closed** — risk engine dead means trading stops, never continues.
+
+**The three questions a design round grades:**
+1. **Authority** — who/what can fire it, and is the kill path out-of-band from the thing it kills?
+2. **Fail-safe direction** — every failure mode lands on "not trading", not "trading unchecked".
+3. **Blast radius** — kill per-strategy / per-session / firm-wide; you want granularity, not only the nuke.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### How this shows up in the room
+
+"Design the order-entry path with risk controls" — the grading axes:
+
+- **Hot path minimal + deterministic** — inline checks stateless and cheap, everything else off-path.
+- **Name the mandate** — 15c3-5 / RTS-6 is *why* risk is inline; saying it moves you from plumber to designer.
+- **Stateful risk + kill authority out-of-band** — with the deadman making it fail-closed.
+- **Independent truth** — drop copy reconciles what the exchange thinks you did vs what your gateway thinks.
+- **Session discipline** — sequence numbers, gap handling, throttles, cancel-on-disconnect: the gateway is a protocol machine, not a pipe.
+
+<span class="tag warn">Bar reminder</span> structured reasoning wins here — the network underneath (colo, cut-through, bypass, PTP timestamps for the latency claims) is YOUR ground; the domain layer above it is what this section keeps warm.
+  </textarea>
+  </section>
+</section>
+
 <!-- ============ END ============ -->
 <section class="center">
   <h2>End</h2>
