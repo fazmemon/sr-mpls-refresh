@@ -4504,6 +4504,93 @@ Not optional, not culture — **regulation**:
   </section>
 </section>
 
+<!-- ============ SECTION 23 — SD-WAN & SDN CONTROLLERS ============ -->
+<section>
+  <section data-markdown>
+  <textarea data-template>
+## 23 · SD-WAN & SDN controllers
+
+Completeness section — enterprise/contract screens and the vendor tracks ask this straight. HRT are unlikely to (branch-scale tech vs a few engineered colo links — tunnels, controller-in-path and probe-steering are anti-goals in a deterministic trading WAN), **but "why would you NOT run SD-WAN here?" is a live judgment probe** — same species as "should we use SR" — and this section is that answer. The transferable part is the **controller pattern**, which you already own from three directions: ACI at Sky (closed DC SDN), Apstra (open DC intent), controller-driven SR-TE over BGP (§6 / the migration deck).
+
+↓ what SD-WAN is · the Catalyst architecture · the controller map · interview lines
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### SD-WAN stripped of the marketing
+
+An **overlay of IPsec tunnels over any transport** (MPLS, internet, LTE — each labelled a **"color"**), with a **centralized control plane** pushing routes + policy, and **per-app steering** driven by live SLA probes.
+
+Map it to what you built at carriers:
+
+| SD-WAN thing | What it actually is |
+|--------------|---------------------|
+| Overlay + segments (VPNs/VRFs) | **L3VPN's job, done CE-side**, transport-agnostic |
+| Controller distributing routes/policy | **a route-reflector + policy engine** (BGP-like protocol) |
+| TLOC (transport locator) | the overlay's **next-hop**: system-IP / color / encap tuple |
+| App-aware routing | **per-flow TE** — BFD probes each tunnel (loss/latency/jitter), policy picks the compliant path per SLA class |
+| Zero-touch provisioning | device calls home, authenticates by cert + **org-name**, pulls config |
+
+<span class="tag ok">The one-liner</span> *"SD-WAN moved the SP's L3VPN + TE value proposition onto the customer's edge boxes, over any transport, run by a controller."*
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Catalyst SD-WAN (Viptela) — the architecture + what day-0 really is
+
+The controller trio (old names still everywhere):
+
+- **Manager** (vManage) — management plane: GUI/API, config templates, monitoring.
+- **Validator** (vBond) — orchestrator: **first point of contact**, authenticates devices, handles NAT traversal, points edges at the controllers.
+- **Controller** (vSmart) — control plane: runs **OMP** (Overlay Management Protocol, BGP-like) distributing **OMP routes, TLOC routes, service routes** + centralized policy. Edges build the IPsec mesh per policy — the Controller never touches data.
+- **Edge** (C8000V / cEdge) — data plane; BFD probes per tunnel per color feed the SLA decisions.
+
+Day-0 reality (Dib's lab, lostintransit.se 2026-06): interfaces split **VPN 0 (control) / VPN 512 (mgmt)**; identity = **org-name + site-id + system-IP** — org-name is literally the trust anchor peers validate; control connections are **DTLS** (ports 12346+). The real work is **PKI plumbing**: CSRs per controller, signed chain installed everywhere — his install failed until the **intermediate + root CA were concatenated** ("Manager didn't have the full chain"). Plus Cisco Software Central licensing: virtual account, PNP profile, serial upload before an edge can even join.
+
+<span class="tag warn">The senior observation</span> the hard part of SD-WAN isn't routing — it's **trust bootstrap and lifecycle** (certs, licensing, controller upgrades). That's where deployments bleed.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### The controller map — one pattern, many boxes
+
+| Domain | Closed | Open / multivendor |
+|--------|--------|--------------------|
+| DC fabric | **ACI / APIC** (your Sky build) | **Apstra** (intent + continuous validation) |
+| WAN TE | — | **SR-PCE / CloudVision** — SR policies via BGP (§6, migration deck) |
+| SD-WAN branch | **Catalyst/Viptela** (OMP) · Fortinet (firewall-led) · Prisma (ex-CloudGenix) | **HPE/Juniper Mist + Session Smart Router** (ex-128 Tech — **tunnel-less** SVR, no IPsec overhead) |
+| Host overlay | **NSX** (Geneve, micro-seg) | K8s **CNI** (Calico/Cilium) |
+
+One pattern everywhere: **declare intent centrally, controller computes, devices forward.**
+
+**THE interview question: what happens when the controller dies?**
+- SD-WAN: edges keep forwarding on **last-known OMP state** (headless); no new sites/policy until it returns.
+- ACI: fabric forwards fine without APIC; you lose change, not traffic.
+- Apstra: off-box intent + validation — no dataplane dependency at all.
+- The grading point: **control-plane loss must degrade to "no changes", never to "no forwarding".** Same fail-direction logic as the §22 deadman — but inverted: risk fails closed, networks fail open (keep forwarding).
+
+<span class="tag ok">Your positioning line</span> *"I've run the closed version (ACI at Sky), designed the open version (controller-driven SR-TE over BGP-LS), and SD-WAN is the same pattern at the branch edge — the differences that matter are trust bootstrap and what breaks when the controller is gone."*
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### SD-WAN gotchas worth volunteering
+
+- **The underlay still matters** — SLA probing picks the least-bad transport; it cannot repair one. Sell circuits short at your peril (your carrier instinct is an asset here, say it).
+- **Tunnel scale** — full-mesh IPsec is O(sites² × colors); real designs go hub/regional or on-demand tunnels. Same hub-and-spoke economics as §9.
+- **App-identification is fragile** — encrypted traffic classified by first-packet heuristics/SNI; policies quietly misfire when apps change CDNs.
+- **QoS ends at the tunnel** — the overlay marks, but the internet underlay honours nothing; only the MPLS color carries a real SLA.
+- Segmentation (per-VPN) is real and cheap — the L3VPN muscle transfers directly.
+
+Lab note: Dib's post is the hands-on controller-setup reference if a role ever demands it — **backlog behind the EVPN/AWS lab** (needs Cisco images + licensing; not P0).
+  </textarea>
+  </section>
+</section>
+
 <!-- ============ END ============ -->
 <section class="center">
   <h2>End</h2>
