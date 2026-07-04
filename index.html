@@ -4422,8 +4422,7 @@ Three-way choice:
 
 The subject matter of the trading design rounds — the layer that sits ON the network you already know. HRT know this isn't your native ground; the bar here is **credible + structured**, not native-expert recall.
 
-Drops so far: **order-entry path · pre-trade risk · kill switch** (the round-2 topic) · **market-data end-to-end** (added 2026-07-04, second half of this section).
-Coming next: exchange connectivity / colo.
+Drops: **order-entry path · pre-trade risk · kill switch** (the round-2 topic) · **market-data end-to-end** · **exchange connectivity / colo** — section complete 2026-07-04.
 
 ↓ for the order path
   </textarea>
@@ -4589,6 +4588,62 @@ The box between the wire and every strategy:
 6. **Know the boundary** — the deterministic SSM plane stays its own plane; don't tunnel it through a controller-computed unicast fabric.
 
 <span class="tag warn">Bar reminder</span> credible + structured, not native-expert. The transport, multicast, and host layers underneath are YOUR ground — this page is the vocabulary and the judgment order the domain expects on top.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Exchange connectivity & colo — where the firm physically lives (drop 3)
+
+- **The venue is a building.** Each exchange's matching engine sits in a specific hall, and the industry lives beside it: the well-known anchors are CME in **Aurora**, NYSE in **Mahwah**, Nasdaq in **Carteret**, the FX/multi-venue ecosystem in **Equinix NY4 (Secaucus)** and **LD4 (Slough)**, Eurex in **Frankfurt**. Your footprint = a cage of racks in those halls.
+- **Why colo is non-negotiable for the hot path: the light.** ~5 ns per metre of fibre — distance is the latency floor that no host tuning or protocol work ever beats. Being in the building removes the term everything else is measured against.
+- **Fairness is engineered, not assumed:** major venues **length-equalise** the access cabling or publish access latency, so cage position inside the hall doesn't buy an edge. The competition moves to your own stack — which is why §18/§L and the feed handler matter so much.
+- Access is bought per **port**: order-entry sessions and market-data typically land on separate ports/VLANs, with throughput tiers priced per port.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Cross-connects — the physical edge of the design
+
+- **A cross-connect (XC)** is a physical fibre patch from your cage to the exchange's access infrastructure, routed via the facility's meet-me room. Ordered from the facility or venue; **days-to-weeks lead time, monthly recurring cost each** — XCs are inventory and budget, not an afterthought.
+- **Everything lands in PAIRS, and the pair must be provably diverse:** A and B cross-connects to **diverse exchange access switches**, over diverse patch routes and trays, into **your two edge devices**. Two XCs through one tray or one panel are ONE failure — the §12 SRLG discipline applied at rack scale.
+- **Failover mechanics differ by layer and you should name which you're using:** an XC or link failure fails over in the transport/L3 design (fast, local); an **exchange gateway failure** is a *session* event — re-establish on the backup gateway, and the in-flight order state question is answered by **drop copy + reconciliation** (drop 1). **Cancel-on-disconnect** is the venue-side backstop wired under all of it.
+- **Time lives here too:** the facility distributes GPS-disciplined **PTP** (boundary clocks in the switches, drop 1/§18) — both for the latency measurements the whole design depends on and for the regulatory timestamps (RTS-25 class).
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Between venues — the inter-metro menu
+
+A firm trades many venues, so the estate is colo islands joined by a WAN — and the WAN is chosen per traffic class, not one-size:
+
+| Option | Latency | The trade |
+|--------|---------|-----------|
+| **Microwave / mm-wave** | lowest — near-straight-line at ~c in air | tiny bandwidth (a sliver of fibre), **rain fade** — always paired with a fibre fallback |
+| **Dark fibre** | deterministic, route-dependent | you light and operate it; highest control, high cost |
+| **Carrier wavelength (λ)** | deterministic, slightly above dark fibre | simpler ops, less route control |
+| **Carrier Ethernet / MPLS service** | fine for non-hot traffic | shared, SLA-grade latency only |
+| **Extranets (Radianz/TNS-class)** | slowest | reach to the long tail of venues you don't colo at |
+
+- **The classic public example:** Chicago–New Jersey, roughly **4 ms one-way by microwave against six-and-a-half-plus by fibre** — the straight line plus air propagation beats glass geometry. That gap is why the RF networks exist, and why they carry only the few bytes that matter.
+- The hot path gets the shortest physical route; recovery channels, drop copy, and bulk ride the boring circuits. **The A/B market-data feeds ride physically disjoint WAN paths** — the arbitration layer (drop 2) is what makes that redundancy free.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### How the room grades exchange-connectivity design
+
+1. **Start from the venue map and the latency budget** — where the strategy demands physical presence, versus where a WAN leg suffices. That decision drives all the money.
+2. **Diversity you can prove** — XC pairs on diverse access switches and risers, WAN paths SRLG-audited end to end. "Two of everything" that shares a duct is one of everything.
+3. **Match the menu to the flow class** — microwave for the bytes that pay for it (with fibre fallback for the fade), λ/dark fibre for feeds and orders, extranet for the long tail.
+4. **Tell the session-failover story on the order side** — backup gateway, drop-copy reconciliation, cancel-on-disconnect: connectivity design and the drop-1 risk layer are one story.
+5. **Cost realism** — XC MRCs, port tiers, the microwave premium. The economics ARE the design (the §9 lesson wearing trading clothes).
+6. **Measure one-way, PTP-disciplined, per path** — you cannot arbitrate or even discuss paths you can't measure.
+
+<span class="tag ok">Section complete</span> Order path + risk + kill switch · market-data end-to-end · connectivity/colo — the trading domain layer the design rounds sit on. Study order = the drops in order; drill only after taught.
   </textarea>
   </section>
 </section>
