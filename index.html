@@ -4422,8 +4422,8 @@ Three-way choice:
 
 The subject matter of the trading design rounds — the layer that sits ON the network you already know. HRT know this isn't your native ground; the bar here is **credible + structured**, not native-expert recall.
 
-This drop: **order-entry path · pre-trade risk · kill switch** (the round-2 topic).
-Coming next: market-data end-to-end · exchange connectivity / colo.
+Drops so far: **order-entry path · pre-trade risk · kill switch** (the round-2 topic) · **market-data end-to-end** (added 2026-07-04, second half of this section).
+Coming next: exchange connectivity / colo.
 
 ↓ for the order path
   </textarea>
@@ -4500,6 +4500,95 @@ Not optional, not culture — **regulation**:
 - **Session discipline** — sequence numbers, gap handling, throttles, cancel-on-disconnect: the gateway is a protocol machine, not a pipe.
 
 <span class="tag warn">Bar reminder</span> structured reasoning wins here — the network underneath (colo, cut-through, bypass, PTP timestamps for the latency claims) is YOUR ground; the domain layer above it is what this section keeps warm.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Market-data end-to-end — the chain (drop 2)
+
+**matching engine → exchange publisher → colo cross-connect → your edge → multicast distribution → feed handler → order book → strategies**
+
+- **The exchange publishes, it never sends to you.** Prices leave the matching engine as one broadcast; every member hears the same stream, and fairness of that delivery is regulated — nobody may systematically hear it earlier.
+- **Direct vs consolidated:** direct = the exchange's own binary feed, taken in its colo — fastest, one venue. Consolidated = a vendor or the US SIP merges venues and normalises — slower, but one format for everything. Hot path rides direct; risk and mid-office often ride consolidated.
+- **Depth levels:** **L1** = top of book · **L2** = book by price level · **L3 / order-by-order** = every add, modify, delete — you build the book yourself. Serious shops take order-by-order.
+- **Protocol reality:** exchange-native binary — Nasdaq **ITCH** (order-by-order), CME **MDP3/SBE**, LSE **MITCH** — framed by a sequenced transport (MoldUDP64-class) over **UDP multicast**, with TCP/unicast **recovery side-channels**. FIX is for orders; market-data at speed is never FIX.
+
+<span class="tag ok">Anchor</span> This is §K multicast + §L host material with the domain vocabulary attached. The network is your ground; the words are what's new.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Sequence numbers run the entire design
+
+Every packet carries a per-stream sequence number. The whole reliability model hangs off that one field:
+
+- **Gap detection** — you received 4519 then 4523: you *know* you lost three, instantly. UDP never tells you; the sequence does.
+- **A/B arbitration** — two identical streams on disjoint paths; take whichever delivers each sequence first, discard the duplicate. Loss on one line is invisible. **Redundancy at zero added latency** — which is why retransmission never leads the design: a resend costs milliseconds, the B feed is already there.
+- **The recovery ladder, in order:** (1) the other feed covers it · (2) **retransmission request** — a TCP request server resends a small range, off the hot path, for modest gaps · (3) **snapshot / refresh** — a separate channel publishing current book state; you take a snapshot, buffer incrementals, apply from the snapshot's sequence, and you're live again. The **late joiner** uses the same mechanism — nobody replays a whole day of increments.
+- **Conflation** is the answer for consumers who only need "the price now": collapse queued updates per symbol — bounded staleness instead of unbounded queueing.
+
+<span class="tag warn">Room line</span> "Gap-free" means no missing sequence numbers. A/B + arbitration delivers it at zero latency cost; recovery paths exist but never sit on the hot path.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### The feed handler — packets in, order book out
+
+The box between the wire and every strategy:
+
+| Job | What it means |
+|-----|---------------|
+| **Arbitrate** | A/B by sequence number, first arrival wins |
+| **Decode** | exchange binary (ITCH / SBE) at wire rate |
+| **Build the book** | apply add / modify / delete per order; maintain by-level views |
+| **Publish inward** | re-multicast internally, or shared memory to co-located strategies |
+| **Recover** | drive the retransmit / snapshot ladder when both feeds gap |
+
+- Runs on the §18/§L host discipline — kernel-bypass NIC, pinned cores, NUMA-local — or **on the NIC itself** (FPGA feed handlers; host and switch get out of the way).
+- **Sharding:** symbols split across handler instances and rails, so one hot symbol can't starve the rest.
+- Downstream split: the **hot path** gets full depth at lowest latency; monitoring, risk, and mid-office get a **conflated** or top-of-book product.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### What the network owes a market-data feed
+
+- **UDP multicast because the arithmetic forces it** — the fan-out sizing move from the design method: hundreds of consumers of one fat stream make unicast infeasible; you didn't choose multicast, the numbers did. **PIM-SSM**: consumers join **(S,G)** via IGMPv3 — known source, no RP, deterministic shortest-path tree. A and B feeds on **physically disjoint planes** — and diversity you haven't SRLG-audited is not diversity.
+- **In order within each path.** Per-flow ECMP is safe — one flow pins one path. **Per-packet spray is forbidden here**: arbitration tolerates loss, but reordering poisons gap detection.
+- **Microbursts are the load model.** Opens, closes, data releases: instantaneous rates run tens of times the average (order-of-magnitude, venue-dependent). The wire survives on shallow cut-through edges — **the drops happen in the host**: ring, softirq, socket buffer (the §L ladder; pcap drill 01 is exactly this fault).
+- **Determinism and measurement:** small messages, no fragmentation, cut-through edge, and **PTP hardware timestamps** at taps — one-way latency against the exchange timestamp, because you cannot reason about a feed you can't measure.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### The slow consumer — multicast's sharp edge
+
+- **Multicast has no backpressure.** The feed never slows down because one box is slow — a slow consumer gaps *itself*: its socket buffer fills and UDP drops locally (**`RcvbufErrors`** — the pcap-01 fingerprint) while every other consumer stays clean.
+- Isolation patterns: latency-insensitive consumers ride **conflated** streams; the hot path gets its own rail; a bulk consumer never joins a raw full-depth group it can't drain.
+- **The triage tree in one line:** a gap on ONE consumer = host problem · gaps on ALL consumers of one line = that line/network · both lines everywhere = upstream of you. That line is the live-diagnosis round compressed.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### Monitoring — and how the room grades the market-data design
+
+**What a production feed plant watches:** per-line, per-feed **gap counters** · **A-versus-B arrival deltas** (line health before loss shows) · **one-way latency vs the exchange timestamp** (PTP-disciplined, tail percentiles not averages) · microsecond-scale burst telemetry at the edge · the §L host-stage drop counters on every consumer.
+
+**The grading axes when this is posed as a design round:**
+1. **Size it first** — messages per second, average versus event burst; let the numbers force multicast.
+2. **A/B + sequence arbitration named unprompted** — zero-added-latency redundancy.
+3. **Recovery off the hot path** — the retransmit and snapshot ladder, plus the late-joiner story.
+4. **Slow-consumer isolation** — conflation versus full-depth rails.
+5. **Measurement** — PTP one-way, tail percentiles, taps with hardware timestamps.
+6. **Know the boundary** — the deterministic SSM plane stays its own plane; don't tunnel it through a controller-computed unicast fabric.
+
+<span class="tag warn">Bar reminder</span> credible + structured, not native-expert. The transport, multicast, and host layers underneath are YOUR ground — this page is the vocabulary and the judgment order the domain expects on top.
   </textarea>
   </section>
 </section>
