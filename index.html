@@ -4735,6 +4735,91 @@ Lab note: Dib's post is the hands-on controller-setup reference if a role ever d
   </section>
 </section>
 
+<!-- ============ SECTION 24 — MULTICAST: THE MACHINE ============ -->
+<section>
+  <section data-markdown>
+  <textarea data-template>
+## 24 · Multicast — the machine, not the flashcards
+
+HRT know this isn't your depth, and market-data IS this. So this section builds the **machine** — a model you derive answers from, not lines you remember.
+
+**The one organising idea: two layers, two jobs.**
+
+- **Routers BUILD the tree.** They speak **PIM** to each other about where the stream must flow, hop by hop, from receiver toward source.
+- **Switches EAVESDROP on it.** They never speak PIM — they overhear the hosts' **IGMP** conversation to learn which ports actually want the stream. That's all "snooping" is.
+
+Every multicast fault is one of those two layers failing — and the symptom tells you which one. Hold that split and most interview answers fall out on their own.
+
+↓ the join story · why trading killed the RP · the failure catalogue · what the room grades
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### The story of one receiver joining feed A
+
+1. The host wants feed A, so it sends an **IGMPv3 membership report**: *include source 10.10.0.1, group 232.1.1.1* — it names the source AND the group, the **(S,G)**.
+2. The **access switch overhears** that report (snooping) and opens this port for the group. Eavesdropping, nothing more.
+3. The **last-hop router** sees it and sends a **PIM (S,G) join toward the source** — each router on the way installs state and passes the join up, until it splices into the existing tree. The tree grows *from receiver toward source*, on the shortest path.
+4. Packets flow down the tree. Each router forwards a multicast packet **only if it arrived on the interface facing the source** — the **RPF check**. That is multicast's loop protection: no RPF, and any topology loop becomes a packet storm.
+
+**And the overlooked worker: the querier.** Snooped state is soft — it expires. Someone must keep asking the wire *"who still wants what?"* (the IGMP General Query) so hosts re-answer and switches refresh their port state. Normally the router does it. **A VLAN with no querier rots silently**: memberships age out group by group, switch by switch, while packets keep arriving upstream.
+
+<span class="tag ok">Derive, don't remember</span> one dark switch + healthy uplink = the eavesdropping layer lost its refresh. You don't memorise "querier" — the model hands it to you.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### ASM vs SSM — why trading killed the rendezvous point
+
+**Classic ASM**: the receiver joins **(\*,G)** — "anyone sending to group G." The network now has a matchmaking problem — receivers don't know the sources — so it needs a matchmaker: the **RP (rendezvous point)**, where senders register and the receivers' shared tree is rooted, followed by a switchover to the source tree. The cost: shared state, shared fate, RP redundancy engineering, MSDP between RPs — a whole failure-mode family that exists ONLY to answer "who is sending?"
+
+**SSM**: the receiver already knows the source — market-data vendors publish it — and **names it in the join**: (S,G), IGMPv3 include, the 232/8 range. The matchmaking problem disappears, and with it the RP, the register process, the shared tree, and MSDP. What remains is the minimal machine: **a shortest-path tree from each receiver to a named source.** Deterministic by construction.
+
+That determinism is the whole reason trading runs SSM — and it makes the **A/B feed model trivial**: two sources, two groups, join both (S,G)s, arbitrate by sequence (§22). Nothing shared between the planes, so nothing correlates their failures.
+
+<span class="tag ok">Your anchor</span> carrier IPTV ran exactly this machinery at scale — same PIM, same IGMP, same trees. The trading version only raises the determinism bar and adds the arbitration layer on top.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### The failure catalogue — symptom names the layer
+
+| Symptom | Layer | Why / confirm |
+|---------|-------|---------------|
+| **One switch dark**, its uplink still receiving | **L2 — snooping/querier** | state aged out with no querier to refresh it; confirm: disable snooping on the VLAN, it floods, receivers return |
+| **Group dark everywhere on ONE feed**, other feed fine | **L3 — the tree** | RPF failing after a topology change, or (S,G) state torn down upstream; the tree didn't rebuild where you think it did |
+| **Both feeds missing the SAME sequences** on all consumers | **upstream of you** | exchange or extranet side; your plant delivered what it was given |
+| **One consumer gapping**, wire clean at the tap | **the host** | socket buffer overrun — `RcvbufErrors` (pcap drill 01) |
+| **Receivers flapping in and out** | **L2 — querier election / fast-leave** | duelling or flapping queriers churn the snooped state |
+
+**The rule that compresses the table: darkness is a state problem, gaps are a drop problem.** Trees don't drop packets — they exist or they don't. Drops live in buffers — hosts and edges. Decide *dark vs gappy* first and you've picked the layer before touching a CLI.
+  </textarea>
+  </section>
+
+  <section data-markdown>
+  <textarea data-template>
+### What the room grades — and the model in one breath
+
+The design axes when multicast comes up (it will — it's the market-data transport):
+
+1. **The arithmetic forces multicast** — fan-out sizing first, same move as §22.
+2. **SSM, named**: (S,G) joins via IGMPv3, 232/8, no RP — and *why*: the RP family of failure modes bought nothing a published source list doesn't.
+3. **The querier as a design item** — a querier on every receiver VLAN, decided at design time, not discovered at 3am.
+4. **RPF as the safety story** — why a multicast plane doesn't loop.
+5. **A/B on physically disjoint planes** + sequence arbitration above (§22) — and SRLG honesty about "disjoint".
+6. **Keep it off the SR fabric** — the deterministic SSM plane stays its own plane; Tree-SID/BIER only if convergence is mandated (migration deck §8).
+
+**The one-breath model to carry into the room:**
+*"Routers build the tree with PIM toward a source the receiver names; switches eavesdrop the IGMP conversation to know which ports care; a querier keeps that eavesdropped state alive; RPF keeps the whole thing loop-free. Break any one of the four and the symptom tells you which."*
+
+<span class="tag warn">Method note</span> read this, discuss it, and only days later does anything here get drilled — cold questions on this section before then are banned.
+  </textarea>
+  </section>
+</section>
+
 <!-- ============ END ============ -->
 <section class="center">
   <h2>End</h2>
