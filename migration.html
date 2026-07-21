@@ -114,155 +114,41 @@ pre { color:#ccc; }
 
 
 <section data-auto-animate>
-  <h3>Should we use SR? — frame the decision honestly</h3>
-  <p class="cap">Four problems are on the table. For each, name the non-SR tool we already have, find its hard limit, and only then claim SR. SR earns its keep on three of the four — not on the one everyone reaches for first (UCMP).</p>
-  <svg viewBox="0 0 1240 470" style="max-height:520px;width:100%">
-    <!-- column headers -->
-    <text x="40"  y="40" fill="#9cd1ef" font-size="20" font-weight="bold">Problem</text>
-    <text x="360" y="40" fill="#9cd1ef" font-size="20" font-weight="bold">Tool we already own (no SR)</text>
-    <text x="730" y="40" fill="#9cd1ef" font-size="20" font-weight="bold">Hard limit of that tool</text>
-    <text x="1060" y="40" fill="#9cd1ef" font-size="20" font-weight="bold">SR needed?</text>
-    <line x1="40" y1="52" x2="1200" y2="52" stroke="#5b9bd5" stroke-width="1.5"/>
+  <h3>Should we use SR? — frame it for a greenfield IP WAN</h3>
+  <p class="cap">HRT run plain IP: OSPF + BGP, <b>no MPLS</b>. So the classic SR pitch &mdash; "collapse your LDP + RSVP-TE stack" &mdash; does not apply: there is nothing to remove. The honest question is not <i>what to simplify</i>, it is <b>what, if anything, to introduce</b> onto the inter-DC / research WAN, and in what shape.</p>
+  <svg viewBox="0 0 1240 460" style="max-height:500px;width:100%">
+    <text x="40" y="34" fill="#9cd1ef" font-size="19" font-weight="bold">What the research WAN actually needs</text>
+    <text x="40" y="68" fill="#e6edf3" font-size="16">1 &middot; Steer classes on one WAN &mdash; research bulk vs control,</text>
+    <text x="62" y="90" fill="#8aa0b3" font-size="14">off the paths that must stay clear. Plain IP = one SPF tree for everyone.</text>
+    <text x="40" y="124" fill="#e6edf3" font-size="16">2 &middot; Deterministic sub-50ms protection (TI-LFA) &mdash;</text>
+    <text x="62" y="146" fill="#8aa0b3" font-size="14">plain LFA has coverage gaps and no post-convergence guarantee.</text>
+    <text x="40" y="180" fill="#e6edf3" font-size="16">3 &middot; End-to-end path control ACROSS the AS / OSPF domains &mdash;</text>
+    <text x="62" y="202" fill="#8aa0b3" font-size="14">IP + eBGP gives reachability, not a source-routed path across boundaries.</text>
+    <text x="40" y="240" fill="#7ec97e" font-size="15" font-style="italic">Load-spreading alone (ECMP / BGP multipath) needs no SR. Steering + TI-LFA + cross-domain path control is where it earns its place.</text>
 
-    <!-- row 1 UCMP -->
-    <text x="40"  y="100" fill="#e6edf3" font-size="17">UCMP</text>
-    <text x="40"  y="122" fill="#8aa0b3" font-size="13">(spread load by capacity)</text>
-    <text x="360" y="100" fill="#e6edf3" font-size="17">BGP DMZ Link-Bandwidth</text>
-    <text x="360" y="122" fill="#8aa0b3" font-size="13">ext-community &#8594; weighted FIB</text>
-    <text x="730" y="100" fill="#e6edf3" font-size="17">Only balances by ratio;</text>
-    <text x="730" y="122" fill="#8aa0b3" font-size="13">cannot pin a <tspan fill="#d9c08c">path</tspan> per class</text>
-    <rect x="1060" y="84" width="120" height="30" rx="5" fill="#243b2a" stroke="#7ec97e"/>
-    <text x="1075" y="105" fill="#7ec97e" font-size="16" font-weight="bold">NO</text>
-    <line x1="40" y1="138" x2="1200" y2="138" stroke="#2b3a47"/>
+    <line x1="40" y1="262" x2="1200" y2="262" stroke="#2b3a47"/>
 
-    <!-- row 2 steering -->
-    <text x="40"  y="186" fill="#e6edf3" font-size="17">Per-class /</text>
-    <text x="40"  y="208" fill="#8aa0b3" font-size="13">explicit-path steering</text>
-    <text x="360" y="186" fill="#e6edf3" font-size="17">IGP metric / PBR / RSVP-TE</text>
-    <text x="360" y="208" fill="#8aa0b3" font-size="13">RSVP-TE not on EOS R-series</text>
-    <text x="730" y="186" fill="#e6edf3" font-size="17">Metric = one tree for all;</text>
-    <text x="730" y="208" fill="#8aa0b3" font-size="13">PBR not multi-domain/scalable</text>
-    <rect x="1060" y="170" width="120" height="30" rx="5" fill="#3b2424" stroke="#d16b6b"/>
-    <text x="1075" y="191" fill="#d16b6b" font-size="16" font-weight="bold">YES</text>
-    <line x1="40" y1="224" x2="1200" y2="224" stroke="#2b3a47"/>
+    <text x="40" y="298" fill="#9cd1ef" font-size="19" font-weight="bold">If we introduce SR, two independent decisions</text>
+    <rect x="40" y="316" width="560" height="126" rx="8" fill="#12190f" stroke="#7ec97e"/>
+    <text x="60" y="344" fill="#7ec97e" font-size="16" font-weight="bold">A &middot; Forwarding plane</text>
+    <text x="60" y="372" fill="#e6edf3" font-size="14.5">SR-MPLS &mdash; introduce a label plane (4-byte labels)</text>
+    <text x="60" y="398" fill="#e6edf3" font-size="14.5">SRv6 &mdash; IPv6-native, no label plane, routable SIDs</text>
+    <text x="60" y="426" fill="#8aa0b3" font-size="13">both ride the OSPF + BGP they already run</text>
 
-    <!-- row 3 protection -->
-    <text x="40"  y="272" fill="#e6edf3" font-size="17">Sub-50ms</text>
-    <text x="40"  y="294" fill="#8aa0b3" font-size="13">deterministic protection</text>
-    <text x="360" y="272" fill="#e6edf3" font-size="17">LFA / remote-LFA</text>
-    <text x="360" y="294" fill="#8aa0b3" font-size="13">IP loop-free alternates</text>
-    <text x="730" y="272" fill="#e6edf3" font-size="17">Coverage gaps; backup is not</text>
-    <text x="730" y="294" fill="#8aa0b3" font-size="13">the post-convergence path</text>
-    <rect x="1060" y="256" width="120" height="30" rx="5" fill="#3b2424" stroke="#d16b6b"/>
-    <text x="1075" y="277" fill="#d16b6b" font-size="16" font-weight="bold">YES</text>
-    <line x1="40" y1="310" x2="1200" y2="310" stroke="#2b3a47"/>
-
-    <!-- row 4 control plane -->
-    <text x="40"  y="358" fill="#e6edf3" font-size="17">Control-plane</text>
-    <text x="40"  y="380" fill="#8aa0b3" font-size="13">simplification</text>
-    <text x="360" y="358" fill="#e6edf3" font-size="17">LDP + RSVP-TE + IGP</text>
-    <text x="360" y="380" fill="#8aa0b3" font-size="13">label dist. protocol stack</text>
-    <text x="730" y="358" fill="#e6edf3" font-size="17">3 protocols, targeted-LDP,</text>
-    <text x="730" y="380" fill="#8aa0b3" font-size="13">RSVP soft-state to maintain</text>
-    <rect x="1060" y="342" width="120" height="30" rx="5" fill="#3b2424" stroke="#d16b6b"/>
-    <text x="1075" y="363" fill="#d16b6b" font-size="16" font-weight="bold">YES</text>
-
-    <text x="40" y="440" fill="#9cd1ef" font-size="16" font-style="italic">Verdict ahead of the argument: SR is justified by steering + TI-LFA + one control plane — NOT by UCMP. If UCMP is all you need, you don't need SR.</text>
+    <rect x="640" y="316" width="560" height="126" rx="8" fill="#15191e" stroke="#9cd1ef"/>
+    <text x="660" y="344" fill="#9cd1ef" font-size="16" font-weight="bold">B &middot; Topology / domains (independent axis)</text>
+    <text x="660" y="372" fill="#e6edf3" font-size="14.5">keep multi-IGP + multi-eBGP &rarr; SR stitches across</text>
+    <text x="660" y="398" fill="#e6edf3" font-size="14.5">single IGP under many eBGP &rarr; one unified SR plane</text>
+    <text x="660" y="424" fill="#e6edf3" font-size="14.5">collapse ASNs &rarr; single AS, big-bang</text>
   </svg>
+  <p class="cap">The rest of the deck reasons through the <b>A &times; B</b> matrix &mdash; each option's mechanics, its failure mode, and the OSPF area math that decides whether it even fits &mdash; then lands a recommendation. The trading edge stays out of scope throughout (local, off any SR plane).</p>
 </section>
 
-<section>
-  <h3>Problem 1 — UCMP is already solved on plain IP: BGP DMZ Link-Bandwidth</h3>
-  <p class="cap">Strawman A core: PE1 reaches a destination behind P1 (400G plane) and P2 (100G plane). We want load split 400:100 = 4:1, not 1:1 ECMP. The link-bandwidth extended community carries each egress capacity; the receiving PE programs unequal FIB weights. No SR, no controller, no new label plane.</p>
-  <svg viewBox="0 0 1240 430" style="max-height:470px;width:100%">
-    <!-- nodes -->
-    <circle cx="160" cy="220" r="40" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
-    <text x="160" y="216" fill="#e6edf3" font-size="18" text-anchor="middle">PE1</text>
-    <text x="160" y="236" fill="#8aa0b3" font-size="12" text-anchor="middle">ingress</text>
 
-    <circle cx="560" cy="110" r="40" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
-    <text x="560" y="116" fill="#e6edf3" font-size="18" text-anchor="middle">P1</text>
-    <circle cx="560" cy="330" r="40" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
-    <text x="560" y="336" fill="#e6edf3" font-size="18" text-anchor="middle">P2</text>
 
-    <circle cx="980" cy="220" r="40" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
-    <text x="980" y="216" fill="#e6edf3" font-size="16" text-anchor="middle">DEST</text>
-    <text x="980" y="236" fill="#8aa0b3" font-size="12" text-anchor="middle">10.0.9.0/24</text>
 
-    <!-- links PE1 -->
-    <line x1="198" y1="208" x2="522" y2="122" stroke="#5b9bd5" stroke-width="3"/>
-    <line x1="198" y1="232" x2="522" y2="318" stroke="#5b9bd5" stroke-width="2"/>
-    <!-- links to dest with capacity colours -->
-    <line x1="600" y1="110" x2="942" y2="208" stroke="#7ec97e" stroke-width="4"/>
-    <text x="660" y="135" fill="#7ec97e" font-size="14">egress 400G &#8594; LB field = 50,000,000,000 B/s</text>
-    <line x1="600" y1="330" x2="942" y2="232" stroke="#d9c08c" stroke-width="2"/>
-    <text x="660" y="320" fill="#d9c08c" font-size="14">egress 100G &#8594; LB field = 12,500,000,000 B/s</text>
 
-    <!-- weight result box -->
-    <rect x="120" y="330" width="340" height="80" rx="6" fill="#15191e" stroke="#5b9bd5"/>
-    <text x="135" y="356" fill="#9cd1ef" font-size="15" font-weight="bold">FIB weight on PE1 (computed):</text>
-    <text x="135" y="380" fill="#e6edf3" font-size="14">via P1 : via P2 = 50e9 : 12.5e9 = 4 : 1</text>
-    <text x="135" y="400" fill="#7ec97e" font-size="14">80% of demand &#8594; P1 plane, 20% &#8594; P2 plane</text>
-  </svg>
-  <p class="cap">Encoding (draft-ietf-idr-link-bandwidth, verified): 8-octet extended community, Type 0x40 (non-transitive) or 0x00 (transitive), SubType 0x04, 2-octet Global-Admin (AS), 4-octet bandwidth as an IEEE-754 32-bit float in <b>bytes/sec, not bits/sec</b>. So 400 Gbit/s &#8658; 400e9 / 8 = 50,000,000,000 B/s in the field; 100 Gbit/s &#8658; 12,500,000,000 B/s.</p>
-</section>
 
-<section>
-  <h3>Problem 1 — how DMZ-LB programs the weighted FIB (config + math)</h3>
-  <p class="cap">P1/P2 carry the link-bandwidth community toward the destination (on EOS it is derived from interface speed, or tuned with <code>link-bandwidth adjust</code>); the receiver PE1 needs no config to consume it, only <code>ucmp mode 1</code> so the parallel paths install in the FIB by ratio, not equal-cost. This is the whole UCMP story on Arista — verified feature, no SR.</p>
-  <pre style="font-size:0.5em;background:#15191e;padding:8px;">! ---- PE1 (receiver) : verified UCMP path-weighting ----
-router bgp 65000
-   maximum-paths 4 ecmp 4                ! allow the parallel paths to install
-   ucmp mode 1                           ! weighted FIB; mode 1 = integer repetition counts
-   ucmp link-bandwidth update-delay 5    ! verified knob: damp churn on bandwidth *increase* (0-600s)
-!
-! ---- P1 / P2 (eBGP egress toward DEST) ----
-! On EOS the link-bandwidth ext-community is derived from egress interface speed and
-! re-advertised; no command is required on PE1 to RECEIVE it (per Arista UCMP TOI).
-! Origination/adjustment knob (illustrative form - confirm exact syntax on target EOS):
-!   neighbor &lt;peer&gt; link-bandwidth adjust auto         ! to verify on target release
-!
-! ---- expected verification (lab to confirm exact columns) ----
-! show ip route 10.0.9.0/24
-!   prints next-hops P1, P2 with FIB weight / integer repetition counts in ratio 4:1</pre>
-  <p class="cap"><b>Weight math:</b> the receiver normalises the two LB values to integer next-hop repetition counts. 50e9 : 12.5e9 &#8594; divide by GCD 12.5e9 &#8594; 4 : 1. EOS programs P1 with 4 FIB slots, P2 with 1, so a 5-way hash sends 4/5 = 80% of flows to the 400G plane. Add a third path at 200G (25e9 B/s) and the set becomes 50e9:12.5e9:25e9 = 4:1:2 &#8594; 7 slots total, P1 = 4/7 = 57%.</p>
-  <p class="cap">Per draft-ietf-bess-ebgp-dmz the <i>cumulative</i> form sums downstream link-bandwidths so an upstream router weights by <i>total reachable</i> capacity, not just the local egress — which is exactly what a CLOS fabric beneath each domain needs.</p>
-</section>
-
-<section>
-  <h3>Problem 1 — the ceiling: DMZ-LB balances <i>by ratio</i>, it cannot express a <i>path</i></h3>
-  <p class="cap">This is the crux of the whole "should we use SR" argument. DMZ-LB answers "how much down each next-hop?" It cannot answer "market-data class must take the low-latency P1 plane and bulk class must take the P2 plane." Same prefix, two classes, two intents — DMZ-LB has no knob for it.</p>
-  <svg viewBox="0 0 1240 400" style="max-height:440px;width:100%">
-    <!-- what DMZ-LB does -->
-    <text x="60" y="40" fill="#7ec97e" font-size="18" font-weight="bold">What DMZ-LB CAN do</text>
-    <circle cx="120" cy="170" r="34" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
-    <text x="120" y="176" fill="#e6edf3" font-size="15" text-anchor="middle">PE1</text>
-    <line x1="154" y1="158" x2="340" y2="110" stroke="#7ec97e" stroke-width="4"/>
-    <line x1="154" y1="182" x2="340" y2="230" stroke="#d9c08c" stroke-width="2"/>
-    <text x="350" y="112" fill="#7ec97e" font-size="14">P1 plane — 80% of ALL traffic</text>
-    <text x="350" y="234" fill="#d9c08c" font-size="14">P2 plane — 20% of ALL traffic</text>
-    <text x="120" y="300" fill="#8aa0b3" font-size="13" text-anchor="middle">one prefix &#8594; one capacity-weighted spray</text>
-    <text x="120" y="320" fill="#8aa0b3" font-size="13" text-anchor="middle">class is irrelevant to the hash</text>
-
-    <line x1="620" y1="20" x2="620" y2="380" stroke="#2b3a47" stroke-width="1.5"/>
-
-    <!-- what we actually need -->
-    <text x="700" y="40" fill="#d16b6b" font-size="18" font-weight="bold">What the desk actually wants</text>
-    <circle cx="760" cy="170" r="34" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
-    <text x="760" y="176" fill="#e6edf3" font-size="15" text-anchor="middle">PE1</text>
-    <!-- mkt data class -->
-    <line x1="794" y1="158" x2="980" y2="110" stroke="#7ec97e" stroke-width="4"/>
-    <text x="990" y="100" fill="#7ec97e" font-size="14">MKT-DATA class &#8594; P1 ONLY</text>
-    <text x="990" y="118" fill="#8aa0b3" font-size="12">deterministic low-latency, 100%</text>
-    <!-- bulk class -->
-    <line x1="794" y1="182" x2="980" y2="250" stroke="#d9c08c" stroke-width="3"/>
-    <text x="990" y="248" fill="#d9c08c" font-size="14">BULK class &#8594; P2 ONLY</text>
-    <text x="990" y="266" fill="#8aa0b3" font-size="12">keep capacity plane clear of mkt-data</text>
-    <text x="850" y="330" fill="#d16b6b" font-size="13" text-anchor="middle">DMZ-LB cannot do this: no per-class FIB,</text>
-    <text x="850" y="350" fill="#d16b6b" font-size="13" text-anchor="middle">no explicit hop list. Destination decides, not source.</text>
-  </svg>
-  <p class="cap"><b>Why no IP tool reaches it:</b> destination-based routing (IGP/BGP) makes the forwarding decision per-prefix at every hop. To pin a class onto an explicit plane you must encode the path <i>at the source</i> — that is the definition of source routing, i.e. SR-TE. DMZ-LB and SR-TE solve different problems; UCMP does not imply SR.</p>
-</section>
 
 <section>
   <h3>Problem 2 — per-class steering needs source routing (SR-TE colour policy)</h3>
@@ -345,32 +231,7 @@ route-map MKTDATA-STEER permit 10
   <p class="cap"><b>Method, not result:</b> the PLR computes its <i>extended</i> P-space (nodes reachable from PE1's neighbours without crossing the failed link) and the Q-space (nodes that can reach the destination without crossing it), per RFC 7490 / draft-ietf-rtgwg-segment-routing-ti-lfa. It then builds the SID list along the post-convergence path: a node-SID to the P/Q boundary, plus an Adj-SID to cross the P&#8594;Q link when P and Q are not adjacent. LFA has no such guarantee — if no single neighbour is loop-free, the prefix is simply unprotected. The repair is installed in FIB <i>before</i> failure, so failover is data-plane-local (target sub-50ms), independent of IGP reconvergence.</p>
 </section>
 
-<section>
-  <h3>Problem 4 — one control plane: SR-MPLS removes LDP and RSVP-TE</h3>
-  <p class="cap">Today MPLS transport needs LDP for labels, RSVP-TE for TE tunnels, plus the IGP — three protocols, targeted-LDP sessions, and RSVP soft-state refreshed per tunnel per hop. SR-MPLS distributes labels <i>inside the OSPF LSAs we already flood</i>, so the label plane collapses into the IGP. Fewer protocols = fewer failure modes on a network where determinism is the product.</p>
-  <svg viewBox="0 0 1240 300" style="max-height:320px;width:100%">
-    <text x="60" y="40" fill="#d16b6b" font-size="18" font-weight="bold">Before — 3 control planes</text>
-    <rect x="60" y="60" width="200" height="46" rx="5" fill="#3b2424" stroke="#d16b6b"/>
-    <text x="160" y="88" fill="#e6edf3" font-size="15" text-anchor="middle">OSPFv2 (reachability)</text>
-    <rect x="60" y="116" width="200" height="46" rx="5" fill="#3b2424" stroke="#d16b6b"/>
-    <text x="160" y="144" fill="#e6edf3" font-size="15" text-anchor="middle">LDP (labels)</text>
-    <rect x="60" y="172" width="200" height="46" rx="5" fill="#3b2424" stroke="#d16b6b"/>
-    <text x="160" y="200" fill="#e6edf3" font-size="15" text-anchor="middle">RSVP-TE (tunnels)</text>
-    <text x="60" y="250" fill="#8aa0b3" font-size="13">+ targeted-LDP sessions, RSVP soft-state refresh</text>
 
-    <line x1="430" y1="40" x2="430" y2="260" stroke="#2b3a47"/>
-    <text x="560" y="40" fill="#7ec97e" font-size="18" font-weight="bold">After — SR-MPLS over OSPF</text>
-    <rect x="560" y="100" width="260" height="70" rx="5" fill="#243b2a" stroke="#7ec97e"/>
-    <text x="690" y="130" fill="#e6edf3" font-size="15" text-anchor="middle">OSPFv2-SR</text>
-    <text x="690" y="152" fill="#8aa0b3" font-size="12" text-anchor="middle">reachability + labels in LSAs</text>
-    <rect x="900" y="100" width="260" height="70" rx="5" fill="#243b2a" stroke="#9cd1ef"/>
-    <text x="1030" y="124" fill="#e6edf3" font-size="14" text-anchor="middle">SR-TE policy (controller)</text>
-    <text x="1030" y="146" fill="#8aa0b3" font-size="11" text-anchor="middle">only where explicit TE needed</text>
-    <text x="1030" y="162" fill="#8aa0b3" font-size="11" text-anchor="middle">BGP SR Policy SAFI, not RSVP</text>
-    <text x="560" y="250" fill="#7ec97e" font-size="13">no LDP, no RSVP soft-state; per-flow TE state lives only at the head-end</text>
-  </svg>
-  <p class="cap"><b>Where the labels come from (deterministic):</b> the SR sub-TLVs are defined by <b>RFC 8665 (OSPF Extensions for SR)</b>, carried in the RFC 7684 containers: the Prefix-SID sub-TLV rides the OSPFv2 Extended Prefix Opaque LSA (opaque type 7) — index 3, V/L flags clear &#8658; label = SRGB base + index = 900000 + 3 = 900003; the Adjacency-SID sub-TLV rides the Extended Link Opaque LSA (opaque type 8) and is local/dynamic. The SR-Algorithm TLV and SID/Label Range (SRGB) TLV ride the Router Information Opaque LSA (RFC 7770, opaque type 4). No separate label protocol exists in the SR path — that is the simplification, and it is structural, not cosmetic.</p>
-</section>
 
 <section>
   <h3>Verdict — SR is justified, but be precise about why</h3>
