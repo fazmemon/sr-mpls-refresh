@@ -172,6 +172,59 @@ pre { color:#ccc; }
     <p style="margin:0.15em 0;color:#8a97a3;">Honest caveat to defend: one OSPF instance across multiple ASNs is unusual &mdash; IGP is normally intra-AS. It is justified here only as a deliberate <em>underlay</em> (loopbacks + SR), with eBGP doing all reachability/policy on top. If that underlay can't scale to one area, Option A degrades toward the inter-domain case (Option B).</p>
   </div>
 </section>
+
+<section>
+  <h3>Option B &mdash; keep multi-IGP, stitch SR across domains (binding-SID)</h3>
+  <p class="cap">Leave each site its own OSPF domain. SR-MPLS then has no end-to-end label plane &mdash; a far router's prefix-SID isn't in the near domain's SR table &mdash; so you <b>stitch</b>: each domain runs its own SRGB, and a <b>binding-SID</b> at the ASBR expands into the next domain's SID-list. One BSID hides a whole remote-domain path behind a single label.</p>
+  <ul style="font-size:0.84em;line-height:1.45;">
+    <li><b>How it's driven:</b> a controller computes the inter-domain path from a <b>BGP-LS</b> topology feed and programs the head-end via <b>BGP SR Policy</b> (SAFI 73). EOS has no PCEP &mdash; BGP SR Policy is the supported path, and it's shipping today.</li>
+    <li><b>What it buys:</b> each domain stays its own flooding/failure domain &mdash; a flap is contained, LSDBs stay small, full administrative + fault isolation.</li>
+    <li><b>What it costs:</b> per-domain label state; the stitch + controller machinery; MSD must hold the stacked SID-list (the binding-SID keeps the head-end stack shallow by compressing a remote path to one label).</li>
+  </ul>
+  <p class="cap">The opposite trade to Option A: <b>contained failure domains, more moving parts.</b> It is also Option A's graceful degradation &mdash; if the single-IGP underlay won't scale, you land here deliberately.</p>
+</section>
+
+<section>
+  <h3>Option C &mdash; SRv6 (IPv6-native, routable SIDs, no label plane)</h3>
+  <p class="cap">Same SR control plane (OSPF/BGP + SR-TE), different <em>forwarding</em>. A SID is an <b>IPv6 address</b>, so it routes across AS/OSPF boundaries with <b>no stitch and no label plane at all</b>: the cleanest inter-domain story, nothing new to run beyond IPv6.</p>
+  <ul style="font-size:0.84em;line-height:1.45;">
+    <li><b>The win:</b> globally-routable SIDs &mdash; if a far locator is in the inter-AS table, the near domain reaches it directly. Removes the binding-SID stitch of Option B entirely.</li>
+    <li><b>The costs:</b> SRH overhead (40 B IPv6 + 8 B SRH + 16 B/SID, vs 4 B/label on SR-MPLS); MTU / fragmentation risk on WAN segments; a <b>coordinated locator plan</b> across the acquired-entity domains = a new ops model; and R-series SRv6 data-plane maturity is to-verify.</li>
+  </ul>
+  <p class="cap">On a <em>bulk</em> research WAN the header overhead matters far less than on a µs trading feed &mdash; but the coordinated-locator ops burden across many acquired ASNs is real. SRv6 is the strongest <b>future-greenfield</b> answer; on this estate today it is the higher-risk option.</p>
+</section>
+
+<section>
+  <h3>Option D &mdash; collapse the ASNs (single AS, big-bang)</h3>
+  <p class="cap">Merge the acquired-entity ASNs into one AS. That removes the eBGP boundaries entirely and enables the simplest possible SR &mdash; flat single IGP, one SRGB, no stitch. The cleanest end-state on paper.</p>
+  <ul style="font-size:0.84em;line-height:1.45;">
+    <li><b>Why it's rarely right:</b> a <b>big-bang</b> with huge blast radius, and you lose what multi-AS gave you &mdash; per-entity policy (communities), administrative isolation, and a natural fault boundary. One AS is one policy-and-failure domain.</li>
+    <li><b>Migration risk:</b> AS-migration / renumbering across live acquired networks is high-risk, low-reward &mdash; when Option A already delivers unified SR <em>without</em> touching a single ASN.</li>
+  </ul>
+  <p class="cap">Verdict on D: <b>don't</b> &mdash; unless there is an independent mandate to consolidate the ASNs. SR must never be the reason to collapse administrative domains.</p>
+</section>
+
+<section>
+  <h3>The number that decides Option A &mdash; OSPF area scaling &amp; failure domain</h3>
+  <p class="cap">Option A lives or dies on whether one OSPF domain can hold the WAN. The math a design round wants:</p>
+  <ul style="font-size:0.84em;line-height:1.45;">
+    <li><b>LSDB size grows with routers + links.</b> Each router floods a Router-LSA listing its adjacencies, so the LSDB &asymp; N router-LSAs + the transit/link LSAs; SPF re-runs on every topology change (Dijkstra, ~O(L log N)).</li>
+    <li><b>The flat-area limit is a budget, not a spec:</b> ~a few hundred routers / low-thousands of links per area before flooding + SPF churn + failure-domain size turn fragile (rule-of-thumb). A global inter-DC WAN of a handful of core sites sits well inside it &mdash; and the DC fabrics beneath are <em>not</em> in this IGP, they are their own domains.</li>
+    <li><b>Failure-domain containment is the real lever:</b> put each region in its own <b>area</b>; ABR summarisation stops a flap flooding globally, so SPF re-runs only inside the hit area. Cost: SR prefix-SIDs must be <b>re-originated inter-area</b> at the ABRs, index preserved (RFC 8665), so the label plane stays end-to-end.</li>
+  </ul>
+  <p class="cap">So Option A is really <b>one IGP, multi-area</b> once the WAN outgrows a comfortable single-area budget &mdash; unified SR label plane, contained flooding, at the cost of inter-area re-origination. That is the honest scaling answer, not "one flat area forever."</p>
+</section>
+
+<section>
+  <h3>Recommendation &mdash; reason to the answer</h3>
+  <p class="cap">Across the A (forwarding) &times; B (topology) matrix, for HRT's greenfield inter-DC / research WAN:</p>
+  <ul style="font-size:0.84em;line-height:1.5;">
+    <li><b>Topology:</b> <span style="color:#7ec97e">single IGP under the existing eBGP domains (Option A)</span> &mdash; unified SR, keep every acquired AS and its policy; go <b>multi-area</b> (not flat) once scale demands, accepting inter-area re-origination. Fall back to inter-domain stitch (Option B) only if the underlay genuinely can't be unified. <span style="color:#d16b6b">Reject collapsing the ASNs (D)</span> &mdash; big-bang, no SR payback.</li>
+    <li><b>Forwarding:</b> <span style="color:#7ec97e">SR-MPLS</span> &mdash; 4-byte labels, MTU-safe, mature on the EOS/Cisco kit they already run, TI-LFA GA. <span style="color:#d9c08c">SRv6 (C)</span> stays the documented path for a future IPv6-native greenfield, revisited when the locator-plan ops cost is justified.</li>
+    <li><b>Scope:</b> the <span style="color:#e79a9a">trading edge stays off SR entirely</span> &mdash; exchange&harr;colo is local and µs-critical; multicast market-data stays in PIM-SSM (appendix). SR earns its keep on research bulk + resilience + cross-domain steering.</li>
+  </ul>
+  <p class="cap">One line for the room: <b>single-IGP-under-eBGP SR-MPLS, multi-area at scale, keep the ASNs, trading floor untouched.</b> Steering + TI-LFA + cross-domain path control, with the least disruption &mdash; and I can say exactly where I'd revisit it (SRv6) and what I'd never do to get there (collapse the ASNs).</p>
+</section>
 </section>
 
 
@@ -263,35 +316,7 @@ route-map MKTDATA-STEER permit 10
 
 
 
-<section>
-  <h3>Verdict — SR is justified, but be precise about why</h3>
-  <svg viewBox="0 0 1240 360" style="max-height:400px;width:100%">
-    <!-- not because -->
-    <rect x="40" y="40" width="560" height="120" rx="8" fill="#1a1d12" stroke="#d9c08c"/>
-    <text x="60" y="72" fill="#d9c08c" font-size="18" font-weight="bold">NOT because of UCMP</text>
-    <text x="60" y="100" fill="#e6edf3" font-size="14">BGP DMZ Link-Bandwidth already gives weighted FIB</text>
-    <text x="60" y="122" fill="#e6edf3" font-size="14">(4:1 over the 400G/100G planes) on plain IP.</text>
-    <text x="60" y="144" fill="#8aa0b3" font-size="13">If capacity-balancing were the only ask, no SR.</text>
 
-    <!-- because -->
-    <rect x="640" y="40" width="560" height="290" rx="8" fill="#12190f" stroke="#7ec97e"/>
-    <text x="660" y="72" fill="#7ec97e" font-size="18" font-weight="bold">YES because of three things IP cannot do</text>
-    <text x="660" y="108" fill="#e6edf3" font-size="15">1. Per-class explicit steering — source-routed</text>
-    <text x="680" y="130" fill="#8aa0b3" font-size="13">SID stack (Adj-SID pins the plane); DMZ-LB can't</text>
-    <text x="680" y="150" fill="#8aa0b3" font-size="13">pin a path. OSPF &#8658; SR-TE colour, Flex-Algo is IS-IS-only.</text>
-    <text x="660" y="186" fill="#e6edf3" font-size="15">2. Sub-50ms deterministic protection — TI-LFA</text>
-    <text x="680" y="208" fill="#8aa0b3" font-size="13">guaranteed coverage + post-convergence repair</text>
-    <text x="680" y="228" fill="#8aa0b3" font-size="13">(OSPF-SR TI-LFA, EOS 4.33.1F).</text>
-    <text x="660" y="264" fill="#e6edf3" font-size="15">3. One control plane — labels in OSPF LSAs,</text>
-    <text x="680" y="286" fill="#8aa0b3" font-size="13">retire LDP + RSVP-TE soft-state.</text>
-    <text x="660" y="318" fill="#7ec97e" font-size="14" font-style="italic">Steering + TI-LFA + simplification carry the case.</text>
-
-    <!-- arrow -->
-    <line x1="600" y1="100" x2="640" y2="100" stroke="#5b9bd5" stroke-width="2" marker-end="url(#a2)"/>
-    <defs><marker id="a2" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#5b9bd5"/></marker></defs>
-  </svg>
-  <p class="cap">The honest line for the room: don't sell SR on UCMP — you'd lose the argument to anyone who knows DMZ Link-Bandwidth. Sell it on the steering, protection and control-plane consolidation that destination-based IP forwarding structurally cannot provide. And we get all three while staying on the OSPF we already run — no IS-IS forklift required.</p>
-</section>
 
 <section>
   <h3>3 - SR-MPLS vs SRv6: the data-plane choice for this net</h3>
@@ -480,7 +505,7 @@ route-map MKTDATA-STEER permit 10
 </section>
 
 <section>
-  <h3>3d - Inter-AS: globally-routable SIDs vs label stitching (Strawman B)</h3>
+  <h3>3d - Inter-AS: globally-routable SIDs vs label stitching (Option B/C detail)</h3>
   <p class="cap">SRv6's headline inter-domain advantage is real - a SID is an IPv6 address, routable across the NYC/CORE/LON ASBRs with no per-domain label state. Set against it: our actual design uses binding-SID stitch on SR-MPLS, which is mature on EOS today; SRv6 inter-AS on EOS R-series is not (to verify).</p>
   <svg viewBox="0 0 1240 330" style="max-height:360px;width:100%">
     <!-- three domains -->
@@ -854,7 +879,7 @@ router ospf 1
 </section>
 
 <section>
-  <h3>OSPF-SR LSA/TLV byte layout + the Strawman A node-SID plan</h3>
+  <h3>OSPF-SR LSA/TLV byte layout + the node-SID plan</h3>
   <p class="cap">Left: the on-the-wire encoding (RFC 8665 sections 3, 5, 6). Right: how those bytes resolve to a label for one loopback on Strawman A. This is the slide that proves the SID-to-label math is deterministic, not a controller secret.</p>
 
   <div style="display:flex;gap:14px;">
@@ -1398,45 +1423,7 @@ Head-end consumption (RFC 9256 &sect;8.4 per-destination/colour steering) - ILLU
   <p class="cap"><strong>Recommendation:</strong> lead with <strong>boundaries + binding-SID stitch</strong> &mdash; it preserves the existing OSPF design, contains blast radius, and keeps head-end MSD at 3. Consolidation is the right answer only where two domains are already operationally one team and the flooding/SRGB-merge cost is acceptable; treat it as a targeted simplification, not a network-wide programme. Pivot-ready: the same controller + BGP-LS feed supports both &mdash; stitching is just "don't merge the IGPs," so you can consolidate a pair of domains later without re-architecting the control plane.</p>
 </section>
 
-<section>
-  <h3>6.1 - The UCMP problem: ECMP hashes by flow, not by capacity</h3>
-  <p class="cap">Strawman A. PE1 (market-data edge) -&gt; PE2 (trading edge), two disjoint planes, but the planes are NOT equal capacity.</p>
-  <svg viewBox="0 0 1240 470" style="max-height:430px;width:100%">
-    <!-- nodes -->
-    <circle cx="150" cy="235" r="34" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
-    <text x="150" y="231" fill="#cfe8fb" font-size="15" text-anchor="middle">PE1</text>
-    <text x="150" y="249" fill="#7fb0d4" font-size="11" text-anchor="middle">idx1</text>
-    <circle cx="1090" cy="235" r="34" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
-    <text x="1090" y="231" fill="#cfe8fb" font-size="15" text-anchor="middle">PE2</text>
-    <text x="1090" y="249" fill="#7fb0d4" font-size="11" text-anchor="middle">idx2</text>
-    <circle cx="620" cy="105" r="34" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
-    <text x="620" y="101" fill="#cfe8fb" font-size="15" text-anchor="middle">P1</text>
-    <text x="620" y="119" fill="#7fb0d4" font-size="11" text-anchor="middle">low-lat plane</text>
-    <circle cx="620" cy="365" r="34" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
-    <text x="620" y="361" fill="#cfe8fb" font-size="15" text-anchor="middle">P2</text>
-    <text x="620" y="383" fill="#7fb0d4" font-size="11" text-anchor="middle">hi-cap plane</text>
-    <!-- P1 plane links (400G) -->
-    <line x1="180" y1="218" x2="590" y2="120" stroke="#5b9bd5" stroke-width="3"/>
-    <line x1="650" y1="120" x2="1060" y2="218" stroke="#5b9bd5" stroke-width="3"/>
-    <text x="360" y="150" fill="#9cd1ef" font-size="13">400G  metric 10</text>
-    <text x="820" y="150" fill="#9cd1ef" font-size="13">400G  metric 10</text>
-    <!-- P2 plane links (100G) -->
-    <line x1="180" y1="252" x2="590" y2="350" stroke="#5b9bd5" stroke-width="3"/>
-    <line x1="650" y1="350" x2="1060" y2="252" stroke="#5b9bd5" stroke-width="3"/>
-    <text x="350" y="332" fill="#9cd1ef" font-size="13">100G  metric 10</text>
-    <text x="810" y="332" fill="#9cd1ef" font-size="13">100G  metric 10</text>
-    <!-- P1-P2 link -->
-    <line x1="620" y1="139" x2="620" y2="331" stroke="#5b9bd5" stroke-width="2" stroke-dasharray="6 5"/>
-    <text x="632" y="240" fill="#7fb0d4" font-size="11">P1&lt;-&gt;P2 (transit, not on PE1-PE2 best path)</text>
-    <!-- offered demand -->
-    <text x="55" y="120" fill="#e6d8a8" font-size="14">offered</text>
-    <text x="55" y="138" fill="#e6d8a8" font-size="14">250G</text>
-    <!-- split annotations -->
-    <text x="360" y="105" fill="#d16b6b" font-size="14">125G</text>
-    <text x="350" y="378" fill="#d16b6b" font-size="14">125G  &gt; 100G  DROP</text>
-  </svg>
-  <p class="cap">Both planes cost OSPF metric 10 end-to-end (PE1-&gt;Px = 10, Px-&gt;PE2 = 10, so each path = 20), so OSPF installs them as ECMP. EOS hashes per 5-tuple flow into equal shares: ~50/50. The 100G plane is offered 125G of a 250G demand and tail-drops; the 400G plane sits at 125/400 = 31% full. Same total path cost, wrong distribution. (Aggregate-demand model; the real fix is to make the share track capacity, not metric.)</p>
-</section>
+
 
 <section>
   <h3>6.2 - Why it splits 50/50: the ECMP share model in the FIB</h3>
