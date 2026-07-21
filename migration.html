@@ -144,6 +144,36 @@ pre { color:#ccc; }
   <p class="cap">The rest of the deck reasons through the <b>A &times; B</b> matrix &mdash; each option's mechanics, its failure mode, and the OSPF area math that decides whether it even fits &mdash; then lands a recommendation. The trading edge stays out of scope throughout (local, off any SR plane).</p>
 </section>
 
+<section>
+  <h3>Option A &mdash; single IGP under many eBGP domains (unified SR, keep the ASNs)</h3>
+  <p class="cap">SR-MPLS rides the <b>IGP</b>. One OSPF underlay spanning the whole WAN &rArr; one unified SR label plane: single SRGB, node-SIDs reachable end-to-end, TI-LFA end-to-end, <b>no binding-SID stitch</b>. eBGP stays layered on top, so each acquired entity keeps its AS and community policy. You get the SR simplicity <i>without</i> collapsing a single ASN.</p>
+  <svg viewBox="0 0 1240 300" style="max-height:340px;width:100%" font-family="Segoe UI, sans-serif">
+    <text x="620" y="36" fill="#d9c08c" font-size="16" text-anchor="middle" font-weight="bold">eBGP overlay &mdash; per-entity AS + community policy (unchanged)</text>
+    <rect x="120" y="54" width="200" height="40" rx="8" fill="#1a1410" stroke="#d9c08c" stroke-dasharray="5 3"/><text x="220" y="79" fill="#e8d6a8" font-size="12" text-anchor="middle">AS 65001 policy</text>
+    <rect x="520" y="54" width="200" height="40" rx="8" fill="#1a1410" stroke="#d9c08c" stroke-dasharray="5 3"/><text x="620" y="79" fill="#e8d6a8" font-size="12" text-anchor="middle">AS 65000 policy</text>
+    <rect x="920" y="54" width="200" height="40" rx="8" fill="#1a1410" stroke="#d9c08c" stroke-dasharray="5 3"/><text x="1020" y="79" fill="#e8d6a8" font-size="12" text-anchor="middle">AS 65002 policy</text>
+    <line x1="220" y1="94" x2="200" y2="206" stroke="#d9c08c" stroke-dasharray="3 3"/>
+    <line x1="620" y1="94" x2="620" y2="206" stroke="#d9c08c" stroke-dasharray="3 3"/>
+    <line x1="1020" y1="94" x2="1060" y2="206" stroke="#d9c08c" stroke-dasharray="3 3"/>
+    <rect x="40" y="150" width="1160" height="120" rx="14" fill="#0f2320" stroke="#4ec9b0" stroke-width="2"/>
+    <text x="620" y="176" fill="#54e0c7" font-size="15.5" text-anchor="middle" font-weight="bold">ONE OSPF underlay &mdash; single SRGB, node-SIDs end-to-end, TI-LFA end-to-end (no stitch)</text>
+    <circle cx="180" cy="228" r="22" fill="#1f3a52" stroke="#7ec97e"/><text x="180" y="233" fill="#cfeaff" font-size="12" text-anchor="middle">R1</text>
+    <circle cx="430" cy="228" r="22" fill="#1f3a52" stroke="#7ec97e"/><text x="430" y="233" fill="#cfeaff" font-size="12" text-anchor="middle">R2</text>
+    <circle cx="620" cy="228" r="22" fill="#1f3a52" stroke="#7ec97e"/><text x="620" y="233" fill="#cfeaff" font-size="12" text-anchor="middle">R3</text>
+    <circle cx="810" cy="228" r="22" fill="#1f3a52" stroke="#7ec97e"/><text x="810" y="233" fill="#cfeaff" font-size="12" text-anchor="middle">R4</text>
+    <circle cx="1060" cy="228" r="22" fill="#1f3a52" stroke="#7ec97e"/><text x="1060" y="233" fill="#cfeaff" font-size="12" text-anchor="middle">R5</text>
+    <line x1="202" y1="228" x2="408" y2="228" stroke="#7ec97e" stroke-width="2"/>
+    <line x1="452" y1="228" x2="598" y2="228" stroke="#7ec97e" stroke-width="2"/>
+    <line x1="642" y1="228" x2="788" y2="228" stroke="#7ec97e" stroke-width="2"/>
+    <line x1="832" y1="228" x2="1038" y2="228" stroke="#7ec97e" stroke-width="2"/>
+  </svg>
+  <div style="font-size:0.8em;line-height:1.4;margin-top:0.2em;">
+    <p style="margin:0.15em 0;"><strong style="color:#d16b6b;">The tension &mdash; one IGP is one failure domain.</strong> Flood scope = the whole WAN: a link flap re-runs SPF everywhere, and LSDB / SPF cost grows with routers &times; links. So the sub-choice: <b>flat single area</b> (simplest SR, worst blast radius) vs <b>single IGP with areas</b> (contains flooding &mdash; but fragments SR, so prefix-SIDs need inter-area re-origination at the ABRs).</p>
+    <p style="margin:0.15em 0;color:#8a97a3;">Honest caveat to defend: one OSPF instance across multiple ASNs is unusual &mdash; IGP is normally intra-AS. It is justified here only as a deliberate <em>underlay</em> (loopbacks + SR), with eBGP doing all reachability/policy on top. If that underlay can't scale to one area, Option A degrades toward the inter-domain case (Option B).</p>
+  </div>
+</section>
+</section>
+
 
 
 
