@@ -145,6 +145,16 @@ pre { color:#ccc; }
 </section>
 
 <section>
+  <h3>UCMP &mdash; real on this WAN, but solvable on plain IP (so <i>not</i> the reason for SR)</h3>
+  <p class="cap">The research WAN has parallel inter-DC links of unequal capacity and elephant flows to spread across them &mdash; a genuine need. Be honest in the room though: <b>UCMP does not require SR.</b> BGP <b>DMZ Link-Bandwidth</b> carries each egress's capacity as an extended community and the receiver programs weighted (unequal) FIB next-hops. Plain IP, no SR, no controller.</p>
+  <ul style="font-size:0.84em;line-height:1.45;">
+    <li><b>How:</b> link-bandwidth ext-community (bytes/sec) &rarr; receiver normalises to integer next-hop repetition counts &rArr; e.g. 400G:100G = 4:1 spread. The <em>cumulative</em> form sums downstream capacity, so an upstream router weights by <em>total reachable</em> bandwidth.</li>
+    <li><b>Its ceiling:</b> DMZ-LB balances by <b>ratio</b> across next-hops &mdash; it cannot pin a <em>path</em> or express a per-class intent ("this class on that path"). That is source routing (SR-TE), a different problem.</li>
+  </ul>
+  <p class="cap">So UCMP is the honest counter-example: if capacity-spreading were the only ask, you would <b>not</b> adopt SR. SR earns its place on steering, TI-LFA and cross-domain path control &mdash; not on UCMP. Saying that out loud is what makes the SR case credible in front of people who know DMZ-LB.</p>
+</section>
+
+<section>
   <h3>Option A &mdash; single IGP under many eBGP domains (unified SR, keep the ASNs)</h3>
   <p class="cap">SR-MPLS rides the <b>IGP</b>. One OSPF underlay spanning the whole WAN &rArr; one unified SR label plane: single SRGB, node-SIDs reachable end-to-end, TI-LFA end-to-end, <b>no binding-SID stitch</b>. eBGP stays layered on top, so each acquired entity keeps its AS and community policy. You get the SR simplicity <i>without</i> collapsing a single ASN.</p>
   <svg viewBox="0 0 1240 300" style="max-height:340px;width:100%" font-family="Segoe UI, sans-serif">
