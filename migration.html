@@ -232,50 +232,7 @@ pre { color:#ccc; }
 
 
 
-<section>
-  <h3>Problem 2 — per-class steering needs source routing (SR-TE colour policy)</h3>
-  <p class="cap">SR-TE expresses the explicit path as a label (SID) stack imposed by the ingress PE. To <i>pin the P1 plane</i> we cannot use P1's prefix-SID — that is a node-SID and follows IGP shortest path, which could ECMP back onto P2. We use the <b>Adjacency-SID of the PE1&#8594;P1 link</b>, then PE2's prefix-SID. Note for OSPF: EOS Flex-Algo is IS-IS-only, so per-class steering on OSPF-SR must be done with SR-TE colour policies, not Flex-Algo.</p>
-  <svg viewBox="0 0 1240 320" style="max-height:340px;width:100%">
-    <circle cx="120" cy="160" r="38" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
-    <text x="120" y="166" fill="#e6edf3" font-size="16" text-anchor="middle">PE1</text>
-    <circle cx="560" cy="80" r="38" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
-    <text x="560" y="86" fill="#e6edf3" font-size="16" text-anchor="middle">P1</text>
-    <text x="560" y="36" fill="#8aa0b3" font-size="13" text-anchor="middle">prefix-SID idx3 = label 900003</text>
-    <circle cx="560" cy="250" r="38" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
-    <text x="560" y="256" fill="#e6edf3" font-size="16" text-anchor="middle">P2</text>
-    <text x="560" y="300" fill="#8aa0b3" font-size="13" text-anchor="middle">prefix-SID idx4 = label 900004</text>
-    <circle cx="1000" cy="160" r="38" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
-    <text x="1000" y="160" fill="#e6edf3" font-size="15" text-anchor="middle">PE2</text>
-    <text x="1000" y="206" fill="#8aa0b3" font-size="13" text-anchor="middle">prefix-SID idx2 = 900002</text>
 
-    <!-- chosen path P1 -->
-    <line x1="158" y1="148" x2="522" y2="92" stroke="#7ec97e" stroke-width="4"/>
-    <text x="300" y="100" fill="#7ec97e" font-size="12">Adj-SID(PE1&#8594;P1)</text>
-    <line x1="598" y1="92" x2="962" y2="148" stroke="#7ec97e" stroke-width="4"/>
-    <!-- unused P2 -->
-    <line x1="158" y1="172" x2="522" y2="238" stroke="#3a4a57" stroke-width="2" stroke-dasharray="6 5"/>
-    <line x1="598" y1="238" x2="962" y2="172" stroke="#3a4a57" stroke-width="2" stroke-dasharray="6 5"/>
-
-    <rect x="340" y="150" width="400" height="48" rx="6" fill="#15191e" stroke="#7ec97e"/>
-    <text x="355" y="170" fill="#9cd1ef" font-size="13">imposed SID-list (mkt-data, colour 100):</text>
-    <text x="355" y="190" fill="#7ec97e" font-size="13" font-family="monospace">[ Adj-SID(PE1&#8594;P1) , 900002 (PE2 prefix-SID) ]</text>
-  </svg>
-  <pre style="font-size:0.5em;background:#15191e;padding:8px;">! ---- PE1 : SR-TE policy pinning the low-latency P1 plane (colour 100) ----
-! Structure verified against Arista EOS Traffic-Management docs; Adj-SID label value is
-! dynamic/local to PE1 -> shown as a placeholder, read it from the device, do not invent.
-router traffic-engineering
-   segment-routing
-      policy endpoint 10.0.0.2 color 100        ! endpoint = PE2 loopback, colour = "low-latency"
-         binding-sid 965100
-         path-group preference 100
-            segment-list label-stack &lt;AdjSID-PE1-P1&gt; 900002   ! pin PE1->P1 adjacency, then PE2 prefix-SID
-!
-! ---- steer the market-data prefix into colour 100 ----
-route-map MKTDATA-STEER permit 10
-   set extcommunity color 100               ! colour ext-comm (RFC 9012) selects the (endpoint,colour) policy
-! attach MKTDATA-STEER to the BGP path / VRF carrying the A-feed</pre>
-  <p class="cap"><b>SID&#8594;label is deterministic for prefix-SIDs:</b> default EOS SR label range / SRGB is 900000–965535, so prefix-SID index 3 &#8658; label 900003, index 2 &#8658; 900002. <b>Adjacency-SIDs are dynamic and local</b> — their label is allocated by PE1 and must be read from the device, never invented. The colour extended community (RFC 9012) on a BGP route resolves the next-hop to the matching <i>(endpoint, colour)</i> policy &#8594; automated steering. This is the capability DMZ-LB structurally lacks.</p>
-</section>
 
 <section>
   <h3>Problem 3 — sub-50ms deterministic protection: LFA's gaps vs TI-LFA</h3>
@@ -496,7 +453,7 @@ route-map MKTDATA-STEER permit 10
   <pre style="font-size:0.5em;background:#15191e;padding:8px;">  serialisation = header_bits / line_rate
   SR-MPLS  12 B = 96 bits :  96 / 400e9  = 0.24 ns/hop   |   96 / 100e9  = 0.96 ns/hop
   SRv6     96 B = 768 bits:  768 / 400e9 = 1.92 ns/hop   |   768 / 100e9 = 7.68 ns/hop
-  Over a 6-hop A/B market-data path on the 100G P2-plane: 6 x 6.72 ns = ~40 ns of pure header serialisation
+  Over a 6-hop A/B path on the 100G plane: 6 x 6.72 ns = ~40 ns of pure header serialisation
   that SRv6 adds and SR-MPLS does not. Tick-to-trade budgets are measured in single-digit microseconds - this is
   NOT the dominant term (fibre + queueing + switch pipeline dominate), but on a deterministic feed it is free
   latency we choose not to spend.</pre>
@@ -529,7 +486,7 @@ route-map MKTDATA-STEER permit 10
     <text x="40" y="302" fill="#cfe8ff" font-size="12.5">PE-LON's SID is one IPv6 address. If its locator is in the inter-AS routing table, NYC reaches it with no stitch -</text>
     <text x="40" y="322" fill="#cfe8ff" font-size="12.5">but that needs a coordinated SRv6 locator plan across admin domains + SRv6 data plane on every ASBR.</text>
   </svg>
-  <pre style="font-size:0.5em;background:#15191e;padding:8px;">  Inter-AS label-stitch walk (SR-MPLS, Strawman B), packet NYC -&gt; LON:
+  <pre style="font-size:0.5em;background:#15191e;padding:8px;">  Inter-AS label-stitch walk (SR-MPLS, the inter-domain example), packet NYC -&gt; LON:
     at PE-NY     : push  &lt;BSID-to-CORE&gt; , &lt;SID-list within NYC to ASBR1&gt;          (labels from NYC SRGB)
     at ASBR1     : pop NYC labels; resolve BSID -&gt; SR policy steers into CORE SRGB SID-list toward ASBR2
     at ASBR2     : resolve next BSID -&gt; LON SRGB SID-list, bottom label = PE-LON prefix-SID
@@ -601,7 +558,7 @@ route-map MKTDATA-STEER permit 10
     <text x="1080" y="172" fill="#dff0fb" font-size="14" text-anchor="middle" font-weight="bold">TI-LFA over OSPF-SR</text>
     <text x="1080" y="60" fill="#9cd1ef" font-size="15" text-anchor="middle" font-weight="bold">&#9660; the two features this design stands on are GA today</text>
   </svg>
-  <p class="cap">Source: Arista TOI / Segment Routing tag (arista.com/en/support/toi/tag/segment-routing). The blue items - OSPFv2 prefix/adj-SID and TI-LFA over OSPF-SR - are exactly the primitives Strawman A and B rely on, and both are shipping EOS. The red item (Flex-Algo) is present in EOS but only under IS-IS, so it is NOT load-bearing for an OSPF design - addressed on the gaps slide. We are not waiting on a roadmap.</p>
+  <p class="cap">Source: Arista TOI / Segment Routing tag (arista.com/en/support/toi/tag/segment-routing). The blue items - OSPFv2 prefix/adj-SID and TI-LFA over OSPF-SR - are exactly the primitives these worked examples rely on, and both are shipping EOS. The red item (Flex-Algo) is present in EOS but only under IS-IS, so it is NOT load-bearing for an OSPF design - addressed on the gaps slide. We are not waiting on a roadmap.</p>
 </section>
 
 <section>
@@ -642,7 +599,7 @@ route-map MKTDATA-STEER permit 10
       </svg>
     </div>
     <div style="flex:1;">
-      <pre style="font-size:0.5em;background:#15191e;padding:8px;">! Strawman A - PE1: ILLUSTRATIVE intent, NOT verbatim EOS CLI
+      <pre style="font-size:0.5em;background:#15191e;padding:8px;">! the worked example - PE1: ILLUSTRATIVE intent, NOT verbatim EOS CLI
 ! (exact keywords differ by EOS train - lab/SE to confirm)
 router ospf 1
    segment-routing mpls
@@ -740,7 +697,7 @@ router ospf 1
   <div style="display:flex;gap:18px;">
     <div style="flex:1.1;">
       <svg viewBox="0 0 600 300" style="max-height:300px;width:100%;">
-        <text x="20" y="26" fill="#dff0fb" font-size="14" font-weight="bold">Worst-case stack in Strawman B (inter-domain, stitched):</text>
+        <text x="20" y="26" fill="#dff0fb" font-size="14" font-weight="bold">Worst-case stack in the inter-domain example (inter-domain, stitched):</text>
         <g font-family="monospace" font-size="12.5">
           <rect x="20" y="44" width="230" height="28" fill="#2b3b1f" stroke="#7ec97e"/><text x="30" y="63" fill="#cfe8cf">1x VPN / service label</text>
           <rect x="20" y="72" width="230" height="28" fill="#2a2440" stroke="#d9c08c"/><text x="30" y="91" fill="#e8dcb6">1x binding-SID (domain stitch)</text>
@@ -763,7 +720,7 @@ router ospf 1
         <tr><td style="padding:3px 6px;">Nokia 7750 SR FP5</td><td style="text-align:center;">MSD value to verify against Nokia SR SPRING docs</td></tr>
         <tr style="background:#16242f;"><td style="padding:3px 6px;"><b>Arista R3 / R4 (Jericho2 / R4 DNX)</b></td><td style="text-align:center;color:#d9c08c;"><b>not publicly published - lab/SE to confirm</b></td></tr>
       </table>
-      <p class="cap">Honest position to the room: I will <b>not</b> quote any MSD number I cannot source. Every figure above is indicative and release-dependent; I would validate the actual value on the relevant platform in lab (<tt>show platform</tt> / TAC). The design is built so that even a conservative MSD (~5-8) is sufficient, because binding-SID stitch (Strawman B) and short SID-lists (Strawman A's two-plane core needs at most 2-3 SIDs) keep us well inside it.</p>
+      <p class="cap">Honest position to the room: I will <b>not</b> quote any MSD number I cannot source. Every figure above is indicative and release-dependent; I would validate the actual value on the relevant platform in lab (<tt>show platform</tt> / TAC). The design is built so that even a conservative MSD (~5-8) is sufficient, because binding-SID stitch (the inter-domain example) and short SID-lists (the two-plane example's two-plane core needs at most 2-3 SIDs) keep us well inside it.</p>
     </div>
   </div>
   <p class="cap">Cisco/Juniper/Nokia figures are indicative only and must be confirmed against current vendor SR config guides per release/line-card. Jericho2 being shared silicon across Arista R3 and Cisco NCS is a useful "same chip class" anchor, but the EOS-specific MSD is still the value to confirm in lab - not asserted here.</p>
@@ -808,7 +765,7 @@ router ospf 1
         <circle cx="110" cy="150" r="16" fill="#1f3a52" stroke="#9cd1ef"/><text x="110" y="154" fill="#dff0fb" font-size="11" text-anchor="middle">PE1</text>
         <circle cx="430" cy="150" r="16" fill="#1f3a52" stroke="#9cd1ef"/><text x="430" y="154" fill="#dff0fb" font-size="11" text-anchor="middle">PE2</text>
       </svg>
-      <p class="cap" style="margin:6px 0 0 0;">PCEP would be one transport for the same intent. BGP SR Policy is the IETF-blessed alternative and is what EOS implements - the headend still gets an explicit SID-list, the controller still does the computation. We <b>flag</b>: whether CloudVision or a 3rd-party controller performs the <i>inter-domain</i> path computation for Strawman B is an open item to confirm with Arista.</p>
+      <p class="cap" style="margin:6px 0 0 0;">PCEP would be one transport for the same intent. BGP SR Policy is the IETF-blessed alternative and is what EOS implements - the headend still gets an explicit SID-list, the controller still does the computation. We <b>flag</b>: whether CloudVision or a 3rd-party controller performs the <i>inter-domain</i> path computation for the inter-domain example is an open item to confirm with Arista.</p>
     </div>
   </div>
   <p class="cap">Feasibility verdict: OSPF-SR + TI-LFA are GA on EOS 4.33.x R-series - <b>no OSPF&#8594;IS-IS forklift, no platform swap</b>. The two gaps are addressed by SR-TE colour policies (for steering) and BGP SR Policy/BGP-LS (in place of PCEP), both shipping EOS. The design uses what they already own.</p>
@@ -879,7 +836,7 @@ router ospf 1
 
 <section>
   <h3>OSPF-SR LSA/TLV byte layout + the node-SID plan</h3>
-  <p class="cap">Left: the on-the-wire encoding (RFC 8665 sections 3, 5, 6). Right: how those bytes resolve to a label for one loopback on Strawman A. This is the slide that proves the SID-to-label math is deterministic, not a controller secret.</p>
+  <p class="cap">Left: the on-the-wire encoding (RFC 8665 sections 3, 5, 6). Right: how those bytes resolve to a label for one loopback on the worked example. This is the slide that proves the SID-to-label math is deterministic, not a controller secret.</p>
 
   <div style="display:flex;gap:14px;">
     <!-- LEFT: byte layout SVG -->
@@ -976,7 +933,7 @@ P2  idx 4  -&gt; 900000+4 = 900004</pre>
 
 <section>
   <h3>SRGB scope, ABR re-origination, MSD, and the EOS turn-on</h3>
-  <p class="cap">Three operational realities behind the byte layout, then the config that lights it up on Arista R-series. Strawman A is a single area 0, so re-origination is shown for the multi-area / Strawman-B case to keep it pivot-ready.</p>
+  <p class="cap">Three operational realities behind the byte layout, then the config that lights it up on Arista R-series. the worked example is a single area 0, so re-origination is shown for the multi-area / Strawman-B case to keep it pivot-ready.</p>
 
   <div style="display:flex;gap:16px;">
     <!-- LEFT: ABR re-origination diagram -->
@@ -1080,7 +1037,7 @@ router ospf 1
     <!-- primary path label -->
     <text x="620" y="500" fill="#7ec97e" font-size="14" text-anchor="middle">Primary PE1&#8594;PE2 = PE1-P1(10) + P1-PE2(10) = <tspan font-weight="bold">cost 20</tspan>, rides the low-latency P1 plane</text>
   </svg>
-  <p class="cap">Strawman A dual-plane core, single OSPF area 0, Arista R-series, OSPF-SR on. Prefix-SID plan: PE1 idx1 = label <b>900001</b>, PE2 idx2 = <b>900002</b>, P1 idx3 = <b>900003</b>, P2 idx4 = <b>900004</b> (SRGB base 900000, default EOS SR range 900000-965535). We protect <span style="color:#d16b6b">PE1's primary link to P1</span> - the low-latency leg carrying live market-data / order flow. The question TI-LFA answers locally, with no signalling: when that link drops, what label stack does PE1 push so the very next packet rides the post-convergence path with zero micro-loop?</p>
+  <p class="cap">A small worked-example core &mdash; 4 nodes, single OSPF area, OSPF-SR on &mdash; illustrating the TI-LFA mechanism. Prefix-SID plan: PE1 idx1 = label <b>900001</b>, PE2 idx2 = <b>900002</b>, P1 idx3 = <b>900003</b>, P2 idx4 = <b>900004</b> (SRGB base 900000, default EOS SR range 900000-965535). We protect <span style="color:#d16b6b">PE1's primary link to P1</span> - the low-latency leg carrying the protected class. The question TI-LFA answers locally, with no signalling: when that link drops, what label stack does PE1 push so the very next packet rides the post-convergence path with zero micro-loop?</p>
 </section>
 
 <section>
@@ -1248,7 +1205,7 @@ router bfd
 
 <section>
   <h3>Inter-AS stitch (1/3): the problem and the per-domain SID plan</h3>
-  <p class="cap">Strawman B: R-NY (NYC AS65001) must reach PE-LN (LON AS65002) across three OSPF domains joined by eBGP at ASBRs. No single IGP, no PCEP on EOS. A binding-SID-stitched SR Policy hides each domain's internals behind one label.</p>
+  <p class="cap">the inter-domain example: R-NY (NYC AS65001) must reach PE-LN (LON AS65002) across three OSPF domains joined by eBGP at ASBRs. No single IGP, no PCEP on EOS. A binding-SID-stitched SR Policy hides each domain's internals behind one label.</p>
   <svg viewBox="0 0 1240 360" style="max-height:330px;width:100%;">
     <!-- domain boxes -->
     <rect x="20" y="60" width="360" height="220" rx="8" fill="none" stroke="#5b9bd5" stroke-dasharray="5 4"/>
@@ -1424,492 +1381,31 @@ Head-end consumption (RFC 9256 &sect;8.4 per-destination/colour steering) - ILLU
 
 
 
-<section>
-  <h3>6.2 - Why it splits 50/50: the ECMP share model in the FIB</h3>
-  <p class="cap">ECMP is capacity-blind by construction. The FIB hashes a flow's 5-tuple into a fixed share array and gives each next-hop an equal number of shares.</p>
-  <svg viewBox="0 0 1240 360" style="max-height:330px;width:100%">
-    <text x="40" y="40" fill="#cfe8fb" font-size="15">PE1 FIB entry for 10.0.2.2/32 (PE2 loopback), 2 ECMP next-hops:</text>
-    <!-- share array -->
-    <g font-size="12">
-      <rect x="40"  y="70" width="70" height="46" fill="#1f3a52" stroke="#5b9bd5"/><text x="75" y="92" fill="#cfe8fb" text-anchor="middle">s0</text><text x="75" y="108" fill="#7fb0d4" text-anchor="middle">P1</text>
-      <rect x="115" y="70" width="70" height="46" fill="#243a30" stroke="#7ec97e"/><text x="150" y="92" fill="#cfe8fb" text-anchor="middle">s1</text><text x="150" y="108" fill="#9bd9a3" text-anchor="middle">P2</text>
-      <rect x="190" y="70" width="70" height="46" fill="#1f3a52" stroke="#5b9bd5"/><text x="225" y="92" fill="#cfe8fb" text-anchor="middle">s2</text><text x="225" y="108" fill="#7fb0d4" text-anchor="middle">P1</text>
-      <rect x="265" y="70" width="70" height="46" fill="#243a30" stroke="#7ec97e"/><text x="300" y="92" fill="#cfe8fb" text-anchor="middle">s3</text><text x="300" y="108" fill="#9bd9a3" text-anchor="middle">P2</text>
-      <rect x="340" y="70" width="70" height="46" fill="#1f3a52" stroke="#5b9bd5"/><text x="375" y="92" fill="#cfe8fb" text-anchor="middle">s4</text><text x="375" y="108" fill="#7fb0d4" text-anchor="middle">P1</text>
-      <rect x="415" y="70" width="70" height="46" fill="#243a30" stroke="#7ec97e"/><text x="450" y="92" fill="#cfe8fb" text-anchor="middle">s5</text><text x="450" y="108" fill="#9bd9a3" text-anchor="middle">P2</text>
-      <text x="500" y="100" fill="#7fb0d4">...  (array of N shares; equal-cost =&gt; equal share count per next-hop)</text>
-    </g>
-    <text x="40" y="160" fill="#cfe8fb" font-size="13">hash(src,dst,sport,dport,proto) mod N  -&gt;  share index  -&gt;  next-hop</text>
-    <text x="40" y="186" fill="#7ec97e" font-size="13">Equal-cost set {P1,P2}: each next-hop gets N/2 shares  =&gt;  share(P1)=0.50, share(P2)=0.50  =&gt;  50% / 50%</text>
-    <!-- math box -->
-    <text x="40" y="240" fill="#e6d8a8" font-size="15">Saturation math (per direction, 250G aggregate demand):</text>
-    <text x="60" y="268" fill="#cfe8fb" font-size="14">load(P2 plane) = 250G x 0.50 = 125G   on a 100G link  =&gt;  25G over =&gt; queue build, tail-drop</text>
-    <text x="60" y="292" fill="#cfe8fb" font-size="14">load(P1 plane) = 250G x 0.50 = 125G   on a 400G link  =&gt;  31% utilised (idle headroom)</text>
-    <text x="60" y="324" fill="#d16b6b" font-size="14">Total fabric capacity 500G &gt; 250G demand, yet we drop. Distribution, not capacity, is the failure.</text>
-  </svg>
-  <p class="cap">Key: a flow is pinned to one share, so per-flow ordering is preserved (vital for market-data) but the split ratio is set by share COUNT per next-hop, not by link speed. To fix UCMP we must change the share counts, not the metric. (Aggregate-demand model: real per-flow loads vary with the hash and flow-size distribution; the equal-share count is what we are correcting.)</p>
-</section>
 
-<section>
-  <h3>6.3 - Target ratio: weight proportional to capacity</h3>
-  <p class="cap">We want each plane loaded to the same utilisation. Solve for the split that makes both planes equally full.</p>
-  <div style="display:flex;gap:24px;align-items:flex-start">
-    <svg viewBox="0 0 560 330" style="max-height:300px;flex:0 0 46%">
-      <!-- bars: before -->
-      <text x="20" y="26" fill="#cfe8fb" font-size="14">ECMP 50/50 (before)</text>
-      <rect x="20" y="44" width="200" height="26" fill="#15191e" stroke="#5b9bd5"/><rect x="20" y="44" width="62" height="26" fill="#5b9bd5"/>
-      <text x="230" y="63" fill="#7fb0d4" font-size="12">P1 400G: 125/400 = 31%</text>
-      <rect x="20" y="80" width="200" height="26" fill="#15191e" stroke="#d16b6b"/><rect x="20" y="80" width="200" height="26" fill="#d16b6b"/>
-      <text x="230" y="99" fill="#d16b6b" font-size="12">P2 100G: 125/100 = 125% DROP</text>
-      <!-- bars: after -->
-      <text x="20" y="150" fill="#cfe8fb" font-size="14">UCMP 80/20 (after)</text>
-      <rect x="20" y="168" width="200" height="26" fill="#15191e" stroke="#7ec97e"/><rect x="20" y="168" width="100" height="26" fill="#7ec97e"/>
-      <text x="230" y="187" fill="#9bd9a3" font-size="12">P1 400G: 200/400 = 50%</text>
-      <rect x="20" y="204" width="200" height="26" fill="#15191e" stroke="#7ec97e"/><rect x="20" y="204" width="100" height="26" fill="#7ec97e"/>
-      <text x="230" y="223" fill="#9bd9a3" font-size="12">P2 100G: 50/100 = 50%</text>
-      <text x="20" y="280" fill="#e6d8a8" font-size="12">Equal % util =&gt; both planes at 50%, no drop,</text>
-      <text x="20" y="300" fill="#e6d8a8" font-size="12">N-1 headroom on each.</text>
-    </svg>
-    <div style="flex:1">
-      <pre style="font-size:0.5em;background:#15191e;padding:8px;">Capacity-proportional weight (the target):
 
-  C(P1) = 400G   C(P2) = 100G   total = 500G
-  w(P1) = 400 / 500 = 0.80
-  w(P2) = 100 / 500 = 0.20            -&gt; 80 / 20
 
-Apply to the 250G demand:
-  P1 = 250 x 0.80 = 200G  on 400G = 50.0% util
-  P2 = 250 x 0.20 =  50G  on 100G = 50.0% util
-  =&gt; identical utilisation, no congestion.
 
-Headroom check (single demand spikes to 320G):
-  P1 = 320 x 0.80 = 256G  (400G) = 64%
-  P2 = 320 x 0.20 =  64G  (100G) = 64%   still safe.
 
-Break point (when does P2 hit 100G?):
-  0.20 x D = 100  -&gt;  D = 500G  = full fabric.
-  So 80/20 keeps both planes feasible up to line-rate
-  aggregate. ECMP's break point was D = 200G (100/0.5).</pre>
-      <p class="cap">Capacity-proportional weight = C(link)/sum(C). It equalises utilisation but ignores latency; here the low-latency plane is the 400G one, so 80/20 happens to push the bulk onto the fast plane too. (If the latency-critical plane were the small one, you would steer the latency-sensitive class explicitly with SR-TE rather than bulk-balance it.) Two ways to install the weight: SR-TE policy weights inside a domain you own (6.4); BGP link-bandwidth across a boundary you don't (6.5).</p>
-    </div>
-  </div>
-</section>
 
-<section>
-  <h3>6.4 - Fix in a domain you own: SR-TE policy, two weighted candidate-path SID-lists</h3>
-  <p class="cap">PE1 owns the path to PE2 inside OSPF area 0. Build one SR Policy (colour = the steering intent) with one candidate path carrying TWO weighted segment-lists, one per plane. RFC 9256: traffic across the segment-lists of the active path is W-ECMP, fraction = w / Sw.</p>
-  <svg viewBox="0 0 1240 250" style="max-height:230px;width:100%">
-    <defs><marker id="ar64" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#5b9bd5"/></marker></defs>
-    <rect x="30" y="30" width="250" height="190" fill="#15191e" stroke="#9cd1ef"/>
-    <text x="155" y="55" fill="#cfe8fb" font-size="14" text-anchor="middle">SR Policy on PE1</text>
-    <text x="45" y="80" fill="#7fb0d4" font-size="12">endpoint 10.0.2.2 (PE2)</text>
-    <text x="45" y="100" fill="#7fb0d4" font-size="12">colour 100 (= "to-PE2-ucmp")</text>
-    <text x="45" y="128" fill="#e6d8a8" font-size="12">SID-list A  weight 80</text>
-    <text x="55" y="146" fill="#9bd9a3" font-size="11">[ 900003 (P1), 900002 (PE2) ]</text>
-    <text x="45" y="172" fill="#e6d8a8" font-size="12">SID-list B  weight 20</text>
-    <text x="55" y="190" fill="#9bd9a3" font-size="11">[ 900004 (P2), 900002 (PE2) ]</text>
-    <!-- arrows to planes -->
-    <line x1="280" y1="135" x2="520" y2="90" stroke="#5b9bd5" stroke-width="3" marker-end="url(#ar64)"/>
-    <line x1="280" y1="180" x2="520" y2="200" stroke="#5b9bd5" stroke-width="3" marker-end="url(#ar64)"/>
-    <circle cx="560" cy="85" r="26" fill="#1f3a52" stroke="#9cd1ef"/><text x="560" y="90" fill="#cfe8fb" font-size="12" text-anchor="middle">P1</text>
-    <circle cx="560" cy="205" r="26" fill="#1f3a52" stroke="#9cd1ef"/><text x="560" y="210" fill="#cfe8fb" font-size="12" text-anchor="middle">P2</text>
-    <text x="600" y="86" fill="#7fb0d4" font-size="12">PE1 is penultimate for 900003: with PHP it pops 900003,</text>
-    <text x="600" y="104" fill="#7fb0d4" font-size="12">P1 receives 900002 and forwards to PE2 on the 400G plane</text>
-    <text x="600" y="206" fill="#7fb0d4" font-size="12">PE1 pops 900004 (PHP); P2 receives 900002 -&gt; PE2 on 100G</text>
-    <text x="600" y="150" fill="#e6d8a8" font-size="13">w / Sw split: 80/(80+20)=0.80 to SID-list A, 20/100=0.20 to B</text>
-  </svg>
-  <pre style="font-size:0.5em;background:#15191e;padding:8px;">! ----- ILLUSTRATIVE EOS SR-TE config (structure per RFC 9256; verify EXACT CLI on target EOS/R-series) -----
-router traffic-engineering
-   segment-routing
-      policy endpoint 10.0.2.2 color 100
-         binding-sid 960100              ! BSID for this policy (in default SRGB 900000-965535; used in 6.5 / Strawman B stitch)
-         !
-         candidate-path preference 200
-            explicit segment-list PLANE-P1
-               weight 80
-               index 10 label 900003     ! P1 prefix-SID  (idx3 -&gt; SRGB base 900000 + 3)
-               index 20 label 900002     ! PE2 prefix-SID (idx2)
-            explicit segment-list PLANE-P2
-               weight 20
-               index 10 label 900004     ! P2 prefix-SID  (idx4)
-               index 20 label 900002     ! PE2 prefix-SID (idx2)
-!
-! steer market-data prefixes into colour 100 via BGP colour ext-community or a local classifier (illustrative)
-ip route 10.2.0.0/16 segment-routing policy color 100 endpoint 10.0.2.2</pre>
-  <p class="cap">SID values are deterministic from the plan: prefix-SID label = SRGB-base 900000 + index (default EOS SRGB/SR range 900000-965535, VERIFIED). P1=idx3=900003, P2=idx4=900004, PE2=idx2=900002. The CLI block STRUCTURE is illustrative (verify exact keywords on the target EOS image); the SID/label values and the w/Sw split are deterministic. The policy does not change OSPF metrics; it overrides the FIB next-hop set for steered flows only. NOTE: EOS has no OSPF Flex-Algo, so per-class steering on OSPF must use SR-TE colour policies like this (VERIFIED), and SR-TE policies are controller-driven over BGP SR-Policy SAFI (no PCEP on EOS) - not signalled by OSPF.</p>
-</section>
 
-<section>
-  <h3>6.4b - How the FIB realises 80/20: integer repetition counts</h3>
-  <p class="cap">Hardware cannot store a fractional weight. EOS BGP UCMP "mode 1" resolves weights to an INTEGER repetition count per next-hop across an N-entry array (VERIFIED: Arista BGP UCMP, EOS 4.24.1F+). An SR-TE policy's w/Sw weights are realised the same way - as integer next-hop shares in the FIB. The arithmetic is exact and worth showing.</p>
-  <div style="display:flex;gap:20px">
-    <pre style="font-size:0.5em;background:#15191e;padding:8px;flex:1">Weights 80:20 -&gt; reduce -&gt; 4:1
-Sum of repetitions N = 4 + 1 = 5  (must be &lt;= the max
-ECMP/UCMP array width the silicon supports).
 
-FIB programs next-hop array of 5 entries:
-   [ P1, P1, P1, P1, P2 ]
-   share(P1) = 4/5 = 0.80
-   share(P2) = 1/5 = 0.20            EXACT, no rounding error.
 
-If weights were 70:30 -&gt; 7:3, N = 10:
-   [ P1 x7 , P2 x3 ] -&gt; 0.70 / 0.30  exact.
 
-If weights were 65:35 -&gt; 13:7, N = 20  (still small).
-Arbitrary ratios round to nearest 1/N; pick N &gt;&gt; ratio
-granularity. With a 256-wide array:
-   80/20 -&gt; 205 : 51  (205/256=0.801, ~0.1% error).</pre>
-    <svg viewBox="0 0 420 250" style="max-height:230px;flex:0 0 42%">
-      <text x="20" y="26" fill="#cfe8fb" font-size="13">5-entry next-hop array (4:1)</text>
-      <rect x="20" y="44" width="64" height="40" fill="#1f3a52" stroke="#5b9bd5"/><text x="52" y="69" fill="#cfe8fb" font-size="12" text-anchor="middle">P1</text>
-      <rect x="88" y="44" width="64" height="40" fill="#1f3a52" stroke="#5b9bd5"/><text x="120" y="69" fill="#cfe8fb" font-size="12" text-anchor="middle">P1</text>
-      <rect x="156" y="44" width="64" height="40" fill="#1f3a52" stroke="#5b9bd5"/><text x="188" y="69" fill="#cfe8fb" font-size="12" text-anchor="middle">P1</text>
-      <rect x="224" y="44" width="64" height="40" fill="#1f3a52" stroke="#5b9bd5"/><text x="256" y="69" fill="#cfe8fb" font-size="12" text-anchor="middle">P1</text>
-      <rect x="292" y="44" width="64" height="40" fill="#243a30" stroke="#7ec97e"/><text x="324" y="69" fill="#9bd9a3" font-size="12" text-anchor="middle">P2</text>
-      <text x="20" y="125" fill="#e6d8a8" font-size="13">hash mod 5 -&gt; index -&gt; next-hop</text>
-      <text x="20" y="150" fill="#9bd9a3" font-size="12">4 of 5 flow-shares to P1 (400G)</text>
-      <text x="20" y="172" fill="#9bd9a3" font-size="12">1 of 5 to P2 (100G)</text>
-      <text x="20" y="206" fill="#7fb0d4" font-size="11">per-flow pinning preserved: a given</text>
-      <text x="20" y="224" fill="#7fb0d4" font-size="11">5-tuple still maps to ONE next-hop</text>
-    </svg>
-  </div>
-  <p class="cap">Per-flow ordering is preserved (each 5-tuple still pins to one next-hop), so UDP market-data is not reordered within a flow. STILL OPEN (do not promise a granularity): exact max-SID-depth (MSD) and max ECMP/UCMP array width on the R-series silicon - the node advertises its imposition MSD per RFC 8476 (OSPF MSD sub-TLV) so a controller will not push a SID-list deeper than the platform can impose; lab to confirm the actual R-series MSD and array width before committing a fine-grained ratio.</p>
-</section>
 
-<section>
-  <h3>6.5 - Fix across a boundary you do NOT own: BGP Link-Bandwidth</h3>
-  <p class="cap">In Strawman B the next-hop planes sit behind an ASBR in a neighbour AS (e.g. CORE/WAN AS65000 reaching LON AS65002). You cannot write an SR Policy into someone else's domain. Instead, attach the capacity as a BGP signal: the Link-Bandwidth extended community. The receiver turns it into UCMP next-hop weights.</p>
-  <svg viewBox="0 0 1240 250" style="max-height:230px;width:100%">
-    <circle cx="120" cy="125" r="30" fill="#1f3a52" stroke="#9cd1ef"/><text x="120" y="130" fill="#cfe8fb" font-size="12" text-anchor="middle">PE1</text>
-    <circle cx="430" cy="70" r="30" fill="#1f3a52" stroke="#9cd1ef"/><text x="430" y="75" fill="#cfe8fb" font-size="11" text-anchor="middle">ASBR-a</text>
-    <circle cx="430" cy="190" r="30" fill="#1f3a52" stroke="#9cd1ef"/><text x="430" y="195" fill="#cfe8fb" font-size="11" text-anchor="middle">ASBR-b</text>
-    <circle cx="820" cy="125" r="30" fill="#1f3a52" stroke="#9cd1ef"/><text x="820" y="130" fill="#cfe8fb" font-size="12" text-anchor="middle">RX</text>
-    <circle cx="1110" cy="125" r="30" fill="#1f3a52" stroke="#9cd1ef"/><text x="1110" y="130" fill="#cfe8fb" font-size="12" text-anchor="middle">PE2</text>
-    <line x1="150" y1="113" x2="402" y2="80" stroke="#5b9bd5" stroke-width="3"/>
-    <line x1="150" y1="137" x2="402" y2="180" stroke="#5b9bd5" stroke-width="3"/>
-    <line x1="460" y1="78" x2="792" y2="115" stroke="#d9c08c" stroke-width="3"/>
-    <line x1="460" y1="182" x2="792" y2="135" stroke="#d9c08c" stroke-width="3"/>
-    <line x1="850" y1="125" x2="1080" y2="125" stroke="#5b9bd5" stroke-width="3"/>
-    <text x="495" y="58" fill="#d9c08c" font-size="12">eBGP, LB ext-comm = 50e9 B/s (400G)</text>
-    <text x="495" y="220" fill="#d9c08c" font-size="12">eBGP, LB ext-comm = 12.5e9 B/s (100G)</text>
-    <text x="760" y="182" fill="#e6d8a8" font-size="12">RX runs 'ucmp mode 1' + multipath: programs 4:1 next-hops to PE2 prefix</text>
-  </svg>
-  <pre style="font-size:0.5em;background:#15191e;padding:8px;">Link-Bandwidth extended community (draft-ietf-idr-link-bandwidth):
-  Type    0x40 = transitive  /  0x00 = non-transitive   (high octet)
-  SubType 0x04 = Link-Bandwidth   -&gt; transitive type 0x4004, non-transitive 0x0004
-  Global Admin   2 octets = local AS number (or any 2-octet value)
-  Local Admin    4 octets = bandwidth as IEEE-754 float32, BYTES per second (NOT bits)
 
-  Plane via ASBR-a (400G): 400e9 bit/s = 50.0e9 byte/s  -&gt; float32 = 0x513A43B7  (decodes 49,999,998,976 ~= 50e9)
-  Plane via ASBR-b (100G): 100e9 bit/s = 12.5e9 byte/s  -&gt; float32 = 0x503A43B7  (decodes 12,499,999,744 ~= 12.5e9)
-  (hex VERIFIED by IEEE-754 encode; float32 cannot hold 50e9 exactly - the ~24-bit mantissa rounds, which is fine: ratio is what matters)
 
-! ----- receiver RX (Arista EOS BGP UCMP, EOS 4.24.1F+) -----
-router bgp 65000
-   maximum-paths 64 ecmp 64
-   ucmp mode 1                         ! VERIFIED feature; FIB = integer repetition counts (see 6.4b)
-   ! receipt of the Link-Bandwidth ext-community needs NO neighbor config - it is accepted/processed automatically (VERIFIED)
 
-! ----- advertiser sets the bandwidth (ILLUSTRATIVE syntax - verify exact keyword/units on target EOS) -----
-route-map SET-LBW permit 10
-   set extcommunity link-bandwidth 50.0g    ! 50 GByte/s = 400 Gbit/s ; choose transitive vs non-transitive per design below</pre>
-  <p class="cap">Mechanism: RX receives both paths, sums the bandwidths (Sw = 50e9 + 12.5e9 = 62.5e9 B/s) and programs next-hops 50/62.5 = 0.80 and 12.5/62.5 = 0.20 -&gt; the same 4:1 array as 6.4b, but signalled, not policy-pushed. DESIGN CAVEAT (senior-level): link-bandwidth is a LOCAL, relative quantity. Sending it TRANSITIVE across many ASNs is semantically weak - an AS three hops away cannot meaningfully act on AS65001's absolute byte/s. In practice use the NON-TRANSITIVE form (0x0004) between the two ASNs that share the parallel links, or re-originate a locally-meaningful value at each ASBR. EOS lets you aggregate received bandwidth from downstream and re-split it upstream, which is the cleaner inter-AS pattern.</p>
-</section>
 
-<section>
-  <h3>6.6 - Which tool, when - and how to verify the split is real</h3>
-  <p class="cap">Same target ratio (80/20), two delivery mechanisms chosen by ownership of the forwarding domain.</p>
-  <svg viewBox="0 0 1240 150" style="max-height:140px;width:100%">
-    <rect x="30" y="20" width="560" height="110" fill="#15191e" stroke="#7ec97e"/>
-    <text x="50" y="48" fill="#9bd9a3" font-size="15">Domain you OWN (Strawman A, area 0)</text>
-    <text x="50" y="74" fill="#cfe8fb" font-size="12">SR-TE policy, colour 100, two weighted SID-lists 80/20</text>
-    <text x="50" y="96" fill="#cfe8fb" font-size="12">- explicit path, per-class steering, no metric change</text>
-    <text x="50" y="118" fill="#7fb0d4" font-size="11">RFC 9256 W-ECMP (w/Sw); controller-driven via BGP SR-Policy SAFI (no PCEP on EOS)</text>
-    <rect x="650" y="20" width="560" height="110" fill="#15191e" stroke="#d9c08c"/>
-    <text x="670" y="48" fill="#e6d8a8" font-size="15">Boundary you DON'T own (Strawman B, inter-AS)</text>
-    <text x="670" y="74" fill="#cfe8fb" font-size="12">BGP Link-Bandwidth ext-community + 'ucmp mode 1'</text>
-    <text x="670" y="96" fill="#cfe8fb" font-size="12">- capacity signalled in BGP, no path control needed</text>
-    <text x="670" y="118" fill="#7fb0d4" font-size="11">draft-ietf-idr-link-bandwidth; prefer non-transitive inter-AS; EOS can aggregate+re-split bw</text>
-  </svg>
-  <pre style="font-size:0.5em;background:#15191e;padding:8px;">Verification plan (EXPECTED output - LAB TO CONFIRM; no live capture is fabricated here):
-  show ip route 10.0.2.2/32                         -&gt; EXPECT 2 next-hops with unequal repetition counts (P1 ~4x, P2 ~1x)
-  show ip bgp 10.2.0.0/16 detail                    -&gt; EXPECT Link-Bandwidth ext-comm on both paths; UCMP weights shown
-  show traffic-engineering segment-routing policy color 100   -&gt; EXPECT 2 segment-lists, weights 80 / 20, state Up/Active
-  interface counters (P1 vs P2 tx bps under a 250G synthetic load)   -&gt; EXPECT ~200G / ~50G, both ~50% util
 
-Acceptance: P2 (100G) plane stays &lt; ~60% util at design demand; tail-drop / output-discard counters do NOT increment.</pre>
-  <p class="cap">Both reduce to the same FIB primitive - an integer repetition-count next-hop array - so they compose: own the head domain with SR-TE, stitch the un-owned tail with link-bandwidth, and the policy binding-SID (960100, set in 6.4) is the handle that joins the SR-TE half to the inter-domain half in Strawman B. Exact show-command output and platform MSD/array-width are lab-confirm items, not asserted here.</p>
-</section>
 
-<section>
-  <h3>7 - Steering one service onto a path: why ECMP can't, and what does</h3>
-  <p class="cap">Strawman A. Two services share PE1&rarr;PE2 but want different paths. Market-data (colour 100) must take the low-latency P1 plane; bulk takes shortest-path/ECMP.</p>
-  <svg viewBox="0 0 1200 470" style="max-height:470px;width:100%">
-    <!-- nodes -->
-    <g font-family="monospace" font-size="14" fill="#dfe7ee">
-      <circle cx="170" cy="235" r="34" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
-      <text x="170" y="231" text-anchor="middle">PE1</text>
-      <text x="170" y="248" text-anchor="middle" font-size="11" fill="#9cd1ef">900001</text>
-      <text x="170" y="300" text-anchor="middle" font-size="11" fill="#9cd1ef">mkt-data edge</text>
 
-      <circle cx="600" cy="120" r="34" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
-      <text x="600" y="116" text-anchor="middle">P1</text>
-      <text x="600" y="133" text-anchor="middle" font-size="11" fill="#9cd1ef">900003</text>
-      <text x="600" y="78" text-anchor="middle" font-size="11" fill="#7ec97e">400G low-lat</text>
 
-      <circle cx="600" cy="350" r="34" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
-      <text x="600" y="346" text-anchor="middle">P2</text>
-      <text x="600" y="363" text-anchor="middle" font-size="11" fill="#9cd1ef">900004</text>
-      <text x="600" y="406" text-anchor="middle" font-size="11" fill="#d9c08c">100G high-cap</text>
 
-      <circle cx="1030" cy="235" r="34" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
-      <text x="1030" y="231" text-anchor="middle">PE2</text>
-      <text x="1030" y="248" text-anchor="middle" font-size="11" fill="#9cd1ef">900002</text>
-      <text x="1030" y="300" text-anchor="middle" font-size="11" fill="#9cd1ef">trading edge</text>
-    </g>
-    <!-- links -->
-    <g stroke="#5b9bd5" stroke-width="3" fill="none">
-      <line x1="200" y1="218" x2="572" y2="138"/>
-      <line x1="200" y1="252" x2="572" y2="332"/>
-      <line x1="628" y1="138" x2="1000" y2="218"/>
-      <line x1="628" y1="332" x2="1000" y2="252"/>
-    </g>
-    <line x1="600" y1="154" x2="600" y2="316" stroke="#5b9bd5" stroke-width="2" stroke-dasharray="5 5"/>
-    <g font-family="monospace" font-size="12" fill="#8aa0b2">
-      <text x="360" y="160">metric 10</text>
-      <text x="360" y="320">metric 40</text>
-      <text x="830" y="160">metric 10</text>
-      <text x="830" y="320">metric 40</text>
-      <text x="612" y="240">P1-P2</text>
-    </g>
-    <!-- the problem: identical /32, ECMP can't distinguish class -->
-    <g font-family="monospace" font-size="13">
-      <text x="600" y="445" text-anchor="middle" fill="#d16b6b">Both services resolve to the SAME route 10.0.0.2/32 (PE2 loopback) - the FIB has one best path. ECMP hashes flows, it cannot map a CLASS to a plane.</text>
-    </g>
-  </svg>
-  <p class="cap">The forwarding decision is keyed on destination prefix only. Market-data and bulk both head to PE2's loopback, so the IGP/FIB gives them one identical next-hop set. There is no field in a plain IGP route that says "this flow is latency-class." That is the gap SR-TE closes. (With these metrics the P1 plane is strictly lower-cost, so unequal-cost; the ECMP-split case is the equal-cost variant called out on the next slide.)</p>
-</section>
 
-<section>
-  <h3>7 - Why ECMP, plain IGP and (on OSPF) Flex-Algo are the wrong tools</h3>
-  <p class="cap">Three candidate mechanisms, and why only SR-TE colour policy expresses per-class path on this network.</p>
-  <table style="font-size:0.62em;width:100%;border-collapse:collapse">
-    <tr style="color:#9cd1ef;border-bottom:1px solid #3a4a5a">
-      <th align="left">Mechanism</th><th align="left">What it keys on</th><th align="left">Can it pin market-data to the P1 plane?</th>
-    </tr>
-    <tr style="border-bottom:1px solid #28323c">
-      <td>Plain IGP shortest-path</td><td>destination prefix &rarr; lowest metric</td>
-      <td style="color:#d16b6b">No. One best path per prefix. Both classes follow the same lowest-metric route; you cannot split by class.</td>
-    </tr>
-    <tr style="border-bottom:1px solid #28323c">
-      <td>ECMP (equal-cost)</td><td>per-flow hash over equal-cost next-hops</td>
-      <td style="color:#d16b6b">No. If P1 and P2 planes were made equal-cost, ECMP would <em>split</em> market-data across both - the opposite of deterministic. It load-balances, it does not classify.</td>
-    </tr>
-    <tr style="border-bottom:1px solid #28323c">
-      <td>Flex-Algo (per-algo metric/plane)</td><td>prefix-SID bound to an algorithm (e.g. min-delay)</td>
-      <td style="color:#d9c08c">Architecturally yes - but <strong>Flex-Algo is IS-IS-only on EOS</strong>. We are staying on OSPFv2, so this door is closed (verified Arista fact).</td>
-    </tr>
-    <tr>
-      <td style="color:#7ec97e">SR-TE colour policy</td><td>SR Policy &lt;headend, colour, endpoint&gt; + colour-ext-comm on the route</td>
-      <td style="color:#7ec97e"><strong>Yes.</strong> Colour 100 = "low-latency intent." The policy carries an explicit SID-list that forces the P1 plane. Bulk has no colour &rarr; falls back to ECMP/shortest-path.</td>
-    </tr>
-  </table>
-  <p class="cap">Because EOS has no OSPF Flex-Algo, the only OSPFv2-compatible way to express "this class, that plane" is an explicit-path SR-TE policy selected by colour. SR-TE rides on the same OSPF-SR prefix-SIDs already turned on in section 5 - no new IGP, no forklift.</p>
-  <p class="cap">RFC refs: SR Policy architecture and automated steering = RFC 9256; Colour Extended Community / Tunnel Encapsulation attribute = RFC 9012 (extended for SR-Policy steering by RFC 9830); BGP advertisement of SR Policies (SAFI 73) = RFC 9830 (was draft-ietf-idr-sr-policy).</p>
-</section>
 
-<section>
-  <h3>7 - The colour-100 policy: endpoint, SID-list, and the label math</h3>
-  <p class="cap">SR Policy is the tuple &lt;headend=PE1, colour=100, endpoint=PE2 10.0.0.2&gt;. Its single candidate path is an explicit SID-list that pins the P1 plane.</p>
-  <svg viewBox="0 0 1200 300" style="max-height:300px;width:100%">
-    <g font-family="monospace" font-size="14" fill="#dfe7ee">
-      <circle cx="120" cy="150" r="32" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
-      <text x="120" y="146" text-anchor="middle">PE1</text>
-      <text x="120" y="163" text-anchor="middle" font-size="11" fill="#9cd1ef">headend</text>
 
-      <circle cx="600" cy="90" r="32" fill="#1f3a52" stroke="#7ec97e" stroke-width="3"/>
-      <text x="600" y="86" text-anchor="middle">P1</text>
-      <text x="600" y="103" text-anchor="middle" font-size="11" fill="#9cd1ef">900003</text>
 
-      <circle cx="600" cy="240" r="32" fill="#1f3a52" stroke="#9cd1ef" stroke-width="1.5" opacity="0.5"/>
-      <text x="600" y="236" text-anchor="middle" opacity="0.6">P2</text>
-      <text x="600" y="253" text-anchor="middle" font-size="11" fill="#9cd1ef" opacity="0.6">900004 (unused)</text>
 
-      <circle cx="1080" cy="150" r="32" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
-      <text x="1080" y="146" text-anchor="middle">PE2</text>
-      <text x="1080" y="163" text-anchor="middle" font-size="11" fill="#9cd1ef">900002 endpoint</text>
-    </g>
-    <!-- forced path -->
-    <g stroke="#7ec97e" stroke-width="4" fill="none">
-      <line x1="150" y1="138" x2="572" y2="100"/>
-      <line x1="628" y1="100" x2="1052" y2="138"/>
-    </g>
-    <!-- unused -->
-    <g stroke="#5b9bd5" stroke-width="2" fill="none" opacity="0.35">
-      <line x1="150" y1="162" x2="572" y2="228"/>
-      <line x1="628" y1="228" x2="1052" y2="162"/>
-    </g>
-    <text x="600" y="40" text-anchor="middle" font-family="monospace" font-size="13" fill="#7ec97e">explicit SID-list forces this plane</text>
-  </svg>
-  <p class="cap" style="margin-top:4px">SID-list (prefix-SIDs, node steering) = <strong>[900003 &nbsp;&rarr;&nbsp; 900002]</strong> = "via P1, then to PE2." Both are global prefix-SIDs (node-SIDs), so each is reachable by shortest path from the prior hop; the headend need not enumerate adjacency-SIDs unless a specific parallel link must be pinned. Here PE1 has a single link to P1, so the P1 node-SID alone forces the low-latency plane.</p>
-  <pre style="font-size:0.5em;background:#15191e;padding:8px;">SID -> label (SRGB base 900000, default EOS range 900000-965535; verified)
-  index  3  (P1)   ->  900000 + 3  = 900003
-  index  4  (P2)   ->  900000 + 4  = 900004   (deliberately NOT in the list)
-  index  2  (PE2)  ->  900000 + 2  = 900002
-
-Colour-100 SID-list  = [ 900003 , 900002 ]      (push order: top = 900003)
-SID-list depth (MSD)  = 2 labels  ->  see MSD check on next slide</pre>
-  <p class="cap">Index-to-label is deterministic: prefix-SID index + SRGB base. 900004 (P2) is intentionally absent - that is how the policy excludes the high-latency plane. This is path expression by SID composition, not by metric tuning.</p>
-</section>
-
-<section>
-  <h3>7 - MSD check: does the SID-list fit the silicon?</h3>
-  <p class="cap">An SR-TE policy is only deployable if its SID-list depth &le; the platform's Maximum SID Depth (MSD). Show the arithmetic, then state the open item honestly.</p>
-  <svg viewBox="0 0 1100 220" style="max-height:220px;width:100%">
-    <g font-family="monospace" font-size="15">
-      <rect x="120" y="70" width="150" height="60" fill="#1f3a52" stroke="#7ec97e" stroke-width="2"/>
-      <text x="195" y="105" text-anchor="middle" fill="#dfe7ee">900003</text>
-      <text x="195" y="55" text-anchor="middle" fill="#8aa0b2" font-size="12">top label</text>
-
-      <rect x="270" y="70" width="150" height="60" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
-      <text x="345" y="105" text-anchor="middle" fill="#dfe7ee">900002</text>
-
-      <rect x="420" y="70" width="260" height="60" fill="#15191e" stroke="#3a4a5a" stroke-width="1" stroke-dasharray="4 4"/>
-      <text x="550" y="105" text-anchor="middle" fill="#8aa0b2">(payload: VPN/service or IP)</text>
-
-      <text x="760" y="95" fill="#dfe7ee">depth = 2 transport SIDs</text>
-      <text x="760" y="120" fill="#7ec97e">2 &le; MSD &rArr; deployable</text>
-    </g>
-  </svg>
-  <pre style="font-size:0.5em;background:#15191e;padding:8px;">MSD arithmetic for colour-100 policy
-  transport label stack imposed by headend (PE1)  = 2   [900003, 900002]
-  + service/VPN label if this is an L3VPN service  = 1   (optional)
-  ----------------------------------------------------------
-  worst-case imposition at PE1                     = 3 labels
-
-Headend MSD (label imposition limit) must be >= 3 for the worst case.
-A 2-SID transport stack is small; it fits comfortably on modern
-R-series merchant silicon in the general case.</pre>
-  <p class="cap" style="color:#d9c08c">TO VERIFY (open, do not invent): exact max-SID-depth on the specific R-series silicon in this fleet. MSD is signalled in OSPFv2 via the Node-MSD TLV in the Router-Information (RI) LSA (RI TLV type 12) and the Link-MSD sub-TLV in the OSPFv2 Extended Link TLV (sub-TLV type 6), per RFC 8476, and re-advertised in BGP-LS to the controller. For a 2-label transport stack this is not a binding constraint in practice, but the deployable depth must be read off the live platform (<code>show ... msd</code>) and the controller must honour it when computing SID-lists - confirm in lab.</p>
-</section>
-
-<section>
-  <h3>7 - Configuration: the local SR-TE policy on PE1 (illustrative)</h3>
-  <p class="cap">EOS local/static SR-TE policy. CLI hierarchy is grounded in Arista EOS Traffic Management docs; treat values as the colour-100 plan above.</p>
-  <pre style="font-size:0.5em;background:#15191e;padding:8px;">! ----- PE1 : low-latency market-data policy (colour 100, endpoint PE2) -----
-router traffic-engineering
-   segment-routing
-      rib system-colored-tunnel-rib
-      !
-      policy endpoint 10.0.0.2 color 100      ! &lt;headend=this box, colour, endpoint=PE2&gt;
-         binding-sid 1000100                  ! BSID from a LOCAL range (SRLB/static), NOT the SRGB
-         path-group preference 100            ! candidate path; higher pref = preferred (default 100)
-            segment-list label-stack 900003 900002 weight 1
-            !                       ^P1     ^PE2     ! forces P1 plane, then PE2
-            explicit-null ipv4                ! optional; arg form none|ipv4|ipv6|both (verified)
-   router-id ipv4 10.0.0.1                    ! PE1 loopback
-
-! show command to verify the policy is UP and resolved (expected output - lab to confirm):
-!   show traffic-engineering segment-routing policy endpoint 10.0.0.2 color 100
-!   show mpls lfib route 1000100        ! binding-SID -> swaps into [900003,900002]</pre>
-  <p class="cap">Verified keywords (Arista EOS Traffic Management docs): <code>router traffic-engineering</code> / <code>segment-routing</code> / <code>rib system-colored-tunnel-rib</code> / <code>policy endpoint &lt;ip&gt; color &lt;n&gt;</code> / <code>binding-sid &lt;label&gt;</code> / <code>path-group preference &lt;v&gt;</code> / <code>segment-list label-stack &lt;l1&gt; &lt;l2&gt; [weight &lt;w&gt;]</code> / <code>explicit-null [none|ipv4|ipv6|both]</code> / <code>router-id ipv4</code>. EOS supports SR policies from BOTH local CLI and BGP (SAFI 73) - this one is local. Default weight = 1, default preference = 100.</p>
-  <p class="cap" style="color:#d9c08c">DESIGN NOTE: the BSID (1000100) is drawn from a local/static label range, deliberately ABOVE the global SRGB (900000-965535) so it cannot collide with prefix-SID labels. The earlier 965100 would have sat inside the active SRGB - avoid. The BSID doubles as the recursion/stitch handle reused in the multi-domain section. Exact SRLB carving is per-fleet; confirm the local label-range allocation in lab.</p>
-</section>
-
-<section>
-  <h3>7 - The steering trigger: colour extended community on the service route</h3>
-  <p class="cap">The policy exists - now market-data traffic must select it. Automated steering (RFC 9256): a BGP route carrying a colour extended community matching the policy's &lt;colour, endpoint&gt; resolves its next-hop THROUGH the policy.</p>
-  <svg viewBox="0 0 1200 330" style="max-height:330px;width:100%">
-    <g font-family="monospace" font-size="13" fill="#dfe7ee">
-      <!-- route advertisement -->
-      <rect x="40" y="40" width="340" height="100" fill="#15191e" stroke="#d9c08c" stroke-width="2" rx="6"/>
-      <text x="60" y="65" fill="#d9c08c">BGP service route (market-data)</text>
-      <text x="60" y="88" fill="#dfe7ee">prefix: 239.x SSM-mapped / VPN NLRI</text>
-      <text x="60" y="108" fill="#dfe7ee">next-hop: 10.0.0.2  (PE2)</text>
-      <text x="60" y="128" fill="#7ec97e">ext-comm: Color:100   &lt;-- intent</text>
-
-      <!-- resolution box -->
-      <rect x="470" y="40" width="320" height="160" fill="#15191e" stroke="#9cd1ef" stroke-width="2" rx="6"/>
-      <text x="490" y="65" fill="#9cd1ef">PE1 automated-steering match (RFC 9256)</text>
-      <text x="490" y="92" fill="#dfe7ee">colour 100  ==  policy colour 100  &check;</text>
-      <text x="490" y="114" fill="#dfe7ee">next-hop 10.0.0.2 == endpoint  &check;</text>
-      <text x="490" y="140" fill="#7ec97e">=&gt; install route via SR Policy,</text>
-      <text x="490" y="160" fill="#7ec97e">   not via plain IGP next-hop</text>
-      <text x="490" y="186" fill="#8aa0b2" font-size="11">recurses onto BSID 1000100 / SID-list</text>
-
-      <!-- resulting stack -->
-      <rect x="880" y="40" width="280" height="160" fill="#15191e" stroke="#7ec97e" stroke-width="2" rx="6"/>
-      <text x="900" y="65" fill="#7ec97e">resulting imposed stack at PE1</text>
-      <text x="900" y="95" fill="#dfe7ee">[ 900003 ]  top  (P1)</text>
-      <text x="900" y="120" fill="#dfe7ee">[ 900002 ]       (PE2)</text>
-      <text x="900" y="145" fill="#8aa0b2">[ service/VPN label ]</text>
-      <text x="900" y="172" fill="#8aa0b2">[ market-data payload ]</text>
-    </g>
-    <g stroke="#9cd1ef" stroke-width="2" marker-end="url(#arr)">
-      <line x1="380" y1="90" x2="465" y2="100"/>
-      <line x1="790" y1="120" x2="875" y2="120"/>
-    </g>
-    <defs><marker id="arr" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#9cd1ef"/></marker></defs>
-    <text x="600" y="300" text-anchor="middle" font-family="monospace" font-size="13" fill="#8aa0b2">Bulk traffic to PE2 carries NO colour -> no policy match -> ordinary IGP/ECMP forwarding (P1 and P2 planes both eligible).</text>
-  </svg>
-  <pre style="font-size:0.5em;background:#15191e;padding:8px;">! On the originating PE / route-reflector: tag the market-data service route with colour 100
-ip prefix-list MKTDATA-PFX seq 10 permit 10.0.0.2/32
-route-map SET-MKTDATA-COLOUR permit 10
-   match ip address prefix-list MKTDATA-PFX
-   set extcommunity color 100 additive          ! attach Color:100  (RFC 9012; EOS 4.23.1F)
-route-map SET-MKTDATA-COLOUR permit 20          ! bulk + everything else: no colour
-! applied to the market-data service prefixes only; bulk prefixes get no colour.
-! NB: for a coloured route to steer, its BGP next-hop must already be IGP-resolvable (Arista doc).</pre>
-  <p class="cap">Colour-ext-comm in route-map <code>set</code> clauses is supported since EOS 4.23.1F (verified TOI): <code>set extcommunity color &lt;n&gt; additive</code>. The matching/steering semantics (colour + endpoint = next-hop) are RFC 9256/9012 and are deterministic.</p>
-</section>
-
-<section>
-  <h3>7 - Resulting forwarding: the two classes diverge (expected, lab-flagged)</h3>
-  <p class="cap">Same destination PE2, two outcomes - because one service is coloured and one is not. This is what "per-class steering on OSPF without Flex-Algo" looks like on the wire.</p>
-  <svg viewBox="0 0 1200 380" style="max-height:380px;width:100%">
-    <g font-family="monospace" font-size="14" fill="#dfe7ee">
-      <circle cx="130" cy="190" r="32" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
-      <text x="130" y="186" text-anchor="middle">PE1</text>
-      <circle cx="600" cy="90" r="32" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
-      <text x="600" y="86" text-anchor="middle">P1</text>
-      <circle cx="600" cy="300" r="32" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
-      <text x="600" y="296" text-anchor="middle">P2</text>
-      <circle cx="1070" cy="190" r="32" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
-      <text x="1070" y="186" text-anchor="middle">PE2</text>
-    </g>
-    <!-- market-data: green, P1 only -->
-    <g stroke="#7ec97e" stroke-width="5" fill="none">
-      <line x1="160" y1="178" x2="572" y2="100"/>
-      <line x1="628" y1="100" x2="1040" y2="178"/>
-    </g>
-    <!-- bulk: blue dashed, both planes -->
-    <g stroke="#5b9bd5" stroke-width="3" fill="none" stroke-dasharray="8 6">
-      <line x1="160" y1="200" x2="572" y2="296"/>
-      <line x1="628" y1="296" x2="1040" y2="200"/>
-      <line x1="162" y1="184" x2="574" y2="98"/>
-    </g>
-    <g font-family="monospace" font-size="13">
-      <text x="600" y="50" text-anchor="middle" fill="#7ec97e">market-data (colour 100) - P1 plane ONLY, deterministic</text>
-      <text x="600" y="360" text-anchor="middle" fill="#5b9bd5">bulk (no colour) - ECMP over P1 + P2 planes (if made equal-cost)</text>
-    </g>
-  </svg>
-  <table style="font-size:0.58em;width:100%;border-collapse:collapse;margin-top:4px">
-    <tr style="color:#9cd1ef;border-bottom:1px solid #3a4a5a">
-      <th align="left">Node action</th><th align="left">market-data (colour 100, via policy)</th><th align="left">bulk (no colour, IGP/ECMP)</th>
-    </tr>
-    <tr style="border-bottom:1px solid #28323c">
-      <td>PE1 imposes</td><td>[900003, 900002, svc]; PE1 is penultimate hop for P1 so it pops 900003 (PHP) on the PE1&rarr;P1 link &rarr; sends [900002, svc]</td><td>[900002, svc] resolving to PE2 node-SID, hashed across eligible next-hops</td>
-    </tr>
-    <tr style="border-bottom:1px solid #28323c">
-      <td>P1 receives</td><td>top = 900002 (PE2). P1 is penultimate hop for PE2 &rarr; pops 900002 (PHP) &rarr; sends [svc] to PE2</td><td>(if hash chose P1) same PHP pop of 900002 &rarr; [svc] to PE2</td>
-    </tr>
-    <tr>
-      <td>PE2 receives</td><td>[svc] &rarr; service label lookup &rarr; market-data payload, P1-plane latency</td><td>[svc] &rarr; payload; latency depends on the plane the hash chose</td>
-    </tr>
-  </table>
-  <p class="cap" style="color:#d9c08c">PHP note: with default prefix-SID flags (no No-PHP / Explicit-NULL flag set on the node-SID), each transport label is popped by its penultimate hop - 900003 on PE1&rarr;P1, then 900002 on P1&rarr;PE2 - so PE2 receives only the service label. If <code>explicit-null</code> is configured the tail imposes label 0 instead of bare pop. EXPECTED OUTPUT - lab to confirm: the <code>show mpls lfib</code> / <code>show traffic-engineering segment-routing policy</code> captures and the measured plane latency must be taken from the live R-series fleet. No device output is fabricated here.</p>
-  <p class="cap">Net design point for the room: market-data gets a deterministic low-latency plane by <em>composing SIDs</em>, bulk keeps the spare capacity of both planes via ECMP - all on the existing OSPFv2 + OSPF-SR, no IS-IS, no Flex-Algo, no per-flow state in the core.</p>
-</section>
 
 <section>
   <h3>8 - Multicast: why it sits OFF the SR fabric (back-pocket)</h3>
