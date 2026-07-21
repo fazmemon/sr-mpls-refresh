@@ -35,59 +35,66 @@ pre { color:#ccc; }
 <p style="margin-top:1.4em;color:#888;font-size:0.8em;">Stay on OSPF &middot; per-domain OSPF-SR &middot; binding-SID stitch &middot; controller-driven SR-TE over BGP</p>
 </section>
 <section data-auto-animate>
-  <h3>What we have now &mdash; Strawman A: in-domain dual-plane core</h3>
+  <h3>What we have now &mdash; the HRT Global WAN (strawman start state)</h3>
   <svg viewBox="0 0 1240 540" style="width:100%;max-height:470px;" font-family="Segoe UI, sans-serif">
-    <rect x="60" y="68" width="1120" height="412" rx="12" fill="none" stroke="#5b9bd5" stroke-dasharray="6 4"/>
-    <text x="620" y="50" fill="#9cd1ef" font-size="21" text-anchor="middle">Single OSPFv2 area 0  &middot;  Arista R-series</text>
+    <!-- WAN CORE -->
+    <rect x="500" y="205" width="240" height="120" rx="12" fill="#15233a" stroke="#9cd1ef" stroke-width="2.5"/>
+    <text x="620" y="250" fill="#dff0fb" font-size="20" text-anchor="middle" font-weight="bold">WAN CORE</text>
+    <text x="620" y="277" fill="#9cd1ef" font-size="15" text-anchor="middle">AS 65000 &middot; OSPFv2</text>
+    <text x="620" y="299" fill="#8aa0b4" font-size="12.5" text-anchor="middle">multi-vendor Arista / Cisco</text>
 
-    <!-- legend (matches link colours) -->
-    <line x1="92" y1="100" x2="134" y2="100" stroke="#7ec97e" stroke-width="4"/>
-    <text x="142" y="105" fill="#bff0c6" font-size="15" text-anchor="start">P1 plane = low-latency (short fibre)</text>
-    <line x1="92" y1="126" x2="134" y2="126" stroke="#d9c08c" stroke-width="3.5"/>
-    <text x="142" y="131" fill="#e8d6a8" font-size="15" text-anchor="start">P2 plane = high-capacity (long fibre)</text>
+    <!-- Research DC-A (top left) -->
+    <rect x="40" y="60" width="270" height="150" rx="10" fill="none" stroke="#5b9bd5" stroke-dasharray="6 4"/>
+    <text x="175" y="52" fill="#7ec97e" font-size="14.5" text-anchor="middle">Research DC-A &middot; AS 65001 &middot; OSPF</text>
+    <circle cx="175" cy="135" r="40" fill="#1f3a52" stroke="#7ec97e" stroke-width="2.5"/>
+    <text x="175" y="132" fill="#cfeaff" font-size="15" text-anchor="middle">R-DC-A</text>
+    <text x="175" y="152" fill="#bff0c6" font-size="11.5" text-anchor="middle">GPU/CPU cluster</text>
 
-    <!-- P1 plane links GREEN = low-latency 400G metric10 -->
-    <line x1="236" y1="250" x2="586" y2="180" stroke="#7ec97e" stroke-width="4"/>
-    <line x1="654" y1="180" x2="1004" y2="250" stroke="#7ec97e" stroke-width="4"/>
-    <text x="372" y="196" fill="#7ec97e" font-size="16" text-anchor="middle">400G &middot; metric 10</text>
-    <text x="868" y="196" fill="#7ec97e" font-size="16" text-anchor="middle">400G &middot; metric 10</text>
+    <!-- Research DC-B (bottom left) -->
+    <rect x="40" y="330" width="270" height="150" rx="10" fill="none" stroke="#5b9bd5" stroke-dasharray="6 4"/>
+    <text x="175" y="502" fill="#7ec97e" font-size="14.5" text-anchor="middle">Research DC-B &middot; AS 65002 &middot; OSPF</text>
+    <circle cx="175" cy="405" r="40" fill="#1f3a52" stroke="#7ec97e" stroke-width="2.5"/>
+    <text x="175" y="402" fill="#cfeaff" font-size="15" text-anchor="middle">R-DC-B</text>
+    <text x="175" y="422" fill="#bff0c6" font-size="11.5" text-anchor="middle">GPU/CPU cluster</text>
 
-    <!-- P2 plane links AMBER = high-capacity 100G metric40 -->
-    <line x1="236" y1="300" x2="586" y2="390" stroke="#d9c08c" stroke-width="3.5"/>
-    <line x1="654" y1="390" x2="1004" y2="300" stroke="#d9c08c" stroke-width="3.5"/>
-    <text x="372" y="372" fill="#d9c08c" font-size="16" text-anchor="middle">100G &middot; metric 40</text>
-    <text x="868" y="372" fill="#d9c08c" font-size="16" text-anchor="middle">100G &middot; metric 40</text>
+    <!-- Trading colo 1 (top right) -->
+    <rect x="930" y="60" width="270" height="150" rx="10" fill="none" stroke="#5b9bd5" stroke-dasharray="6 4"/>
+    <text x="1065" y="52" fill="#e79a9a" font-size="14.5" text-anchor="middle">Trading colo-1 &middot; AS 65010 &middot; OSPF</text>
+    <circle cx="1065" cy="135" r="40" fill="#1f3a52" stroke="#d16b6b" stroke-width="2.5"/>
+    <text x="1065" y="132" fill="#cfeaff" font-size="15" text-anchor="middle">COLO-1</text>
+    <text x="1065" y="152" fill="#f0c6c6" font-size="11.5" text-anchor="middle">exchange-facing</text>
 
-    <!-- cross-link -->
-    <line x1="620" y1="197" x2="620" y2="373" stroke="#d9c08c" stroke-width="2" stroke-dasharray="6 4"/>
-    <text x="700" y="289" fill="#d9c08c" font-size="14" text-anchor="middle">100G &middot; m40 (cross)</text>
+    <!-- Trading colo 2 (bottom right) -->
+    <rect x="930" y="330" width="270" height="150" rx="10" fill="none" stroke="#5b9bd5" stroke-dasharray="6 4"/>
+    <text x="1065" y="502" fill="#e79a9a" font-size="14.5" text-anchor="middle">Trading colo-2 &middot; AS 65011 &middot; OSPF</text>
+    <circle cx="1065" cy="405" r="40" fill="#1f3a52" stroke="#d16b6b" stroke-width="2.5"/>
+    <text x="1065" y="402" fill="#cfeaff" font-size="15" text-anchor="middle">COLO-2</text>
+    <text x="1065" y="422" fill="#f0c6c6" font-size="11.5" text-anchor="middle">exchange-facing</text>
 
-    <!-- PE1 -->
-    <circle cx="200" cy="275" r="42" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
-    <text x="200" y="270" fill="#cfeaff" font-size="22" text-anchor="middle">PE1</text>
-    <text x="200" y="292" fill="#9ec9e8" font-size="15" text-anchor="middle">mkt-data</text>
-    <text x="200" y="348" fill="#7ec97e" font-size="15" text-anchor="middle">Lo0 .1/32</text>
+    <!-- eBGP links (gold) core to each site -->
+    <line x1="215" y1="150" x2="500" y2="240" stroke="#d9c08c" stroke-width="3"/>
+    <text x="352" y="180" fill="#d9c08c" font-size="12.5" text-anchor="middle">eBGP 65001&harr;65000</text>
+    <line x1="215" y1="390" x2="500" y2="295" stroke="#d9c08c" stroke-width="3"/>
+    <text x="352" y="360" fill="#d9c08c" font-size="12.5" text-anchor="middle">eBGP 65002&harr;65000</text>
+    <line x1="1025" y1="150" x2="740" y2="240" stroke="#d9c08c" stroke-width="3"/>
+    <text x="888" y="180" fill="#d9c08c" font-size="12.5" text-anchor="middle">eBGP 65010&harr;65000</text>
+    <line x1="1025" y1="390" x2="740" y2="295" stroke="#d9c08c" stroke-width="3"/>
+    <text x="888" y="360" fill="#d9c08c" font-size="12.5" text-anchor="middle">eBGP 65011&harr;65000</text>
 
-    <!-- PE2 -->
-    <circle cx="1040" cy="275" r="42" fill="#1f3a52" stroke="#9cd1ef" stroke-width="2"/>
-    <text x="1040" y="270" fill="#cfeaff" font-size="22" text-anchor="middle">PE2</text>
-    <text x="1040" y="292" fill="#9ec9e8" font-size="15" text-anchor="middle">trading</text>
-    <text x="1040" y="348" fill="#7ec97e" font-size="15" text-anchor="middle">Lo0 .2/32</text>
+    <!-- traffic classes -->
+    <text x="620" y="350" fill="#7ec97e" font-size="12.5" text-anchor="middle">research bulk: DC-A &harr; DC-B (elephant flows: model / dataset sync)</text>
+    <text x="620" y="371" fill="#e79a9a" font-size="12.5" text-anchor="middle">trading: colo &harr; exchange (latency-sensitive) &mdash; both ride this one WAN</text>
 
-    <!-- P1 -->
-    <circle cx="620" cy="155" r="42" fill="#1f3a52" stroke="#7ec97e" stroke-width="2.5"/>
-    <text x="620" y="161" fill="#cfeaff" font-size="22" text-anchor="middle">P1</text>
-    <text x="620" y="112" fill="#7ec97e" font-size="15" text-anchor="middle">low-latency &middot; Lo0 .3/32</text>
-
-    <!-- P2 -->
-    <circle cx="620" cy="415" r="42" fill="#1f3a52" stroke="#d9c08c" stroke-width="2.5"/>
-    <text x="620" y="421" fill="#cfeaff" font-size="22" text-anchor="middle">P2</text>
-    <text x="620" y="474" fill="#d9c08c" font-size="15" text-anchor="middle">high-capacity &middot; Lo0 .4/32</text>
+    <!-- legend -->
+    <line x1="70" y1="518" x2="108" y2="518" stroke="#d9c08c" stroke-width="4"/>
+    <text x="116" y="523" fill="#e8d6a8" font-size="13" text-anchor="start">gold = eBGP (AS / policy boundary)</text>
+    <rect x="470" y="510" width="30" height="15" rx="3" fill="none" stroke="#5b9bd5" stroke-dasharray="5 3"/>
+    <text x="508" y="523" fill="#9cd1ef" font-size="13" text-anchor="start">dashed box = independent OSPF domain</text>
   </svg>
   <div style="font-size:0.82em;line-height:1.45;margin-top:0.25em;">
-    <p style="margin:0.18em 0;"><strong>Topology:</strong> PE1 (mkt-data) and PE2 (trading), each dual-homed to plane P1 and plane P2.</p>
-    <p style="margin:0.18em 0;"><strong>Metric by latency, not bandwidth:</strong> 10 on the 400G short-fibre plane, 40 on the 100G long-fibre plane &mdash; so SPF puts trading flows on the low-latency plane and leaves the capacity plane for the UCMP / steering questions (&sect;2&ndash;3). Auto-cost would wrongly make the 400G links cheapest.</p>
-    <p style="margin:0.18em 0;color:#8a97a3;">/31 links, /32 loopbacks in 10.255.0.0/24. Plain OSPFv2 today &mdash; no SR yet; metrics &amp; addresses are strawman choices.</p>
+    <p style="margin:0.18em 0;"><strong>Topology:</strong> a WAN core (its own AS + OSPF) stitching several site domains &mdash; research/compute DCs and trading colos &mdash; <strong>each an independent AS and its own OSPF instance</strong>, joined by eBGP. Many ASNs (origin an explicit assumption: acquired entities, each keeping its own AS &amp; community policy).</p>
+    <p style="margin:0.18em 0;"><strong>Two boundaries, drawn apart on purpose:</strong> the gold eBGP links are the <em>AS / policy</em> boundaries; the dashed boxes are the <em>OSPF flooding</em> domains. They align today &mdash; every migration option ahead moves one of these two axes independently (single IGP under many eBGP domains, collapsed ASNs, per-domain SR, &hellip;).</p>
+    <p style="margin:0.18em 0;color:#8a97a3;">Today = plain IP: OSPFv2 IGP + BGP (communities), multi-vendor Arista/Cisco, <strong>no MPLS and no SR</strong> &mdash; that is exactly what we migrate. Grounded on HRT's public role specs (a Global WAN interconnecting globally-distributed on-prem research DCs + trading colos, running OSPF/BGP); ASNs real, their origin a stated strawman assumption.</p>
   </div>
 </section>
 
