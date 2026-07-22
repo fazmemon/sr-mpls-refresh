@@ -41,29 +41,25 @@
       .reveal table { font-size: 0.55em; }
     }
   
-  /* --- folded-in DC cheatsheet utility classes --- */
-  .reveal .tbl{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:8px -4px}
+  .reveal .tbl{overflow-x:auto;margin:8px -4px}
   .reveal .k{color:#9cdcfe;font-weight:700}
   .reveal .r{color:#f48771;font-weight:700}
   .reveal .g{color:#4ec9b0;font-weight:700}
   .reveal .room{background:#1e2d1e;border-left:3px solid #4ec9b0;padding:8px 10px;border-radius:0 6px 6px 0;margin:8px 0;font-size:.8em}
   .reveal .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-
-  /* --- folded-in teach-deck utility classes --- */
   .reveal .key{background:#0f2030;border-left:3px solid #4ec9b0;border-radius:0 8px 8px 0;padding:10px 15px;margin:.6em 0 0;font-size:.8em;color:#bfe9df}
   .reveal .key b{color:#4ec9b0}
   .reveal .say{background:#12202f;border:1px solid #2e6e5e;border-radius:10px;padding:10px 15px;margin:.6em 0 0;font-size:.82em}
-  .reveal .say:before{content:"THE ROOM LINE";color:#4ec9b0;font-size:.6em;font-weight:700;letter-spacing:1.5px;display:block;margin-bottom:4px}
   .reveal .danger{background:#2a1620;border-left:3px solid #ff7b8a;border-radius:0 8px 8px 0;padding:10px 15px;margin:.6em 0 0;font-size:.8em;color:#ffd4da}
-  .reveal .danger b{color:#ff9aa6}
   .reveal .lead{color:#9db0d0}
   .reveal .em{color:#4ec9b0;font-weight:600}
   .reveal .em2{color:#569cd6;font-weight:600}
   .reveal .warn{color:#dcdcaa}
   .reveal .box{background:#152136;border:1px solid #2b3a56;border-radius:12px;padding:13px 18px;margin:.4em 0}
-  .reveal .box h3{margin:.05em 0 .3em;color:#9cdcfe}
   .reveal .cols{display:flex;gap:2vw;flex-wrap:wrap}
   .reveal .col{flex:1;min-width:280px}
+  .reveal .small{font-size:.8em;color:#9db0d0}
+  .reveal .hook{background:#0f2030;border-left:3px solid #dcdcaa;padding:8px 12px;margin:.5em 0;font-size:.82em}
 </style>
 </head>
 <body>
@@ -4864,8 +4860,6 @@ The design axes when multicast comes up (it will — it's the market-data transp
 
 <h3>the DC cheatsheet, folded in</h3>
 
-<p style="font-size:.7em;color:#888">Silicon and buffer architecture, packet flow, EVPN/VXLAN, AI-GPU fabric, chassis and optics, virtualisation, and the AI-DC front-end / back-end split.</p>
-
 </section></section>
 
 <section>
@@ -4882,18 +4876,18 @@ The design axes when multicast comes up (it will — it's the market-data transp
   </div>
 </section>
 <section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">1 &middot; Silicon / chassis / line-card</h4>
+<h4 style="color:#888;font-size:.7em;margin-bottom:.2em">1 &middot; Silicon / chassis / line-card</h4>
 <h3>Broadcom families</h3>
-<ul>
+  <ul>
     <li><b>Trident</b> = feature leaf (VXLAN, telemetry), shallow</li>
     <li><b>Tomahawk</b> = spine / low-latency / AI leaf, shallow, high-radix (TH6 = 102.4T)</li>
     <li><b>Jericho</b> = deep buffer, DCI, AI scale-out (VOQ + cells + <b>Ramon</b> fabric chip)</li>
   </ul>
 </section>
 <section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">1 &middot; Silicon / chassis / line-card</h4>
+<h4 style="color:#888;font-size:.7em;margin-bottom:.2em">1 &middot; Silicon / chassis / line-card</h4>
 <h3>Mnemonics</h3>
-<div class="hook">
+  <div class="hook">
     <b>Arista "R" = deep/Jericho</b> &rarr; 7280R / 7500R / 7800R (28-50-80). No "R" = shallow.<br>
     <b>Juniper by where it lives:</b> <span class="k">QFX = DC</span> &middot; <span class="k">PTX = core</span> &middot; <span class="k">MX = edge</span>. Deep DC = QFX10000 = Q5.<br>
     <b>In-house lives only where the money is</b> (deep/routing/AI). Shallow leaf = Broadcom commodity. Only Cisco bothers with in-house shallow (Cloud Scale).<br>
@@ -4910,9 +4904,9 @@ The design axes when multicast comes up (it will — it's the market-data transp
 <div class="hook"><b>The law:</b> each generation <b>~doubles bandwidth</b> via a MIX of <b>faster lanes</b> AND <b>more lanes</b>. "Which line card" = which silicon gen + port config.</div>
 </section>
 <section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">2 &middot; Card / silicon evolution</h4>
+<h4 style="color:#888;font-size:.7em;margin-bottom:.2em">2 &middot; Card / silicon evolution</h4>
 <h3>The 4 levers (start at the lane, end at the chip)</h3>
-<p>A <b>lane</b> = one SerDes; its speed = <b>bits/symbol &times; baud</b>. A <b>port</b> = several lanes bonded. The <b>chip</b> = all lanes across all ports.</p>
+  <p>A <b>lane</b> = one SerDes; its speed = <b>bits/symbol &times; baud</b>. A <b>port</b> = several lanes bonded. The <b>chip</b> = all lanes across all ports.</p>
   <ul>
     <li><b>1. bits/symbol</b> &mdash; NRZ (1 bit) &rarr; <b>PAM4 (2 bits)</b>.</li>
     <li><b>2. baud rate</b> climbs each gen.<br><span class="small">1+2 = per-lane ladder <b>25 &rarr; 50 &rarr; 100 &rarr; 200G per lane</b>.</span></li>
@@ -4922,29 +4916,19 @@ The design axes when multicast comes up (it will — it's the market-data transp
   <p class="small">Faster lanes (1+2) + more lanes (3+4) together = the doubling. The lane-<b>count</b> half (3+4) is the one people forget.</p>
   <div class="hook"><b>Simpler memory hook &mdash; 3 knobs:</b> <code>Bandwidth = bits &times; baud &times; lanes</code>. <b>bits</b> (PAM4) &middot; <b>baud</b> (faster symbols) &middot; <b>lanes</b> (how many &mdash; bond more per port + more on the die). You always remember bits + baud; the one you drop is <b>LANES</b>.</div>
   <div class="grid2">
-    <div>
-</section>
-<section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">2 &middot; Card / silicon evolution</h4>
-<h3>Tomahawk (shallow)</h3>
-TH3 &rarr; TH4 25.6T &rarr; TH5 51.2T &rarr; <b>TH6 102.4T</b><br><span class="small">radix / bandwidth race</span></div>
-    <div>
-</section>
-<section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">2 &middot; Card / silicon evolution</h4>
-<h3>Jericho (deep)</h3>
-J2 &rarr; J2c+ &rarr; J3-AI &rarr; <b>J4 ~51.2T</b><br><span class="small">J3-AI = perfect-LB/congestion-free for GPU; J4 = scale across DCs</span></div>
+    <div><h3>Tomahawk (shallow)</h3>TH3 &rarr; TH4 25.6T &rarr; TH5 51.2T &rarr; <b>TH6 102.4T</b><br><span class="small">radix / bandwidth race</span></div>
+    <div><h3>Jericho (deep)</h3>J2 &rarr; J2c+ &rarr; J3-AI &rarr; <b>J4 ~51.2T</b><br><span class="small">J3-AI = perfect-LB/congestion-free for GPU; J4 = scale across DCs</span></div>
   </div>
 </section>
 <section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">2 &middot; Card / silicon evolution</h4>
+<h4 style="color:#888;font-size:.7em;margin-bottom:.2em">2 &middot; Card / silicon evolution</h4>
 <h3>Trident (feature leaf)</h3>
-<p>Trident2 &rarr; 3 &rarr; 4 &rarr; 5 &mdash; spends on programmability / VXLAN / telemetry, not raw Tbps.</p>
+  <p>Trident2 &rarr; 3 &rarr; 4 &rarr; 5 &mdash; spends on programmability / VXLAN / telemetry, not raw Tbps.</p>
 </section>
 <section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">2 &middot; Card / silicon evolution</h4>
+<h4 style="color:#888;font-size:.7em;margin-bottom:.2em">2 &middot; Card / silicon evolution</h4>
 <h3>Glossary</h3>
-<ul>
+  <ul>
     <li><b>SerDes</b> = serializer/deserializer; turns parallel bits into a serial stream on a lane. Port = several lanes.</li>
     <li><b>radix</b> = ports one chip fans out. High-radix &rarr; fewer Clos tiers.</li>
     <li><b>HBM</b> = stacked DRAM beside the chip = where the deep buffer lives (off-die).</li>
@@ -4954,9 +4938,9 @@ J2 &rarr; J2c+ &rarr; J3-AI &rarr; <b>J4 ~51.2T</b><br><span class="small">J3-AI
   </ul>
 </section>
 <section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">2 &middot; Card / silicon evolution</h4>
+<h4 style="color:#888;font-size:.7em;margin-bottom:.2em">2 &middot; Card / silicon evolution</h4>
 <h3>Radix &rarr; fabric size</h3>
-<div class="hook"><b>Radix = k = ports on the switch.</b> Split half down / half up: a 2-tier fabric holds <b>k&sup2;/2 hosts</b> (3-tier = k&sup3;/4). It's the <b>square</b> &mdash; <b>double the radix &rarr; 4&times; the fabric</b>. That's why radix is the scaling lever (and why a high-radix chassis stays flat/3-stage longer). k=64 &rarr; 2,048 &middot; k=128 &rarr; 8,192. <span class="small">(#spines = k/2 = a leaf's uplinks; #leaves = k = a spine's ports &mdash; bookkeeping, not needed in the room.)</span></div>
+  <div class="hook"><b>Radix = k = ports on the switch.</b> Split half down / half up: a 2-tier fabric holds <b>k&sup2;/2 hosts</b> (3-tier = k&sup3;/4). It's the <b>square</b> &mdash; <b>double the radix &rarr; 4&times; the fabric</b>. That's why radix is the scaling lever (and why a high-radix chassis stays flat/3-stage longer). k=64 &rarr; 2,048 &middot; k=128 &rarr; 8,192. <span class="small">(#spines = k/2 = a leaf's uplinks; #leaves = k = a spine's ports &mdash; bookkeeping, not needed in the room.)</span></div>
 </section>
 </section>
 
@@ -4966,15 +4950,15 @@ J2 &rarr; J2c+ &rarr; J3-AI &rarr; <b>J4 ~51.2T</b><br><span class="small">J3-AI
 <p><b>Forwarding logic is identical</b> (parse &rarr; lookup &rarr; forward). <b>Buffering differs.</b></p>
 </section>
 <section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">3 &middot; Packet flow &mdash; two flows, not three</h4>
-<h3>Shallow (Tomahawk / Trident) = output-queued shared-memory</h3>
-<p>wire &rarr; ingress &rarr; parse+lookup (ACLs here) &rarr; <b>store ONCE in on-chip shared buffer</b> &rarr; enqueue pointer to <b>EGRESS</b> queue &rarr; scheduler &rarr; wire.<br>
+<h4 style="color:#888;font-size:.7em;margin-bottom:.2em">3 &middot; Packet flow &mdash; two flows, not three</h4>
+<h3 class="k">Shallow (Tomahawk / Trident) = output-queued shared-memory</h3>
+  <p>wire &rarr; ingress &rarr; parse+lookup (ACLs here) &rarr; <b>store ONCE in on-chip shared buffer</b> &rarr; enqueue pointer to <b>EGRESS</b> queue &rarr; scheduler &rarr; wire.<br>
   <span class="r">No cells. No VOQ. No fabric.</span> Single die, lowest latency, cut-through, microburst-limited. Buffer at <b>egress</b>.</p>
 </section>
 <section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">3 &middot; Packet flow &mdash; two flows, not three</h4>
-<h3>Deep (Jericho / Q5) = ingress-VOQ + cell fabric</h3>
-<p>wire &rarr; ingress &rarr; parse+lookup &rarr; <b>segment into cells</b> &rarr; <b>INGRESS VOQ</b> (deep HBM) &rarr; egress scheduler <b>credit/grant</b> &rarr; <b>spray cells across fabric</b> &rarr; <b>egress reassembles</b> &rarr; wire.<br>
+<h4 style="color:#888;font-size:.7em;margin-bottom:.2em">3 &middot; Packet flow &mdash; two flows, not three</h4>
+<h3 class="k">Deep (Jericho / Q5) = ingress-VOQ + cell fabric</h3>
+  <p>wire &rarr; ingress &rarr; parse+lookup &rarr; <b>segment into cells</b> &rarr; <b>INGRESS VOQ</b> (deep HBM) &rarr; egress scheduler <b>credit/grant</b> &rarr; <b>spray cells across fabric</b> &rarr; <b>egress reassembles</b> &rarr; wire.<br>
   No HOL, deep, scales across a modular chassis. ~&micro;s latency. Buffer at <b>ingress</b>.</p>
   <div class="hook"><b>Why fabric exists:</b> a deep box is a <b>modular chassis</b> = many line cards/chips; the fabric (+cells) connects them. A shallow box is a <b>single die</b> &mdash; nothing to cross, so no fabric. <i>Fabric = multiple chips to interconnect.</i> (Distinction is architecture, not box size: Nexus 9500 is a shallow chassis.)</div>
   <div class="room"><b>QoS vs architectural latency:</b> a strict-priority queue fixes <b>queuing</b> latency (voice doesn't wait behind bulk &mdash; SP edge does this on deep boxes daily). It CANNOT fix the <b>architectural floor</b> every packet pays on a VOQ box: cell seg/reassembly + credit grant + off-chip HBM (+ jitter). So deep+QoS = fine for ms-tolerant voice; <b>fails for ns/deterministic HFT/RoCE</b> &rarr; those need shallow cut-through (tens of ns) or L1 (~5ns).</div>
@@ -4984,12 +4968,8 @@ J2 &rarr; J2c+ &rarr; J3-AI &rarr; <b>J4 ~51.2T</b><br><span class="small">J3-AI
 <section>
 <section>
 <h2>4 &middot; EVPN / VXLAN</h2>
-
-</section>
-<section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">4 &middot; EVPN / VXLAN</h4>
 <h3>How we got here &mdash; the topology evolution (each step fixes the last)</h3>
-<div class="tbl">
+  <div class="tbl">
   <table>
     <tr><th>Step</th><th>What it gave</th><th>What forced the next</th></tr>
     <tr><td><b>vPC / MLAG</b></td><td>active/active dual-homing, no STP block</td><td>2-switch only; big L2 flooding/blast radius</td></tr>
@@ -5003,9 +4983,9 @@ J2 &rarr; J2c+ &rarr; J3-AI &rarr; <b>J4 ~51.2T</b><br><span class="small">J3-AI
   <p class="small"><b>Heads-up:</b> "collapsed spine" here = the small-DC leaf+spine pair. A <i>different</i> "collapse" = <b>chassis-as-spine</b> (&sect;8) &mdash; folding the spine onto a chassis backplane to kill a tier of optics. Same phrase, two moves.</p>
 </section>
 <section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">4 &middot; EVPN / VXLAN</h4>
+<h4 style="color:#888;font-size:.7em;margin-bottom:.2em">4 &middot; EVPN / VXLAN</h4>
 <h3>The 2&times;2 &mdash; the data-plane spine</h3>
-<div class="tbl">
+  <div class="tbl">
   <table>
     <tr><th></th><th>Learn it (route type, control plane)</th><th>Carry it (VNI in packet, data plane)</th></tr>
     <tr><th>Bridge (same subnet)</th><td><span class="k">Type-2</span> (MAC+IP)</td><td><span class="k">L2VNI</span></td></tr>
@@ -5015,9 +4995,9 @@ J2 &rarr; J2c+ &rarr; J3-AI &rarr; <b>J4 ~51.2T</b><br><span class="small">J3-AI
   <div class="room"><b>MPLS L3VPN map (you know this cold):</b> <span class="k">Type-5 = VPNv4 route</span> (how leaf learns) &middot; <span class="k">L3VNI = VPN label</span> (in the packet) &middot; <span class="k">egress leaf = egress PE</span>. Same machine, VXLAN wrapper instead of label stack. "Symmetric IRB" = both ends route (route-in &rarr; L3VNI &rarr; route-out).</div>
 </section>
 <section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">4 &middot; EVPN / VXLAN</h4>
+<h4 style="color:#888;font-size:.7em;margin-bottom:.2em">4 &middot; EVPN / VXLAN</h4>
 <h3>Symmetric vs Asymmetric IRB</h3>
-<div class="tbl">
+  <div class="tbl">
   <table>
     <tr><th></th><th>Symmetric (modern default)</th><th>Asymmetric</th></tr>
     <tr><th>Path</th><td>bridge &rarr; <b>route into shared L3VNI</b> &rarr; fabric &rarr; <b>route out</b> &rarr; bridge. Both ends route.</td><td>ingress <b>routes AND bridges</b> (routes from source L2VNI into the <i>destination's</i> L2VNI) &rarr; fabric &rarr; egress <b>bridges only</b>.</td></tr>
@@ -5029,9 +5009,9 @@ J2 &rarr; J2c+ &rarr; J3-AI &rarr; <b>J4 ~51.2T</b><br><span class="small">J3-AI
   <p class="small">One-liner: <b>asymmetric needs all VNIs on all leaves; symmetric needs only the L3VNI</b> &mdash; that's why symmetric won.</p>
 </section>
 <section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">4 &middot; EVPN / VXLAN</h4>
+<h4 style="color:#888;font-size:.7em;margin-bottom:.2em">4 &middot; EVPN / VXLAN</h4>
 <h3>Unicast walk A&rarr;B (same subnet)</h3>
-<ol>
+  <ol>
     <li><b>Type-2</b> pre-loaded B's MAC+IP to every leaf via BGP.</li>
     <li>A ARPs &rarr; local leaf answers from its table = <b>ARP suppression</b> (never floods). The "IP" in Type-2 is what enables this.</li>
     <li>Ingress leaf encaps: inner frame + <b>VNI</b> + outer IP (src leaf loopback &rarr; dst leaf loopback).</li>
@@ -5040,14 +5020,14 @@ J2 &rarr; J2c+ &rarr; J3-AI &rarr; <b>J4 ~51.2T</b><br><span class="small">J3-AI
   </ol>
 </section>
 <section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">4 &middot; EVPN / VXLAN</h4>
+<h4 style="color:#888;font-size:.7em;margin-bottom:.2em">4 &middot; EVPN / VXLAN</h4>
 <h3>BUM (broadcast/unknown/multicast)</h3>
-<p><b>Type-3</b> (IMET) = the per-VNI flood list (who). <b>Ingress replication</b> = the how (leaf unicasts one copy to each leaf on the list; no multicast underlay needed = DC default). What's left after ARP suppression: real broadcast (DHCP) + multicast, not unknown-unicast.</p>
+  <p><b>Type-3</b> (IMET) = the per-VNI flood list (who). <b>Ingress replication</b> = the how (leaf unicasts one copy to each leaf on the list; no multicast underlay needed = DC default). What's left after ARP suppression: real broadcast (DHCP) + multicast, not unknown-unicast.</p>
 </section>
 <section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">4 &middot; EVPN / VXLAN</h4>
+<h4 style="color:#888;font-size:.7em;margin-bottom:.2em">4 &middot; EVPN / VXLAN</h4>
 <h3>Multihoming &mdash; ESI-LAG (= vPC, standards-based)</h3>
-<div class="tbl">
+  <div class="tbl">
   <table>
     <tr><th>Mechanism</th><th>Route</th><th>Prevents</th></tr>
     <tr><td><b>DF election</b></td><td>Type-4</td><td>duplicate BUM to host (one forwarder)</td></tr>
@@ -5058,26 +5038,22 @@ J2 &rarr; J2c+ &rarr; J3-AI &rarr; <b>J4 ~51.2T</b><br><span class="small">J3-AI
   <p class="small">Say "<b>DF election</b>", not "broadcast suppression" (that's ARP suppression, a different thing).</p>
 </section>
 <section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">4 &middot; EVPN / VXLAN</h4>
+<h4 style="color:#888;font-size:.7em;margin-bottom:.2em">4 &middot; EVPN / VXLAN</h4>
 <h3>Underlay / overlay</h3>
-<p>Underlay = IP reachability for VTEP loopbacks + ECMP. OSPF/IS-IS, or <b>eBGP (RFC 7938)</b> at hyperscale (per-leaf ASN, shared spine ASN, blast-radius contained). Overlay = BGP EVPN (spines = route reflectors). VXLAN needs <b>jumbo MTU 9216</b> (~50B overhead) or silent blackhole.</p>
+  <p>Underlay = IP reachability for VTEP loopbacks + ECMP. OSPF/IS-IS, or <b>eBGP (RFC 7938)</b> at hyperscale (per-leaf ASN, shared spine ASN, blast-radius contained). Overlay = BGP EVPN (spines = route reflectors). VXLAN needs <b>jumbo MTU 9216</b> (~50B overhead) or silent blackhole.</p>
 </section>
 </section>
 
 <section>
 <section>
 <h2>5 &middot; AI / GPU fabric</h2>
-
-</section>
-<section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">5 &middot; AI / GPU fabric</h4>
 <h3>Scale-up vs scale-out</h3>
-<p><b>Scale-up</b> = inside a node, GPUs glued by <b>NVLink/NVSwitch</b> (NVIDIA), ~TB/s. <b>Scale-out</b> = the network between nodes = what's sold: <span class="k">Ethernet (Juniper/Broadcom/Spectrum-X + UEC) vs InfiniBand (NVIDIA Quantum)</span>.</p>
+  <p><b>Scale-up</b> = inside a node, GPUs glued by <b>NVLink/NVSwitch</b> (NVIDIA), ~TB/s. <b>Scale-out</b> = the network between nodes = what's sold: <span class="k">Ethernet (Juniper/Broadcom/Spectrum-X + UEC) vs InfiniBand (NVIDIA Quantum)</span>.</p>
 </section>
 <section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">5 &middot; AI / GPU fabric</h4>
+<h4 style="color:#888;font-size:.7em;margin-bottom:.2em">5 &middot; AI / GPU fabric</h4>
 <h3>Why ECMP breaks for all-reduce</h3>
-<p>All-reduce = a few huge <b>elephant</b> flows. ECMP hashes <b>per-flow</b> &rarr; pins each to one path &rarr; elephants collide while links idle. Barrier-synced &rarr; slowest path stalls every GPU.</p>
+  <p>All-reduce = a few huge <b>elephant</b> flows. ECMP hashes <b>per-flow</b> &rarr; pins each to one path &rarr; elephants collide while links idle. Barrier-synced &rarr; slowest path stalls every GPU.</p>
   <div class="room"><b>Fix = packet spraying / adaptive routing</b> (spread one flow across all paths: Broadcom DLB, Spectrum-X adaptive, UEC). Safe ONLY on <b>lossless + reorder-tolerant</b>: <span class="k">RoCEv2 over PFC + ECN + DCQCN</span>. NIC reassembles; fabric must not drop. Plain TCP = disaster.</div>
   <div class="hook"><b>DCQCN &mdash; who actually slows down (plain words):</b><br>
   A congested switch sets the <b>ECN</b> mark on the packet. The packet carries that mark to the <b>receiver</b>. The receiver sends a <b>CNP</b> (Congestion Notification Packet) back to the <b>sender</b>. The <b>sender</b> cuts its send rate.<br>
@@ -5085,9 +5061,9 @@ J2 &rarr; J2c+ &rarr; J3-AI &rarr; <b>J4 ~51.2T</b><br><span class="small">J3-AI
   <div class="hook"><b>"AI has incast &mdash; why shallow buffers, not deep?"</b> (likely probe) Because AI solves congestion at the <b>transport</b> with <b>lossless RoCE (PFC/ECN/DCQCN)</b>, not in the box. Deep buffers add the latency AI hates &mdash; so AI is deliberately <b>shallow + lossless</b>. Deep buffer is for traffic you <i>can't</i> make lossless: WAN, DCI, peering, mixed enterprise (big RTT, speed mismatch, classic TCP).</div>
 </section>
 <section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">5 &middot; AI / GPU fabric</h4>
+<h4 style="color:#888;font-size:.7em;margin-bottom:.2em">5 &middot; AI / GPU fabric</h4>
 <h3>Non-Clos topologies (sold into AI/HPC)</h3>
-<ul>
+  <ul>
     <li><b>Rail-optimized Clos</b> &mdash; each GPU NIC on its own rail/leaf; same-rank GPUs = 1 hop (NVIDIA default).</li>
     <li><b>Dragonfly</b> &mdash; groups fully meshed by global links; cuts optics; needs adaptive routing (HPE Slingshot).</li>
     <li><b>Torus</b> &mdash; wrap-around grid, no spine; cheap, multi-hop (Google TPU).</li>
@@ -5098,9 +5074,9 @@ J2 &rarr; J2c+ &rarr; J3-AI &rarr; <b>J4 ~51.2T</b><br><span class="small">J3-AI
   <div class="hook"><b>Meta F16 &mdash; "wide, not fast."</b> Meta's DC fabric (~2019): <b>16 spine planes</b> (was 4), built from mature <b>100G merchant silicon</b> instead of waiting for faster optics &rarr; ~4&times; capacity; <b>HGRID</b> aggregates above. All fixed-form-factor, <b>disaggregated</b> &mdash; lose one plane = 1/16, not 1/4 (blast-radius win). The <b>scale-OUT</b> (add planes of cheap boxes) counterpart to the <b>scale-UP</b> (radix in a chassis) move. Arc: 2014 4-post &rarr; 2019 F16+HGRID &rarr; 400/800G &rarr; AI RoCE fabrics &rarr; NVLink copper (NVL72).</div>
 </section>
 <section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">5 &middot; AI / GPU fabric</h4>
+<h4 style="color:#888;font-size:.7em;margin-bottom:.2em">5 &middot; AI / GPU fabric</h4>
 <h3>What a "stripe" is &mdash; the building block</h3>
-<p>A <b>stripe</b> is one rail-optimized block: 8 leaves (one per rail) plus all the GPUs hanging off them. It's the repeatable unit you tile to grow the fabric. It is NOT "rail vs Clos" &mdash; a stripe IS a slice of the Clos, aligned to the 8 rails.</p>
+  <p>A <b>stripe</b> is one rail-optimized block: 8 leaves (one per rail) plus all the GPUs hanging off them. It's the repeatable unit you tile to grow the fabric. It is NOT "rail vs Clos" &mdash; a stripe IS a slice of the Clos, aligned to the 8 rails.</p>
   <p class="small"><b>Don't confuse:</b> this "stripe" (the rail tile) &ne; <b>"L1/L3 striping"</b> = load-<i>spreading</i> traffic across parallel paths (optical wavelengths at L1 / ECMP at L3) to beat polarisation. Same word, different concept.</p>
   <div class="hook"><b>The ladder (plain words):</b><br>
   <b>GPU</b> = one accelerator, one NIC, one rail (an H100 NIC is 400G).<br>
@@ -5110,9 +5086,9 @@ J2 &rarr; J2c+ &rarr; J3-AI &rarr; <b>J4 ~51.2T</b><br><span class="small">J3-AI
   <b>Cluster</b> = many stripes joined through the spine tier.</div>
 </section>
 <section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">5 &middot; AI / GPU fabric</h4>
+<h4 style="color:#888;font-size:.7em;margin-bottom:.2em">5 &middot; AI / GPU fabric</h4>
 <h3>Sizing &mdash; how many GPUs fit (rail-optimized, 1:1, 8-GPU servers)</h3>
-<div class="hook"><b>One division does it:</b> <code>GPUs/leaf = 12.8T &divide; GPU-port-speed</code> &rarr; A100@200G = 64, H100@400G = 32. &times; <b>8 leaves</b> (8 rails) = per stripe. <code>Spines = 256 leaf-uplinks &divide; spine-ports</code>.</div>
+  <div class="hook"><b>One division does it:</b> <code>GPUs/leaf = 12.8T &divide; GPU-port-speed</code> &rarr; A100@200G = 64, H100@400G = 32. &times; <b>8 leaves</b> (8 rails) = per stripe. <code>Spines = 256 leaf-uplinks &divide; spine-ports</code>.</div>
   <div class="tbl">
   <table>
     <tr><th></th><th>A100 (200G port)</th><th>H100 (400G port)</th></tr>
@@ -5125,9 +5101,9 @@ J2 &rarr; J2c+ &rarr; J3-AI &rarr; <b>J4 ~51.2T</b><br><span class="small">J3-AI
   <p class="small">Leaf = QFX5230-64CD: 64&times;400G = 25.6T &rarr; 32 down + 32 up = <b>12.8T each way</b> &rarr; that's the &divide; that gives 64/32. Intra-server GPU&harr;GPU = NVLink (off-fabric).</p>
 </section>
 <section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">5 &middot; AI / GPU fabric</h4>
+<h4 style="color:#888;font-size:.7em;margin-bottom:.2em">5 &middot; AI / GPU fabric</h4>
 <h3>Juniper's AI scale-out answer (don't fall for "Q5")</h3>
-<div class="hook"><b>Q5 is NOT the AI answer.</b> Q5 (QFX10000) is the older deep-buffer DC <i>switch</i>. For the AI back-end fabric Juniper does what everyone does &mdash; <b>buys Broadcom Tomahawk 5/6</b> (QFX5240 / QFX5250). <i>(confirm current model names &mdash; AI naming moves fast.)</i></div>
+  <div class="hook"><b>Q5 is NOT the AI answer.</b> Q5 (QFX10000) is the older deep-buffer DC <i>switch</i>. For the AI back-end fabric Juniper does what everyone does &mdash; <b>buys Broadcom Tomahawk 5/6</b> (QFX5240 / QFX5250). <i>(confirm current model names &mdash; AI naming moves fast.)</i></div>
   <ul>
     <li><b>Why no in-house Jericho3-AI clone:</b> the AI fabric is built <b>shallow + lossless</b> (Tomahawk + RoCE/PFC/ECN), not deep-buffer. Jericho3-AI is Broadcom's <i>deep-buffer</i> AI angle; most AI fabrics go shallow TH + lossless instead.</li>
     <li><b>AI leaf/spine</b> &rarr; Broadcom TH5/TH6 (QFX5240/5250) &mdash; merchant, same as Arista.</li>
@@ -5144,9 +5120,9 @@ J2 &rarr; J2c+ &rarr; J3-AI &rarr; <b>J4 ~51.2T</b><br><span class="small">J3-AI
 <div class="hook"><b>A chassis IS a folded Clos.</b> Line cards = the <b>leaf</b> stage (the ports); fabric modules = the <b>spine</b> stage, meshed over the <b>copper backplane</b> (no optics). So a "2-tier" fabric whose spine is a chassis is really a <b>5-stage Clos</b> &mdash; the middle 3 stages hidden on the backplane ("show the backplane as a layer"). <b>Why cheaper:</b> you buried a tier of optics inside the box. Same move recurs &mdash; <b>chassis backplane</b> &middot; <b>NVLink copper rack (GB200 NVL72)</b> &middot; <b>IP+Optical coherent pluggable</b>: all <b>collapse a tier of optics into copper</b> where the failure domain allows. Not "leaf-spine is dead" &mdash; it's <i>where the stages physically live</i>, and it's the AI back-end where it pays.</div>
 </section>
 <section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">8 &middot; Chassis / line cards / optics (pre-sales hardware)</h4>
+<h4 style="color:#888;font-size:.7em;margin-bottom:.2em">8 &middot; Chassis / line cards / optics (pre-sales hardware)</h4>
 <h3>What's in a deep-buffer modular chassis</h3>
-<ul>
+  <ul>
     <li><b>Line cards</b> &mdash; the ports + the forwarding ASIC (e.g. Jericho). Packets enter, get looked up, buffered in the <b>ingress VOQ</b>. The silicon lives here.</li>
     <li><b>Fabric modules</b> (SFMs) &mdash; the internal switch carrying <b>cells</b> between line cards. Broadcom's fabric chip = <b>Ramon</b> (pairs with Jericho).</li>
     <li><b>Supervisors / Route Engines</b> &mdash; the control plane (runs BGP/EVPN, programs the line cards). Redundant pair.</li>
@@ -5154,25 +5130,25 @@ J2 &rarr; J2c+ &rarr; J3-AI &rarr; <b>J4 ~51.2T</b><br><span class="small">J3-AI
   </ul>
 </section>
 <section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">8 &middot; Chassis / line cards / optics (pre-sales hardware)</h4>
+<h4 style="color:#888;font-size:.7em;margin-bottom:.2em">8 &middot; Chassis / line cards / optics (pre-sales hardware)</h4>
 <h3>Silicon generation maps to the LINE CARD</h3>
-<p>Each line card is built around <b>one ASIC generation</b> (Jericho2 &rarr; J2c+ &rarr; J3). The chassis is a <b>generation-agnostic backplane</b> &mdash; you populate it with whatever-gen line cards you buy. "Arista 7800<b>R3</b> vs <b>R4</b>" = same chassis, different-gen line cards.</p>
+  <p>Each line card is built around <b>one ASIC generation</b> (Jericho2 &rarr; J2c+ &rarr; J3). The chassis is a <b>generation-agnostic backplane</b> &mdash; you populate it with whatever-gen line cards you buy. "Arista 7800<b>R3</b> vs <b>R4</b>" = same chassis, different-gen line cards.</p>
 </section>
 <section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">8 &middot; Chassis / line cards / optics (pre-sales hardware)</h4>
+<h4 style="color:#888;font-size:.7em;margin-bottom:.2em">8 &middot; Chassis / line cards / optics (pre-sales hardware)</h4>
 <h3>Fabric data path</h3>
-<p>ingress line card: lookup &rarr; <b>ingress VOQ</b> &rarr; segment into <b>cells</b> &rarr; spray across <b>fabric modules</b> &rarr; egress line card <b>reassembles</b>. More fabric modules = more internal bandwidth + redundancy.</p>
+  <p>ingress line card: lookup &rarr; <b>ingress VOQ</b> &rarr; segment into <b>cells</b> &rarr; spray across <b>fabric modules</b> &rarr; egress line card <b>reassembles</b>. More fabric modules = more internal bandwidth + redundancy.</p>
   <div class="hook"><b>Ramon is Broadcom-only</b> (goes with Jericho). In-house vendors build their own fabric chips: <b>Juniper</b> (Q5/Express), <b>Cisco Silicon One</b>, <b>Nokia FP5</b>. Concept is universal (line-card ASIC + separate fabric ASIC); the chip is merchant-vs-in-house.</div>
 </section>
 <section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">8 &middot; Chassis / line cards / optics (pre-sales hardware)</h4>
+<h4 style="color:#888;font-size:.7em;margin-bottom:.2em">8 &middot; Chassis / line cards / optics (pre-sales hardware)</h4>
 <h3>Upgrade to 800G without a forklift</h3>
-<p>Swap the <b>line cards</b> for newer-gen silicon with 800G ports (e.g. 100G Jericho2 cards &rarr; 800G Jericho3 cards). Likely add/upgrade <b>fabric modules</b> too so the fabric can feed them. <b>Chassis, backplane, power frame persist</b> &mdash; that's the whole point of modular: buy the chassis once, refresh line cards over a decade. (Fixed shallow box = single die, 1RU, no line cards/fabric &mdash; you replace the whole box.)</p>
+  <p>Swap the <b>line cards</b> for newer-gen silicon with 800G ports (e.g. 100G Jericho2 cards &rarr; 800G Jericho3 cards). Likely add/upgrade <b>fabric modules</b> too so the fabric can feed them. <b>Chassis, backplane, power frame persist</b> &mdash; that's the whole point of modular: buy the chassis once, refresh line cards over a decade. (Fixed shallow box = single die, 1RU, no line cards/fabric &mdash; you replace the whole box.)</p>
 </section>
 <section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">8 &middot; Chassis / line cards / optics (pre-sales hardware)</h4>
+<h4 style="color:#888;font-size:.7em;margin-bottom:.2em">8 &middot; Chassis / line cards / optics (pre-sales hardware)</h4>
 <h3>Optics (big AI cost + power lever)</h3>
-<ul>
+  <ul>
     <li><b>Form factors</b>: SFP28 (25G) &rarr; QSFP28 (100G) &rarr; <b>QSFP-DD / OSFP</b> (400/800G = the AI optics).</li>
     <li><b>LPO</b> (Linear Pluggable Optics) &mdash; strips the DSP, ~50-60% less power. Arista 7060XE7 headline; AI cost lever.</li>
     <li><b>CPO</b> (co-packaged optics) &mdash; optics next to the ASIC; the next power step at huge scale.</li>
@@ -5182,26 +5158,22 @@ J2 &rarr; J2c+ &rarr; J3-AI &rarr; <b>J4 ~51.2T</b><br><span class="small">J3-AI
   </ul>
 </section>
 <section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">8 &middot; Chassis / line cards / optics (pre-sales hardware)</h4>
+<h4 style="color:#888;font-size:.7em;margin-bottom:.2em">8 &middot; Chassis / line cards / optics (pre-sales hardware)</h4>
 <h3>Cooling</h3>
-<p>Air vs <b>liquid</b>. AI boxes (Arista 7060XE7, Juniper QFX5250) are liquid-cooled. <b>Why:</b> chip power (TH6 at 100T+) + dense 800G optics + GPUs pack <b>too many watts into too little space</b> &mdash; air physically can't move the heat away fast enough. Liquid carries far more heat per volume (direct-to-chip cold plate / immersion). <b>Power density outran air.</b> Net: <b>optics + power + cooling = the AI-fabric cost conversation</b> = where pre-sales money actually is.</p>
+  <p>Air vs <b>liquid</b>. AI boxes (Arista 7060XE7, Juniper QFX5250) are liquid-cooled. <b>Why:</b> chip power (TH6 at 100T+) + dense 800G optics + GPUs pack <b>too many watts into too little space</b> &mdash; air physically can't move the heat away fast enough. Liquid carries far more heat per volume (direct-to-chip cold plate / immersion). <b>Power density outran air.</b> Net: <b>optics + power + cooling = the AI-fabric cost conversation</b> = where pre-sales money actually is.</p>
 </section>
 <section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">8 &middot; Chassis / line cards / optics (pre-sales hardware)</h4>
+<h4 style="color:#888;font-size:.7em;margin-bottom:.2em">8 &middot; Chassis / line cards / optics (pre-sales hardware)</h4>
 <h3>Oversubscription</h3>
-<p>Set at the <b>leaf uplink:downlink ratio</b> (sum of fabric-facing vs host-facing bandwidth). <b>1:1 (non-blocking)</b> for AI / trading; up to <b>3:1</b> for general compute. The <b>spine is non-blocking by construction</b> &mdash; oversubscription is a leaf decision, not a spine one. (Weak answer says "the spine" &mdash; wrong.)</p>
+  <p>Set at the <b>leaf uplink:downlink ratio</b> (sum of fabric-facing vs host-facing bandwidth). <b>1:1 (non-blocking)</b> for AI / trading; up to <b>3:1</b> for general compute. The <b>spine is non-blocking by construction</b> &mdash; oversubscription is a leaf decision, not a spine one. (Weak answer says "the spine" &mdash; wrong.)</p>
 </section>
 </section>
 
 <section>
 <section>
 <h2>9 &middot; Virtualization &amp; containers (network view)</h2>
-
-</section>
-<section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">9 &middot; Virtualization &amp; containers (network view)</h4>
 <h3>Three layers</h3>
-<div class="tbl">
+  <div class="tbl">
   <table>
     <tr><th>Layer</th><th>What it virtualizes</th><th>Network</th></tr>
     <tr><td><b>VM</b> (VMware/ESXi)</td><td>the <b>hardware</b> &mdash; a full guest OS each, heavy</td><td>vSwitch / <b>NSX</b> overlay</td></tr>
@@ -5212,9 +5184,9 @@ J2 &rarr; J2c+ &rarr; J3-AI &rarr; <b>J4 ~51.2T</b><br><span class="small">J3-AI
   <p class="small">k8s runtime = <b>containerd</b> (Docker shim dropped at v1.24); Docker just builds the OCI image. "k8s manages Docker" = stale.</p>
 </section>
 <section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">9 &middot; Virtualization &amp; containers (network view)</h4>
+<h4 style="color:#888;font-size:.7em;margin-bottom:.2em">9 &middot; Virtualization &amp; containers (network view)</h4>
 <h3>The networking (why it's yours, not devops)</h3>
-<ul>
+  <ul>
     <li><b>K8s CNI</b> &mdash; every pod gets an IP; the CNI plugin does pod-to-pod (Calico/Cilium, usually a Geneve/VXLAN overlay); <b>Services</b>+kube-proxy load-balance across replicas; <b>NetworkPolicy</b> is the distributed firewall. An overlay on your EVPN/VXLAN underlay.</li>
     <li><b>VMware NSX</b> &mdash; Geneve overlay + micro-segmentation (distributed firewall in the hypervisor).</li>
     <li><b>Service chaining (SFC)</b> &mdash; stitch network functions into a path: <b>VNFs</b> (VMs) / <b>CNFs</b> (containers).</li>
@@ -5231,9 +5203,9 @@ J2 &rarr; J2c+ &rarr; J3-AI &rarr; <b>J4 ~51.2T</b><br><span class="small">J3-AI
 <div class="hook"><b>An AI DC is 3&ndash;4 SEPARATE networks, not one.</b> The split to own: <b>front-end</b> (north-south, the normal DC) vs <b>back-end = the GPU fabric</b> (the special one). A GPU server sits on <b>both</b> &mdash; one front-end NIC <i>plus</i> one back-end NIC per GPU. (Plus usually a separate <b>storage</b> net and a 1G <b>OOB/mgmt</b> net.)</div>
 </section>
 <section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">10 &middot; AI DC end-to-end &mdash; front-end vs back-end (the Nscale picture)</h4>
+<h4 style="color:#888;font-size:.7em;margin-bottom:.2em">10 &middot; AI DC end-to-end &mdash; front-end vs back-end (the Nscale picture)</h4>
 <h3>The whole picture</h3>
-<pre style="overflow-x:auto;-webkit-overflow-scrolling:touch;background:#f3f5f9;border:1px solid var(--line);border-radius:8px;padding:10px;font-size:11.5px;line-height:1.35">        INTERNET / USERS / other DCs / WAN
+  <pre style="overflow-x:auto;-webkit-overflow-scrolling:touch;background:#f3f5f9;border:1px solid var(--line);border-radius:8px;padding:10px;font-size:11.5px;line-height:1.35">        INTERNET / USERS / other DCs / WAN
                      |
   +-------------  FRONT-END fabric  (north-south)  --------------+
   |  EVPN-VXLAN leaf-spine . TCP . ECMP . can run 3:1 oversub    |
@@ -5254,9 +5226,9 @@ J2 &rarr; J2c+ &rarr; J3-AI &rarr; <b>J4 ~51.2T</b><br><span class="small">J3-AI
   +------------------------------------------------------------+</pre>
 </section>
 <section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">10 &middot; AI DC end-to-end &mdash; front-end vs back-end (the Nscale picture)</h4>
+<h4 style="color:#888;font-size:.7em;margin-bottom:.2em">10 &middot; AI DC end-to-end &mdash; front-end vs back-end (the Nscale picture)</h4>
 <h3>Front-end vs back-end &mdash; the table to own</h3>
-<div class="tbl">
+  <div class="tbl">
   <table>
     <tr><th></th><th class="k">Front-end (north-south)</th><th class="k">Back-end = GPU fabric (east-west)</th></tr>
     <tr><th>Carries</th><td>users/API, ingest, checkpoints, storage, k8s, mgmt, telemetry</td><td>GPU&harr;GPU collectives (AllReduce) <b>only</b></td></tr>
@@ -5271,9 +5243,9 @@ J2 &rarr; J2c+ &rarr; J3-AI &rarr; <b>J4 ~51.2T</b><br><span class="small">J3-AI
   </div>
 </section>
 <section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">10 &middot; AI DC end-to-end &mdash; front-end vs back-end (the Nscale picture)</h4>
+<h4 style="color:#888;font-size:.7em;margin-bottom:.2em">10 &middot; AI DC end-to-end &mdash; front-end vs back-end (the Nscale picture)</h4>
 <h3>Inside the GPU server &mdash; scale-up vs scale-out</h3>
-<pre style="overflow-x:auto;-webkit-overflow-scrolling:touch;background:#f3f5f9;border:1px solid var(--line);border-radius:8px;padding:10px;font-size:11.5px;line-height:1.35">   GPU SERVER  (HGX/DGX H100 - 8 GPUs)
+  <pre style="overflow-x:auto;-webkit-overflow-scrolling:touch;background:#f3f5f9;border:1px solid var(--line);border-radius:8px;padding:10px;font-size:11.5px;line-height:1.35">   GPU SERVER  (HGX/DGX H100 - 8 GPUs)
    +-------------------------------------------------+
    | GPU0  GPU1  GPU2  GPU3  GPU4  GPU5  GPU6  GPU7   |
    |  +------ NVLink / NVSwitch ------+   SCALE-UP    |  ~TB/s, in-box, off-fabric
@@ -5286,9 +5258,9 @@ J2 &rarr; J2c+ &rarr; J3-AI &rarr; <b>J4 ~51.2T</b><br><span class="small">J3-AI
   <p class="small"><b>Scale-up</b> = NVLink inside the box (off-fabric, ~TB/s). <b>Scale-out</b> = the back-end fabric between boxes. Two different networks &mdash; don't merge them.</p>
 </section>
 <section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">10 &middot; AI DC end-to-end &mdash; front-end vs back-end (the Nscale picture)</h4>
+<h4 style="color:#888;font-size:.7em;margin-bottom:.2em">10 &middot; AI DC end-to-end &mdash; front-end vs back-end (the Nscale picture)</h4>
 <h3>Back-end topology options</h3>
-<pre style="overflow-x:auto;-webkit-overflow-scrolling:touch;background:#f3f5f9;border:1px solid var(--line);border-radius:8px;padding:10px;font-size:11.5px;line-height:1.35">   RAIL-OPTIMIZED CLOS  (the back-end default)
+  <pre style="overflow-x:auto;-webkit-overflow-scrolling:touch;background:#f3f5f9;border:1px solid var(--line);border-radius:8px;padding:10px;font-size:11.5px;line-height:1.35">   RAIL-OPTIMIZED CLOS  (the back-end default)
 
        spine  spine  spine  spine     (added at scale to join rails/stripes)
          |      |      |      |
@@ -5325,9 +5297,9 @@ J2 &rarr; J2c+ &rarr; J3-AI &rarr; <b>J4 ~51.2T</b><br><span class="small">J3-AI
   <div class="hook"><b>Back-end transport choice:</b> <b>InfiniBand</b> (NVIDIA Quantum &mdash; mature, lossless by design, but lock-in) vs <b>Ethernet</b> RoCEv2 (Spectrum-X / Broadcom / Juniper + <b>UEC</b> &mdash; open, multi-vendor). Juniper's whole AI play = <b>open Ethernet scale-out</b>.</div>
 </section>
 <section>
-<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">10 &middot; AI DC end-to-end &mdash; front-end vs back-end (the Nscale picture)</h4>
+<h4 style="color:#888;font-size:.7em;margin-bottom:.2em">10 &middot; AI DC end-to-end &mdash; front-end vs back-end (the Nscale picture)</h4>
 <h3>Front-end = the DC you already know</h3>
-<p>Standard <b>eBGP underlay + EVPN-VXLAN leaf-spine</b> (your &sect;4). Nothing new here &mdash; that's the point: the <b>back-end GPU fabric is the differentiator</b>; the front-end is your home turf.</p>
+  <p>Standard <b>eBGP underlay + EVPN-VXLAN leaf-spine</b> (your &sect;4). Nothing new here &mdash; that's the point: the <b>back-end GPU fabric is the differentiator</b>; the front-end is your home turf.</p>
 
   <div class="room"><b>Room walk (memorise the shape):</b> "Two fabrics. The <b>front-end</b> is a normal EVPN-VXLAN leaf-spine &mdash; storage, ingest, checkpoints, k8s, mgmt, over TCP. The <b>back-end</b> is the GPU fabric &mdash; rail-optimized Clos, RoCEv2 lossless or InfiniBand, packet-spray, 1:1 non-blocking, 400/800G per GPU, carrying nothing but AllReduce. Inside the server, <b>NVLink</b> glues the 8 GPUs (scale-up); the back-end connects servers (scale-out)."</div>
 
@@ -5336,8 +5308,9 @@ J2 &rarr; J2c+ &rarr; J3-AI &rarr; <b>J4 ~51.2T</b><br><span class="small">J3-AI
 </main>
 </section>
 </section>
+
 <section>
-<section class="center"><h1>Appendix — Linux receive path &amp; kernel bypass</h1><h3>the host side: four stages, four buffers, the counter that names each one, the tuning, and the gapping walk</h3></section>
+<section class="center"><h1>Appendix — Linux receive path &amp; kernel bypass</h1><h3>four stages, four buffers, the counters, the tuning, the gapping walk</h3></section>
 <section>
 <h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">HRT · weak axis · teach deck</h4>
     <h1>The Linux receive path &amp; kernel bypass</h1>
@@ -5499,7 +5472,7 @@ ethtool -S ens5   →  bw_in_allowance_exceeded: 498   ← AWS shaped you at the
 </section>
 
 <section>
-<section class="center"><h1>Appendix — AWS networking</h1><h3>the vocabulary, VPC/AZ/subnet, SG vs NACL, peering/TGW/Direct Connect, and the GPU-fabric angle (placement groups + EFA)</h3></section>
+<section class="center"><h1>Appendix — AWS networking</h1><h3>VPC/AZ/subnet, SG vs NACL, peering/TGW/DX, placement groups + EFA</h3></section>
 <section>
 <h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">Study · your weak axis · covers HRT + Nscale</h4>
     <h1>AWS networking = your own model, in AWS words</h1>
@@ -5804,115 +5777,7 @@ ethtool -S ens5   →  bw_in_allowance_exceeded: 498   ← AWS shaped you at the
 </section>
 
 <section>
-<section class="center"><h1>Appendix — the design round, as a method</h1><h3>four moves in order, sizing that forces the architecture, the failure sweep, the should-we-use-SR judgement, and delivery</h3></section>
-<section>
-<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">HRT · the round you lead · teach deck</h4>
-    <h1>The design round — drill the attack, never the scenario</h1>
-    <p class="lead">You've done ~100 design interviews; the design body is lived ground. What this deck holds is the <b>attack made explicit</b> — the order, the sizing reflex, and the judgment through-line — so it fires cold into ANY scenario they pose. The reframe that unlocks it: <span class="em">a design round is your day job narrated out loud.</span> Only the structure is new, and the structure is four moves.</p>
-</section>
-<section>
-<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">The spine — order IS the seniority signal</h4>
-    <h2>Four moves, in order, every time</h2>
-    <svg viewBox="0 0 1000 200" role="img" aria-label="The four steps">
-      <g font-size="14" text-anchor="middle">
-        <rect x="30" y="50" width="200" height="90" rx="10" fill="#152136" stroke="#4da3ff" stroke-width="2"/>
-        <text x="130" y="82" fill="#4da3ff" font-weight="700">1 · SCOPE</text>
-        <text x="130" y="104" fill="#9db0d0" font-size="11">don't design yet —</text>
-        <text x="130" y="120" fill="#9db0d0" font-size="11">PROPOSE the NFRs, confirm</text>
-        <rect x="280" y="50" width="200" height="90" rx="10" fill="#152136" stroke="#54e0c7" stroke-width="2.5"/>
-        <text x="380" y="82" fill="#54e0c7" font-weight="700">1.5 · SIZE IT</text>
-        <text x="380" y="104" fill="#9db0d0" font-size="11">back-of-envelope — the</text>
-        <text x="380" y="120" fill="#9db0d0" font-size="11">numbers force the architecture</text>
-        <rect x="530" y="50" width="200" height="90" rx="10" fill="#152136" stroke="#4da3ff" stroke-width="2"/>
-        <text x="630" y="82" fill="#4da3ff" font-weight="700">2 · HIGH-LEVEL</text>
-        <text x="630" y="104" fill="#9db0d0" font-size="11">boxes + dataflow,</text>
-        <text x="630" y="120" fill="#9db0d0" font-size="11">happy path, get buy-in</text>
-        <rect x="780" y="50" width="200" height="90" rx="10" fill="#152136" stroke="#ffcf6b" stroke-width="2"/>
-        <text x="880" y="82" fill="#ffcf6b" font-weight="700">3 · DEEP-DIVE</text>
-        <text x="880" y="104" fill="#9db0d0" font-size="11">bottlenecks, tradeoffs,</text>
-        <text x="880" y="120" fill="#9db0d0" font-size="11">what breaks at 3am — YOUR ground</text>
-      </g>
-      <g stroke="#9db0d0" stroke-width="2"><line x1="230" y1="95" x2="280" y2="95"/><line x1="480" y1="95" x2="530" y2="95"/><line x1="730" y1="95" x2="780" y2="95"/></g>
-      <text x="500" y="180" fill="#9db0d0" font-size="13" text-anchor="middle">wrap: recap · what you'd monitor · what you'd do with more time. Time-box: ~10 min scope · ~10 high-level · the rest deep-dive.</text>
-    </svg>
-    <ul>
-      <li><b>Scope in the trading register:</b> what traffic — one-to-many market-data / many-to-one order flow / control? Latency and loss profile — deterministic or throughput? Scale — nodes, rate each, one DC or across colos?</li>
-      <li><b>The senior move:</b> don't ask open questions — <span class="em">propose</span> the requirements and confirm: "I'll assume market-data distribution, N consumers, latency-critical, gap-free — right?"</li>
-    </ul>
-</section>
-<section>
-<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">Your self-named rust — made reflex</h4>
-    <h2>Size it: the numbers force the architecture</h2>
-    <div class="cols">
-      <div class="col box"><h3>The worked example (own it cold)</h3>
-        <p>300 consumers × 10G of one fat stream = 3T of <b>duplication</b> — and the wall is the <b>SOURCE's egress</b> (one host cannot produce 300 copies), not the switch fabric. <span class="em">You didn't choose multicast; the arithmetic did.</span></p></div>
-      <div class="col box"><h3>Reflex numbers (keep hot)</h3>
-        <p>1 ms ≈ <b>200 km</b> in fibre · air/microwave ≈ <b>300 km/ms</b> (1.5× fibre) · bytes × 8 = bits · a 100G NIC ≈ <b>12.5 GB/s</b> · serialisation = header bits ÷ line rate.</p></div>
-    </div>
-    <div class="key"><b>The two-buffers seam (your own realisation — HFT panels probe exactly this):</b> BDP = bandwidth × RTT = data <i>in flight</i> = the <b>TCP window / socket buffer</b> needed to keep a long fat pipe full — too small and the pipe <i>starves</i> (a throughput problem). The <b>router egress buffer</b> is different: packets queued at an output port, fills on microburst, tail-drops (an <i>overflow</i> problem). BOTH are sized bandwidth × delay — that's why they pattern-match: 100G × 60 ms = 6 Gbit ÷ 8 = <b>750 MB window</b>; 50 ms × 100G ≈ <b>625 MB egress buffer</b>. Same product, two different problems.</div>
-    <div class="key"><b>Worked example:</b> 50,000 messages a second at 100 bytes = 5 MB/s = 40 megabits. Bandwidth is trivial; determinism and the message rate drive the design, not throughput.</div>
-</section>
-<section>
-<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">Where 25 years wins — structured, not recalled</h4>
-    <h2>Deep-dive: the failure-mode sweep</h2>
-    <ul>
-      <li><b>Run the sweep in a fixed order</b> so nothing hides: single link · single node · the SHARED-fate pair (SRLG — "two of everything" in one duct is one of everything) · the slow consumer · the control-plane loss (does it degrade to "no changes" or to "no forwarding"?) · the operational failure (who fat-fingers what).</li>
-      <li><b>Quantify the failover:</b> what carries the load the instant it breaks (pre-installed repair, ECMP survivors) vs after reconvergence — and does the surviving capacity actually hold the inherited reroute (the N-1 budget question).</li>
-      <li><b>Validate before capex</b> — "why has nobody complained?" is a design input: if the pain isn't real, the build isn't justified. Commercial judgment is screened for.</li>
-      <li><b>Monitoring closes it:</b> say what you'd watch — tail percentiles not averages, one-way latency (PTP-disciplined), the per-stage drop counters.</li>
-    </ul>
-    <div class="key"><b>Whiteboard discipline:</b> draw first, talk to the drawing — you design against a picture, not prose. Happy path fully drawn BEFORE any failure talk. When corrected on a hard fact, concede fast and fold it in; otherwise hold your line.</div>
-</section>
-<section>
-<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">The through-line they advanced you for</h4>
-    <h2>"Should we use SR?" — the judgment, not the sell</h2>
-    <table>
-      <tr><th>The ask</th><th>The tool you already own (no SR)</th><th>SR needed?</th></tr>
-      <tr><td>Spread load by capacity (UCMP)</td><td>BGP link-bandwidth → weighted FIB</td><td><span class="em">NO</span> — never sell SR on UCMP; you'd lose to anyone who knows DMZ link-bandwidth</td></tr>
-      <tr><td>Pin a CLASS to a path/plane</td><td>metric = one tree for all; PBR doesn't scale</td><td><span class="warn">YES</span> — source routing is the definition of the problem (SR-TE colour policy)</td></tr>
-      <tr><td>Sub-50ms deterministic protection</td><td>LFA — coverage gaps, arbitrary backup path</td><td><span class="warn">YES</span> — TI-LFA: guaranteed coverage, repair = the post-convergence path</td></tr>
-      <tr><td>Fewer control planes</td><td>IGP + LDP + RSVP-TE stack</td><td><span class="warn">YES</span> — labels ride the IGP; LDP and RSVP soft-state retire</td></tr>
-      <tr><td>Deterministic one-to-many feed</td><td>PIM-SSM, its own plane</td><td><span class="em">NO</span> — keep market-data OFF the SR fabric; steering + protection + consolidation carry the case</td></tr>
-    </table>
-    <div class="key"><b>Practise BOTH verdicts:</b> the market-data problem where SR is the WRONG tool, and the steering/protection problem where it earns its keep. Making the call — not reciting the tech — is the seniority signal, and it's the exact judgment your migration deck walks.</div>
-</section>
-<section>
-<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">Vary the surface, never repeat the rep</h4>
-    <h2>The eight surfaces the attack must fire into</h2>
-    <div class="cols">
-      <div class="col">
-        <ul>
-          <li><b>Market-data distribution</b> — fan-out → multicast, A/B + sequence arbitration, slow consumer</li>
-          <li><b>Order-entry / gateway path</b> — asymmetry: multicast in, <i>reliable unicast</i> out; risk inline; kill switch; the RATE drives it, not bandwidth</li>
-          <li><b>Inter-DC / colo transport</b> — latency budget picks the medium (microwave vs fibre vs λ), diversity SRLG-audited</li>
-          <li><b>Time distribution (PTP)</b> — why, fan-out, accuracy budget, failure modes</li>
-        </ul>
-      </div>
-      <div class="col">
-        <ul>
-          <li><b>Risk / kill-switch fan-in</b> — stateless inline vs stateful beside the path; fail-closed; blast radius</li>
-          <li><b>Exchange connectivity</b> — cross-connect pairs, session failover, drop copy, cancel-on-disconnect</li>
-          <li><b>SR-earns-it design</b> — per-class steering / TI-LFA / consolidation on ground you own</li>
-          <li><b>Hub-and-spoke at scale</b> — push the failure: hub = SPOF + bottleneck → regional hubs / hierarchy</li>
-        </ul>
-      </div>
-    </div>
-    <div class="key"><b>The law:</b> what becomes reflex is the ATTACK — scope → size → draw → break — never any one scenario. Memorised scenarios break on a new case; the varied rep transfers. Each rep = a fresh surface, cold, timed.</div>
-</section>
-<section>
-<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">How it lands in the room</h4>
-    <h2>Delivery — the half that isn't networking</h2>
-    <ul>
-      <li><b>~90 seconds per answer</b> — land the point, then offer to go deeper. Rambling is the failure mode they name.</li>
-      <li><b>You lead.</b> Set the agenda, state assumptions, propose the architecture, invite them to pick the deep-dive, lead that subdiscussion — your natural mode; the clock is the only new constraint.</li>
-      <li><b>Never STAR a technical question</b> — structured diagnosis for technical, STAR for "tell me about a time" only.</li>
-      <li><b>Calm narration IS the test</b> — for a trading-infra seat, composure while working a live problem is half the grade.</li>
-      <li><b>Defer on their network.</b> The verified facts you hold: massively multi-AS · deploying BGP communities · IGP is OSPF (as far as you know) · eBGP got a raised eyebrow. Assert nothing beyond that — ask.</li>
-    </ul>
-</section>
-</section>
-<section>
-<section class="center"><h1>Appendix — Multicast, the machine</h1><h3>two layers, two jobs — and why trading deleted the RP</h3></section>
+<section class="center"><h1>Appendix — Multicast, the machine</h1><h3>two layers two jobs, and why trading deleted the RP</h3></section>
 <section>
 <h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">HRT · market-data IS this · teach deck</h4>
     <h1>Multicast — the machine, not the flashcards</h1>
@@ -6033,6 +5898,115 @@ ethtool -S ens5   →  bw_in_allowance_exceeded: 498   ← AWS shaped you at the
       <li><b>6 · Know the boundary</b> — the deterministic SSM plane stays off the SR/VXLAN fabric.</li>
     </ul>
     <div class="key"><b>Your anchor, said once:</b> carrier IPTV ran exactly this machinery at scale — same PIM, same IGMP, same trees. The trading version raises the determinism bar and adds the arbitration layer on top. You're updating lived ground, not learning a new field.</div>
+</section>
+</section>
+
+<section>
+<section class="center"><h1>Appendix — the design round, as a method</h1><h3>four moves, sizing, the failure sweep, the should-we-use-SR judgement</h3></section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">HRT · the round you lead · teach deck</h4>
+    <h1>The design round — drill the attack, never the scenario</h1>
+    <p class="lead">You've done ~100 design interviews; the design body is lived ground. What this deck holds is the <b>attack made explicit</b> — the order, the sizing reflex, and the judgment through-line — so it fires cold into ANY scenario they pose. The reframe that unlocks it: <span class="em">a design round is your day job narrated out loud.</span> Only the structure is new, and the structure is four moves.</p>
+</section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">The spine — order IS the seniority signal</h4>
+    <h2>Four moves, in order, every time</h2>
+    <svg viewBox="0 0 1000 200" role="img" aria-label="The four steps">
+      <g font-size="14" text-anchor="middle">
+        <rect x="30" y="50" width="200" height="90" rx="10" fill="#152136" stroke="#4da3ff" stroke-width="2"/>
+        <text x="130" y="82" fill="#4da3ff" font-weight="700">1 · SCOPE</text>
+        <text x="130" y="104" fill="#9db0d0" font-size="11">don't design yet —</text>
+        <text x="130" y="120" fill="#9db0d0" font-size="11">PROPOSE the NFRs, confirm</text>
+        <rect x="280" y="50" width="200" height="90" rx="10" fill="#152136" stroke="#54e0c7" stroke-width="2.5"/>
+        <text x="380" y="82" fill="#54e0c7" font-weight="700">1.5 · SIZE IT</text>
+        <text x="380" y="104" fill="#9db0d0" font-size="11">back-of-envelope — the</text>
+        <text x="380" y="120" fill="#9db0d0" font-size="11">numbers force the architecture</text>
+        <rect x="530" y="50" width="200" height="90" rx="10" fill="#152136" stroke="#4da3ff" stroke-width="2"/>
+        <text x="630" y="82" fill="#4da3ff" font-weight="700">2 · HIGH-LEVEL</text>
+        <text x="630" y="104" fill="#9db0d0" font-size="11">boxes + dataflow,</text>
+        <text x="630" y="120" fill="#9db0d0" font-size="11">happy path, get buy-in</text>
+        <rect x="780" y="50" width="200" height="90" rx="10" fill="#152136" stroke="#ffcf6b" stroke-width="2"/>
+        <text x="880" y="82" fill="#ffcf6b" font-weight="700">3 · DEEP-DIVE</text>
+        <text x="880" y="104" fill="#9db0d0" font-size="11">bottlenecks, tradeoffs,</text>
+        <text x="880" y="120" fill="#9db0d0" font-size="11">what breaks at 3am — YOUR ground</text>
+      </g>
+      <g stroke="#9db0d0" stroke-width="2"><line x1="230" y1="95" x2="280" y2="95"/><line x1="480" y1="95" x2="530" y2="95"/><line x1="730" y1="95" x2="780" y2="95"/></g>
+      <text x="500" y="180" fill="#9db0d0" font-size="13" text-anchor="middle">wrap: recap · what you'd monitor · what you'd do with more time. Time-box: ~10 min scope · ~10 high-level · the rest deep-dive.</text>
+    </svg>
+    <ul>
+      <li><b>Scope in the trading register:</b> what traffic — one-to-many market-data / many-to-one order flow / control? Latency and loss profile — deterministic or throughput? Scale — nodes, rate each, one DC or across colos?</li>
+      <li><b>The senior move:</b> don't ask open questions — <span class="em">propose</span> the requirements and confirm: "I'll assume market-data distribution, N consumers, latency-critical, gap-free — right?"</li>
+    </ul>
+</section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">Your self-named rust — made reflex</h4>
+    <h2>Size it: the numbers force the architecture</h2>
+    <div class="cols">
+      <div class="col box"><h3>The worked example (own it cold)</h3>
+        <p>300 consumers × 10G of one fat stream = 3T of <b>duplication</b> — and the wall is the <b>SOURCE's egress</b> (one host cannot produce 300 copies), not the switch fabric. <span class="em">You didn't choose multicast; the arithmetic did.</span></p></div>
+      <div class="col box"><h3>Reflex numbers (keep hot)</h3>
+        <p>1 ms ≈ <b>200 km</b> in fibre · air/microwave ≈ <b>300 km/ms</b> (1.5× fibre) · bytes × 8 = bits · a 100G NIC ≈ <b>12.5 GB/s</b> · serialisation = header bits ÷ line rate.</p></div>
+    </div>
+    <div class="key"><b>The two-buffers seam (your own realisation — HFT panels probe exactly this):</b> BDP = bandwidth × RTT = data <i>in flight</i> = the <b>TCP window / socket buffer</b> needed to keep a long fat pipe full — too small and the pipe <i>starves</i> (a throughput problem). The <b>router egress buffer</b> is different: packets queued at an output port, fills on microburst, tail-drops (an <i>overflow</i> problem). BOTH are sized bandwidth × delay — that's why they pattern-match: 100G × 60 ms = 6 Gbit ÷ 8 = <b>750 MB window</b>; 50 ms × 100G ≈ <b>625 MB egress buffer</b>. Same product, two different problems.</div>
+    <div class="key"><b>Worked example:</b> 50,000 messages a second at 100 bytes = 5 MB/s = 40 megabits. Bandwidth is trivial; determinism and the message rate drive the design, not throughput.</div>
+</section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">Where 25 years wins — structured, not recalled</h4>
+    <h2>Deep-dive: the failure-mode sweep</h2>
+    <ul>
+      <li><b>Run the sweep in a fixed order</b> so nothing hides: single link · single node · the SHARED-fate pair (SRLG — "two of everything" in one duct is one of everything) · the slow consumer · the control-plane loss (does it degrade to "no changes" or to "no forwarding"?) · the operational failure (who fat-fingers what).</li>
+      <li><b>Quantify the failover:</b> what carries the load the instant it breaks (pre-installed repair, ECMP survivors) vs after reconvergence — and does the surviving capacity actually hold the inherited reroute (the N-1 budget question).</li>
+      <li><b>Validate before capex</b> — "why has nobody complained?" is a design input: if the pain isn't real, the build isn't justified. Commercial judgment is screened for.</li>
+      <li><b>Monitoring closes it:</b> say what you'd watch — tail percentiles not averages, one-way latency (PTP-disciplined), the per-stage drop counters.</li>
+    </ul>
+    <div class="key"><b>Whiteboard discipline:</b> draw first, talk to the drawing — you design against a picture, not prose. Happy path fully drawn BEFORE any failure talk. When corrected on a hard fact, concede fast and fold it in; otherwise hold your line.</div>
+</section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">The through-line they advanced you for</h4>
+    <h2>"Should we use SR?" — the judgment, not the sell</h2>
+    <table>
+      <tr><th>The ask</th><th>The tool you already own (no SR)</th><th>SR needed?</th></tr>
+      <tr><td>Spread load by capacity (UCMP)</td><td>BGP link-bandwidth → weighted FIB</td><td><span class="em">NO</span> — never sell SR on UCMP; you'd lose to anyone who knows DMZ link-bandwidth</td></tr>
+      <tr><td>Pin a CLASS to a path/plane</td><td>metric = one tree for all; PBR doesn't scale</td><td><span class="warn">YES</span> — source routing is the definition of the problem (SR-TE colour policy)</td></tr>
+      <tr><td>Sub-50ms deterministic protection</td><td>LFA — coverage gaps, arbitrary backup path</td><td><span class="warn">YES</span> — TI-LFA: guaranteed coverage, repair = the post-convergence path</td></tr>
+      <tr><td>Fewer control planes</td><td>IGP + LDP + RSVP-TE stack</td><td><span class="warn">YES</span> — labels ride the IGP; LDP and RSVP soft-state retire</td></tr>
+      <tr><td>Deterministic one-to-many feed</td><td>PIM-SSM, its own plane</td><td><span class="em">NO</span> — keep market-data OFF the SR fabric; steering + protection + consolidation carry the case</td></tr>
+    </table>
+    <div class="key"><b>Practise BOTH verdicts:</b> the market-data problem where SR is the WRONG tool, and the steering/protection problem where it earns its keep. Making the call — not reciting the tech — is the seniority signal, and it's the exact judgment your migration deck walks.</div>
+</section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">Vary the surface, never repeat the rep</h4>
+    <h2>The eight surfaces the attack must fire into</h2>
+    <div class="cols">
+      <div class="col">
+        <ul>
+          <li><b>Market-data distribution</b> — fan-out → multicast, A/B + sequence arbitration, slow consumer</li>
+          <li><b>Order-entry / gateway path</b> — asymmetry: multicast in, <i>reliable unicast</i> out; risk inline; kill switch; the RATE drives it, not bandwidth</li>
+          <li><b>Inter-DC / colo transport</b> — latency budget picks the medium (microwave vs fibre vs λ), diversity SRLG-audited</li>
+          <li><b>Time distribution (PTP)</b> — why, fan-out, accuracy budget, failure modes</li>
+        </ul>
+      </div>
+      <div class="col">
+        <ul>
+          <li><b>Risk / kill-switch fan-in</b> — stateless inline vs stateful beside the path; fail-closed; blast radius</li>
+          <li><b>Exchange connectivity</b> — cross-connect pairs, session failover, drop copy, cancel-on-disconnect</li>
+          <li><b>SR-earns-it design</b> — per-class steering / TI-LFA / consolidation on ground you own</li>
+          <li><b>Hub-and-spoke at scale</b> — push the failure: hub = SPOF + bottleneck → regional hubs / hierarchy</li>
+        </ul>
+      </div>
+    </div>
+    <div class="key"><b>The law:</b> what becomes reflex is the ATTACK — scope → size → draw → break — never any one scenario. Memorised scenarios break on a new case; the varied rep transfers. Each rep = a fresh surface, cold, timed.</div>
+</section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">How it lands in the room</h4>
+    <h2>Delivery — the half that isn't networking</h2>
+    <ul>
+      <li><b>~90 seconds per answer</b> — land the point, then offer to go deeper. Rambling is the failure mode they name.</li>
+      <li><b>You lead.</b> Set the agenda, state assumptions, propose the architecture, invite them to pick the deep-dive, lead that subdiscussion — your natural mode; the clock is the only new constraint.</li>
+      <li><b>Never STAR a technical question</b> — structured diagnosis for technical, STAR for "tell me about a time" only.</li>
+      <li><b>Calm narration IS the test</b> — for a trading-infra seat, composure while working a live problem is half the grade.</li>
+      <li><b>Defer on their network.</b> The verified facts you hold: massively multi-AS · deploying BGP communities · IGP is OSPF (as far as you know) · eBGP got a raised eyebrow. Assert nothing beyond that — ask.</li>
+    </ul>
 </section>
 </section>
 </div>
