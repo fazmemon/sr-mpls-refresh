@@ -19,7 +19,13 @@
   .lead{color:var(--muted);font-size:min(1.95vw,18px);max-width:82ch}
   .em{color:var(--accent2);font-weight:600}.em2{color:var(--accent);font-weight:600}.warn{color:var(--warn)}
   b{color:#fff}
-  code{background:#1e2a3e;padding:1px 6px;border-radius:3px;color:#ffd9a0;font-size:.92em}
+  code{background:#1e2a3e;padding:1px 6px;border-radius:3px;color:#ffd9a0;font-size:.92em;
+       font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  pre{background:#0b1420;border:1px solid var(--line);border-radius:8px;padding:12px 16px;
+      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:min(2vw,17px);color:#ffd9a0;line-height:1.4;margin:.4em 0;
+      overflow-x:auto;min-width:0;max-width:100%;width:100%;align-self:stretch;white-space:pre}
+  table code{font-size:.88em;white-space:nowrap}
   ul{margin:.3em 0;padding-left:0;list-style:none}
   li{margin:.42em 0;padding-left:1.3em;position:relative;font-size:min(1.9vw,17px);max-width:86ch}
   li:before{content:"";position:absolute;left:0;top:.55em;width:8px;height:8px;border-radius:2px;background:var(--accent2)}
@@ -95,24 +101,46 @@
 
   <!-- 4 -->
   <section class="slide">
-    <div class="kicker">Produce these cold</div>
-    <h2>The tcpdump you must not have to look up</h2>
-    <div class="cols">
-      <div class="col"><div class="box"><h3>Capture properly</h3>
-        <p><code>-w cap.pcap</code> write to disk, don't print<br>
-        <code>-s0</code> full packet — <span class="warn">a short snaplen truncates silently</span><br>
-        <code>-nn</code> no name resolution in the hot path<br>
-        <code>-W 10 -C 100</code> ring buffer for a long hunt</p></div></div>
-      <div class="col"><div class="box"><h3>Filters</h3>
-        <p><code>host 10.1.1.1 and port 179</code><br>
-        <code>net 10.1.0.0/16</code><br>
-        <code>'tcp[tcpflags] &amp; tcp-syn != 0'</code><br>
-        <code>'tcp[tcpflags] &amp; tcp-rst != 0'</code><br>
-        <code>udp port 4789</code> VXLAN · <code>udp port 4791</code> RoCEv2<br>
-        <code>host 239.1.1.1</code> a multicast group</p></div></div>
-    </div>
-    <div class="key"><b>The one people get wrong:</b> <code>-s0</code>. Default snaplen on some builds truncates the payload, and you discover it after the fault has gone away.</div>
+    <div class="kicker">Produce these cold — whole commands, not flags</div>
+    <h2>tcpdump: one command, then variations</h2>
+    <p class="lead"><b>Start from this every time</b> — then change only the filter at the end:</p>
+    <pre>tcpdump -i eth0 -nn -s0 -w cap.pcap</pre>
+    <p class="lead"><code>-i</code> which interface · <code>-nn</code> don't resolve names <b>or</b> ports (resolution stalls the capture) · <code>-s0</code> whole packet, <span class="warn">not a truncated header</span> · <code>-w</code> to disk, because printing to screen drops packets under load.</p>
+    <table>
+      <tr><th>The question you're asking</th><th>What you type</th></tr>
+      <tr><td>Watch it live instead of saving</td><td><code>tcpdump -i eth0 -nn host 10.1.1.1</code></td></tr>
+      <tr><td>Is this BGP session flapping?</td><td><code>tcpdump -i eth0 -nn 'tcp port 179 and host 10.1.1.1'</code></td></tr>
+      <tr><td>Who is trying to connect?</td><td><code>tcpdump -i eth0 -nn 'tcp[tcpflags] &amp; tcp-syn != 0'</code></td></tr>
+      <tr><td>Who is tearing sessions down?</td><td><code>tcpdump -i eth0 -nn 'tcp[tcpflags] &amp; tcp-rst != 0'</code></td></tr>
+      <tr><td>Is this multicast group flowing?</td><td><code>tcpdump -i eth0 -nn host 239.1.1.1</code></td></tr>
+      <tr><td>Did the receiver actually join?</td><td><code>tcpdump -i eth0 -nn igmp</code></td></tr>
+      <tr><td>Is PIM building the tree?</td><td><code>tcpdump -i eth0 -nn proto 103</code></td></tr>
+      <tr><td>What's inside the overlay?</td><td><code>tcpdump -i eth0 -nn -v udp port 4789</code></td></tr>
+      <tr><td>Is RoCE congested?</td><td><code>tcpdump -i eth0 -nn udp port 4791</code></td></tr>
+      <tr><td>Intermittent — catch it overnight</td><td><code>tcpdump -i eth0 -nn -s0 -W 10 -C 100 -w hunt.pcap</code></td></tr>
+    </table>
+    <div class="key"><b>The ring buffer is the one people don't know:</b> <code>-C 100</code> starts a new file every 100 MB, <code>-W 10</code> keeps only the last 10 and overwrites. So you leave it running for a fault that happens at 3am without filling the disk.</div>
     <div class="foot"><span>4 · tcpdump</span><span>4</span></div>
+  </section>
+
+  <!-- 4b -->
+  <section class="slide">
+    <div class="kicker">You won't have a GUI on a switch or a jump box</div>
+    <h2>Reading it back — tshark, no Wireshark</h2>
+    <table>
+      <tr><th>What you want</th><th>What you type</th></tr>
+      <tr><td>Re-filter a capture you already took</td><td><code>tcpdump -nn -r cap.pcap 'host 10.1.1.1'</code></td></tr>
+      <tr><td>Count how many resets are in it</td><td><code>tcpdump -nn -r cap.pcap 'tcp[tcpflags] &amp; tcp-rst != 0' | wc -l</code></td></tr>
+      <tr><td><b>Find the microburst</b> — traffic per millisecond</td><td><code>tshark -r cap.pcap -q -z io,stat,0.001</code></td></tr>
+      <tr><td>What does tshark think is wrong?</td><td><code>tshark -r cap.pcap -q -z expert</code></td></tr>
+      <tr><td>Which conversations dominate?</td><td><code>tshark -r cap.pcap -q -z conv,tcp</code></td></tr>
+      <tr><td>Just the retransmissions</td><td><code>tshark -r cap.pcap -Y tcp.analysis.retransmission</code></td></tr>
+      <tr><td>Just the zero-windows</td><td><code>tshark -r cap.pcap -Y tcp.analysis.zero_window</code></td></tr>
+      <tr><td>Show me the VXLAN inner packet</td><td><code>tshark -r cap.pcap -d udp.port==4789,vxlan -V</code></td></tr>
+    </table>
+    <div class="key"><b><code>-z io,stat,0.001</code> is the microburst-hunting command.</b> It buckets the capture per millisecond, so a 200 µs burst that's invisible in a 30-second utilisation average shows up as a spike. If you remember one line off this slide, that's the one.</div>
+    <div class="key"><b>Note the two filter languages</b> — tcpdump uses <b>BPF</b> (<code>host x and port y</code>), tshark's <code>-Y</code> uses <b>Wireshark display filters</b> (<code>tcp.analysis.retransmission</code>). Mixing them up is the most common fumble, and saying "that's a display filter, not a capture filter" out loud shows you know the difference.</div>
+    <div class="foot"><span>4b · tshark</span><span>5</span></div>
   </section>
 
   <!-- 5 -->
@@ -127,7 +155,7 @@
       <tr><td><b>Duplicate</b></td><td>Same segment twice, no gap to fill</td><td>Usually <b>your capture</b> — the same packet mirrored from two ports</td></tr>
     </table>
     <div class="key"><b>Why the distinction earns marks:</b> calling reordering "loss" sends someone hunting a nonexistent fault. Out-of-order on a fabric means <b>flows are being spread across paths with different latency</b> — that's a load-balancing conversation, not a packet-loss one.</div>
-    <div class="foot"><span>5 · Loss shapes</span><span>5</span></div>
+    <div class="foot"><span>5 · Loss shapes</span><span>6</span></div>
   </section>
 
   <!-- 6 -->
@@ -147,7 +175,7 @@
       <text x="750" y="225" fill="#9db0d0" font-size="12" text-anchor="middle">throughput falls off a cliff — this is the one that hurts</text>
     </svg>
     <div class="key"><b>A receiver that gets an out-of-order segment re-ACKs the last in-order byte</b> — that's a dup-ACK. Three of them trigger fast retransmit. <b>SACK</b> blocks tell the sender exactly which ranges arrived so it resends only the hole. Lots of dup-ACKs is a stack coping. <b>RTOs instead of dup-ACKs</b> means loss so heavy there weren't enough packets left to trigger fast retransmit.</div>
-    <div class="foot"><span>6 · Recovery</span><span>6</span></div>
+    <div class="foot"><span>6 · Recovery</span><span>7</span></div>
   </section>
 
   <!-- 7 -->
@@ -161,7 +189,7 @@
       <li><b>The UDP twin:</b> exactly the same disease with no backpressure — the kernel just drops, and it shows as <code>RcvbufErrors</code> in <code>nstat</code>/<code>netstat -su</code>. No zero-window warning, because UDP has no way to say "stop".</li>
     </ul>
     <div class="say">"Zero-window means the network delivered fine and the application couldn't keep up — I'd be looking at the consumer, not the path."</div>
-    <div class="foot"><span>7 · Zero window</span><span>7</span></div>
+    <div class="foot"><span>7 · Zero window</span><span>8</span></div>
   </section>
 
   <!-- 8 -->
@@ -176,7 +204,7 @@
     </ul>
     <div class="key"><b>The tells in the capture:</b> the delay is <b>suspiciously constant</b> rather than variable, it only affects <b>small</b> writes, and it disappears on large transfers. Fix: <code>TCP_NODELAY</code>, and write whole messages in one call instead of header-then-body.</div>
     <div class="key"><b>Why it matters here:</b> this is the canonical "our order path has a mysterious 40 ms" answer, and it's a host/application fault that gets blamed on the network every time.</div>
-    <div class="foot"><span>8 · The 40ms</span><span>8</span></div>
+    <div class="foot"><span>8 · The 40ms</span><span>9</span></div>
   </section>
 
   <!-- 9 -->
@@ -190,7 +218,7 @@
     </ol>
     <p>That's a <b>PMTU black hole</b>. The sender never learns the real MTU and retransmits full-size forever.</p>
     <div class="key"><b>Confirm it:</b> a large ping with DF set, walking the size down until it succeeds. <b>Fix:</b> permit ICMP type 3 code 4, or <b>MSS-clamp</b> at the edge. <b>The DC version:</b> a VXLAN or VPN overlay adding ~50 bytes on a 1500-byte underlay produces exactly this signature — which is why overlays want a 9000-byte underlay.</div>
-    <div class="foot"><span>9 · PMTU</span><span>9</span></div>
+    <div class="foot"><span>9 · PMTU</span><span>10</span></div>
   </section>
 
   <!-- 10 -->
@@ -204,7 +232,7 @@
       <li><b>No state for the connection</b> — after a reboot, a failover, or a NAT/state-table timeout. This is the classic "idle sessions die after N minutes".</li>
     </ul>
     <div class="key"><b>The middlebox-injection tell is the one worth having ready</b> — spotting a forged RST by its TTL is the difference between blaming the application and finding the firewall.</div>
-    <div class="foot"><span>10 · RST</span><span>10</span></div>
+    <div class="foot"><span>10 · RST</span><span>11</span></div>
   </section>
 
   <!-- 11 -->
@@ -219,7 +247,7 @@
       <li><b>Anywhere</b> — <b>RPF</b>. The source must be reachable out the interface the traffic arrived on, or it's dropped silently. Asymmetric routing kills multicast on its own.</li>
     </ol>
     <div class="key"><b>The structure is the answer</b> — source → host stack → L2 snooping → RPF → hop-by-hop state. The commands are vendor trivia.</div>
-    <div class="foot"><span>11 · Multicast</span><span>11</span></div>
+    <div class="foot"><span>11 · Multicast</span><span>12</span></div>
   </section>
 
   <!-- 12 -->
@@ -245,7 +273,7 @@
       <defs><marker id="a" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6" fill="#9db0d0"/></marker></defs>
     </svg>
     <div class="key"><b>Then the A/B test, which is the part that shows you've worked a market-data network:</b> A and B are independent paths carrying the same sequence space. A gap on <b>A only</b> is a path problem and arbitration should have covered it. The same gap on <b>A and B at the same sequence</b> is at the source or on a shared segment — which also means your "disjoint" feeds aren't.</div>
-    <div class="foot"><span>12 · Gap attribution</span><span>12</span></div>
+    <div class="foot"><span>12 · Gap attribution</span><span>13</span></div>
   </section>
 
   <!-- 13 -->
@@ -259,7 +287,7 @@
       <li><b>Fix:</b> buffer, pacing, or ECN. <span class="warn">Not "add bandwidth"</span> — the link isn't full.</li>
     </ul>
     <div class="key"><b>This is the most common argument you will be asked to demolish</b> — someone points at a graph showing 40% and concludes the network is fine.</div>
-    <div class="foot"><span>13 · Microburst</span><span>13</span></div>
+    <div class="foot"><span>13 · Microburst</span><span>14</span></div>
   </section>
 
   <!-- 14 -->
@@ -272,7 +300,7 @@
       <li><b>Comparing two capture points</b> requires a shared clock discipline: <b>PTP</b> with hardware timestamping (boundary clocks ideally), <span class="warn">not NTP</span>. Without it the delta between two captures is meaningless.</li>
     </ul>
     <div class="say">"Before quoting a latency from captures I'd establish whether the timestamps are hardware and whether the two capture points are PTP-disciplined — otherwise the delta is noise."</div>
-    <div class="foot"><span>14 · Timestamps</span><span>14</span></div>
+    <div class="foot"><span>14 · Timestamps</span><span>15</span></div>
   </section>
 
   <!-- 15 -->
@@ -288,7 +316,7 @@
         <p><b>ECN marks + CNPs</b> coming back = congestion being managed properly under DCQCN. <b>PFC pause frames</b> = you've reached the blunt instrument, with head-of-line blocking and deadlock risk.</p></div></div>
     </div>
     <div class="key"><b>The design point:</b> ECN/DCQCN should be doing the work. <b>PFC is the last resort</b> — lots of pause frames in a capture is a finding, not a healthy fabric.</div>
-    <div class="foot"><span>15 · Overlay</span><span>15</span></div>
+    <div class="foot"><span>15 · Overlay</span><span>16</span></div>
   </section>
 
   <!-- 16 -->
@@ -303,7 +331,7 @@
       <li><b>5 · You don't confuse averages with instants.</b> Utilisation lies; queue depth and ms-resolution don't.</li>
     </ul>
     <div class="key"><b>Practice target:</b> <code>captures/pcap-drill-01.html</code> — a planted market-data gapping fault, built and waiting. Diagnose it cold: network or host, which stage, the fix.</div>
-    <div class="foot"><span>16 · Grading axes</span><span>16</span></div>
+    <div class="foot"><span>16 · Grading axes</span><span>17</span></div>
   </section>
 
 </div>
