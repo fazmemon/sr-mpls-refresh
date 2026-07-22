@@ -48,7 +48,7 @@
   <div class="hero">
     <h3>The whole thing, in four lines</h3>
     <ol>
-      <li><b>Read five decks</b> — plus the focused teach pages in section 3.</li>
+      <li><b>Read five decks</b> — everything else is folded into them.</li>
       <li><b>Drill from one page</b> — 177 questions, answers underneath.</li>
       <li><b>Do the labs</b> — Arista SR + EVPN + SDN, the Linux box, multicast.</li>
       <li><b>Mock it</b> — whiteboards, technical rounds, STARs, two full loops.</li>
@@ -65,7 +65,7 @@
       <span class="d">Where you captured and what SPAN hides · what the capture lies about (TSO/LRO, checksum offload, timestamps) · tcpdump cold · then nine shapes: retrans vs out-of-order vs duplicate · fast-retransmit vs the RTO cliff · zero-window and its UDP twin · the constant 40 ms · PMTU black hole · RST and the middlebox TTL tell · where a multicast tree broke · <b>market-data gap attribution, network or host, A vs B</b> · microburst vs the utilisation graph · PTP · VXLAN and RoCEv2 decode.</span></li>
     <li><a href="./">SR-MPLS refresh deck</a><span class="tag live">the big one</span>
       <span class="d"><b>Everything conceptual lives here.</b> The SR machine · TI-LFA generations · BGP-LS/PCE · seamless MPLS · inter-AS &amp; EPE · UCMP · CLOS &amp; AI fabric · EVPN-VXLAN · the trading domain · SD-WAN · SRv6.
-      <br>The focused teach pages in section 3 (Linux, AWS, multicast, design-round, DC cheatsheet) stay <b>separate deliberately</b> — folding them into this deck bloated it until it stopped rendering, so they live on their own pages.</span></li>
+      <br><b>+ five appendices:</b> DC cheatsheet (silicon, VOQ packet flow, EVPN, AI-GPU sizing, chassis/optics, virtualisation, AI-DC front/back) · Linux receive path &amp; kernel bypass · AWS networking · multicast the machine · the design-round method.</span></li>
     <li><a href="migration.html">IP → SR migration deck</a><span class="tag live">the design round</span>
       <span class="d"><b>Your design-round answer.</b> HRT's real network (plain IP, OSPF + BGP, no MPLS) · SR onto the greenfield research/inter-DC WAN, trading floor untouched · the A×B decision · UCMP as the honest counter-example · options A–D · OSPF area maths · the recommendation.
       <br><b>+ inter-DC backbone appendix:</b> requirements drive design · elephant flows vs ECMP · <b>"we're an IPv4 shop — can we run SRv6?"</b> · physical diversity &amp; repair-time sizing. The role is <b>connecting the HPC datacentres</b>, so this is the shape of the job.</span></li>
@@ -77,13 +77,13 @@
       <span class="d">Every question has its answer underneath. Jump-links at the top for each section. Written 22 Jul: BGP 16 · MPLS+SR 16 · OSPF 15 · pcap 14 · general networking 14 · SDN 12 · multicast 12 · design scenarios 10 · TCP/IP 8 · encapsulation 8. Earlier sections: CLOS, VXLAN, EVPN, IRB, ESI-LAG, silicon, Linux host, AWS, virtualisation.</span></li>
   </ul>
 
-  <h2>3 · The focused pages — read alongside</h2>
+  <h2>3 · Folded in — don't read separately</h2>
   <ul>
-    <li><a href="aws-networking-teach.html">AWS networking</a><span class="tag live">TEACH PAGE</span></li>
-    <li><a href="linux-kernel-bypass-teach.html">Linux receive path &amp; kernel bypass</a><span class="tag live">TEACH PAGE</span></li>
-    <li><a href="multicast-teach.html">Multicast — the machine</a><span class="tag live">TEACH PAGE</span></li>
-    <li><a href="design-round-method.html">Design round — the attack</a><span class="tag live">TEACH PAGE</span></li>
-    <li><a href="https://fazmemon.github.io/dc-cheatsheet/">DC cheatsheet</a><span class="tag live">TEACH PAGE</span>
+    <li><a href="aws-networking-teach.html">AWS networking</a><span class="tag dup">IN REFRESH DECK</span></li>
+    <li><a href="linux-kernel-bypass-teach.html">Linux receive path &amp; kernel bypass</a><span class="tag dup">IN REFRESH DECK</span></li>
+    <li><a href="multicast-teach.html">Multicast — the machine</a><span class="tag dup">IN REFRESH DECK</span></li>
+    <li><a href="design-round-method.html">Design round — the attack</a><span class="tag dup">IN REFRESH DECK</span></li>
+    <li><a href="https://fazmemon.github.io/dc-cheatsheet/">DC cheatsheet</a><span class="tag dup">IN REFRESH DECK</span>
       <span class="d">its Juniper pre-sales and Apstra sections were deliberately not folded — written for an SE role, not this one</span></li>
     <li><a href="inter-as-epe-build.html">Inter-AS Option C + EPE build</a><span class="tag dup">DEEP DIVE</span>
       <span class="d">longer-form than the deck's treatment — only if you want that depth</span></li>
