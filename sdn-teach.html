@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SDN — three ideas, one name</title>
+<style>
+  :root{--bg:#0e1726;--panel:#152136;--panel2:#19243c;--ink:#eaf0fb;--muted:#9db0d0;--accent:#4da3ff;--accent2:#54e0c7;--warn:#ffcf6b;--line:#2b3a56;--ex:#0f2030}
+  *{box-sizing:border-box}html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--ink);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  #deck{height:100vh;width:100vw;overflow:hidden;position:relative}
+  .slide{position:absolute;inset:0;padding:4vh 6vw 8vh;display:none;flex-direction:column;justify-content:center;animation:fade .3s ease;overflow-y:auto}
+  .slide.active{display:flex}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  h1{font-size:min(4.8vw,46px);line-height:1.1;margin:0 0 .35em;letter-spacing:-.5px}
+  h2{font-size:min(3vw,30px);margin:0 0 .5em;letter-spacing:-.3px}
+  .kicker{color:var(--accent);font-weight:700;text-transform:uppercase;letter-spacing:2px;font-size:12px;margin-bottom:10px}
+  p{font-size:min(1.95vw,18px);max-width:84ch;margin:.45em 0;color:#dbe6f7}
+  .lead{color:var(--muted);font-size:min(1.95vw,18px);max-width:82ch}
+  .em{color:var(--accent2);font-weight:600}.em2{color:var(--accent);font-weight:600}.warn{color:var(--warn)}
+  b{color:#fff}
+  code{background:#1e2a3e;padding:1px 6px;border-radius:3px;color:#ffd9a0;font-size:.92em}
+  ul{margin:.3em 0;padding-left:0;list-style:none}
+  li{margin:.42em 0;padding-left:1.3em;position:relative;font-size:min(1.9vw,17px);max-width:86ch}
+  li:before{content:"";position:absolute;left:0;top:.55em;width:8px;height:8px;border-radius:2px;background:var(--accent2)}
+  ol{margin:.3em 0;padding-left:1.4em}
+  ol li{padding-left:.2em;font-size:min(1.9vw,17px)}
+  ol li:before{display:none}
+  .key{background:var(--ex);border-left:3px solid var(--accent2);border-radius:0 8px 8px 0;padding:10px 15px;margin:.6em 0 0;font-size:min(1.85vw,16px);color:#bfe9df;max-width:88ch}
+  .key b{color:var(--accent2)}
+  .say{background:#12202f;border:1px solid #2e6e5e;border-radius:10px;padding:10px 15px;margin:.6em 0 0;font-size:min(1.9vw,17px);color:#eaf0fb;max-width:88ch}
+  .say:before{content:"THE ROOM LINE  ";color:var(--accent2);font-size:10px;font-weight:700;letter-spacing:1.5px;display:block;margin-bottom:4px}
+  .danger{background:#2a1620;border-left:3px solid #ff7b8a;border-radius:0 8px 8px 0;padding:10px 15px;margin:.6em 0 0;font-size:min(1.85vw,16px);color:#ffd4da;max-width:88ch}
+  .danger b{color:#ff9aa6}
+  .cols{display:flex;gap:2.2vw;flex-wrap:wrap;margin-top:.2em}
+  .col{flex:1;min-width:300px}
+  .box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px 18px;margin:.4em 0}
+  .box h3{margin:.05em 0 .3em;font-size:min(2vw,19px);color:#9cdcfe}.box p{font-size:min(1.8vw,16px);margin:.2em 0}
+  table{border-collapse:collapse;width:100%;margin-top:.4em;font-size:min(1.75vw,16px)}
+  td,th{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+  th{color:var(--accent);font-weight:700}
+  .foot{position:fixed;bottom:14px;left:6vw;right:6vw;display:flex;justify-content:space-between;color:var(--muted);font-size:12px;border-top:1px solid var(--line);padding-top:7px}
+  .nav{position:fixed;bottom:1px;left:50%;transform:translateX(-50%);color:var(--muted);font-size:11px;opacity:.5}
+  svg{width:100%;max-height:56vh}
+  .pgbtn{position:fixed;top:50%;transform:translateY(-50%);width:46px;height:66px;border:1px solid var(--line);background:rgba(21,33,54,.9);color:var(--ink);font-size:26px;border-radius:10px;cursor:pointer;z-index:20}
+  .pgbtn.prev{left:10px}.pgbtn.next{right:10px}
+  @media(max-width:820px){
+    .cols{flex-direction:column;gap:0}
+    #deck{height:auto;overflow:visible}
+    .slide{display:flex!important;position:static;inset:auto;height:auto;min-height:auto;padding:5vh 7vw 4vh;border-bottom:1px solid var(--line);justify-content:flex-start}
+    .foot,.nav,.pgbtn{display:none}
+    svg{max-height:none}
+    table{font-size:13px}
+  }
+</style>
+</head>
+<body>
+<div id="deck">
+
+  <!-- 1 · cover -->
+  <section class="slide active">
+    <div class="kicker">HRT · own round · teach deck</div>
+    <h1>SDN — three ideas wearing one name</h1>
+    <p class="lead">The reason SDN feels slippery is that <b>it isn't one thing</b>. Three separate ideas got the same label, one of them died, and the other two are just called "the network" now. Hold that split and every SDN question becomes answerable — including the ones where the honest answer is <span class="em">"that approach lost, and here's why."</span></p>
+    <p class="lead"><b class="warn">Positioning warning — the recruiter was explicit (22 Jul):</b> they want <span class="em">hands-on people</span>. They are <span class="warn">not</span> interested in "the architect who drove it". So every answer in this round lands on <b>what you did with your hands</b> — the model you worked through with the developers, the migrations you ran, the things you fixed when they broke at 2am. The decisions you made are context, mentioned <i>after</i> the doing, never instead of it.</p>
+    <div class="foot"><span>SDN teach</span><span>1</span></div>
+  </section>
+
+  <!-- 2 · the three SDNs -->
+  <section class="slide">
+    <div class="kicker">The organising idea</div>
+    <h2>Three things called SDN</h2>
+    <svg viewBox="0 0 1020 250" role="img" aria-label="Three definitions of SDN">
+      <rect x="15" y="30" width="315" height="190" rx="12" fill="#2a1620" stroke="#ff7b8a" stroke-width="2"/>
+      <text x="172" y="60" fill="#ff9aa6" font-size="15" text-anchor="middle" font-weight="700">1 · Split the planes</text>
+      <text x="172" y="90" fill="#eaf0fb" font-size="13" text-anchor="middle">Dumb switches, central brain</text>
+      <text x="172" y="112" fill="#eaf0fb" font-size="13" text-anchor="middle">OpenFlow, ~2011</text>
+      <text x="172" y="150" fill="#ff9aa6" font-size="14" text-anchor="middle" font-weight="700">DIED</text>
+      <text x="172" y="176" fill="#9db0d0" font-size="12" text-anchor="middle">scale, failure domain,</text>
+      <text x="172" y="194" fill="#9db0d0" font-size="12" text-anchor="middle">silicon wouldn't play</text>
+
+      <rect x="352" y="30" width="315" height="190" rx="12" fill="#12241d" stroke="#54e0c7" stroke-width="2"/>
+      <text x="509" y="60" fill="#54e0c7" font-size="15" text-anchor="middle" font-weight="700">2 · Model-driven</text>
+      <text x="509" y="90" fill="#eaf0fb" font-size="13" text-anchor="middle">The network has an API</text>
+      <text x="509" y="112" fill="#eaf0fb" font-size="13" text-anchor="middle">YANG · OpenConfig · gNMI</text>
+      <text x="509" y="150" fill="#54e0c7" font-size="14" text-anchor="middle" font-weight="700">WON</text>
+      <text x="509" y="176" fill="#9db0d0" font-size="12" text-anchor="middle">so completely it stopped</text>
+      <text x="509" y="194" fill="#9db0d0" font-size="12" text-anchor="middle">being called SDN</text>
+
+      <rect x="689" y="30" width="315" height="190" rx="12" fill="#152136" stroke="#4da3ff" stroke-width="2"/>
+      <text x="846" y="60" fill="#4da3ff" font-size="15" text-anchor="middle" font-weight="700">3 · Central intent</text>
+      <text x="846" y="90" fill="#eaf0fb" font-size="13" text-anchor="middle">Controller decides policy,</text>
+      <text x="846" y="112" fill="#eaf0fb" font-size="13" text-anchor="middle">protocols still forward</text>
+      <text x="846" y="150" fill="#4da3ff" font-size="14" text-anchor="middle" font-weight="700">WON</text>
+      <text x="846" y="176" fill="#9db0d0" font-size="12" text-anchor="middle">PCE/SR policy, fabric</text>
+      <text x="846" y="194" fill="#9db0d0" font-size="12" text-anchor="middle">managers, orchestration</text>
+    </svg>
+    <div class="key"><b>The move in the room:</b> when someone says "SDN", ask <i>which</i> they mean — or state which you're answering about. That one sentence separates an architect from someone reciting a vendor page.</div>
+    <div class="foot"><span>2 · Three SDNs</span><span>2</span></div>
+  </section>
+
+  <!-- 3 · why OpenFlow died -->
+  <section class="slide">
+    <div class="kicker">The post-mortem that earns you credibility</div>
+    <h2>Why "dumb switches, central brain" lost</h2>
+    <ul>
+      <li><b>The failure domain was catastrophic.</b> If the controller is the brain, losing it means the network stops <i>thinking</i>. Thirty years of distributed protocol design existed precisely to remove single points of failure — OpenFlow put one back in.</li>
+      <li><b>It didn't scale.</b> Flow-by-flow programming from a central point means controller round-trips in the forwarding path and flow-table entries as the scaling unit. Fabrics have millions of flows and finite TCAM.</li>
+      <li><b>The silicon never wanted it.</b> Merchant ASICs are pipelines with fixed tables, not general-purpose match-action engines. OpenFlow assumed hardware that mostly didn't exist.</li>
+      <li><b>The problem was mis-stated.</b> Operators didn't actually hate distributed routing — BGP and IS-IS work. What they hated was <span class="em">configuring boxes by hand, one CLI at a time</span>. That's a <i>management</i> problem, not a <i>forwarding</i> problem — and idea 2 solved it.</li>
+    </ul>
+    <div class="say">"The industry mistook a management problem for a forwarding problem. Once that was clear, the answer stopped being 'replace the control plane' and became 'give the control plane an API'."</div>
+    <div class="foot"><span>3 · The post-mortem</span><span>3</span></div>
+  </section>
+
+  <!-- 4 · the stack -->
+  <section class="slide">
+    <div class="kicker">What "SDN" actually is today</div>
+    <h2>The stack, bottom to top</h2>
+    <svg viewBox="0 0 1000 300" role="img" aria-label="Modern SDN stack">
+      <rect x="120" y="16" width="760" height="46" rx="8" fill="#19243c" stroke="#4da3ff"/><text x="500" y="45" fill="#9cdcfe" font-size="15" text-anchor="middle" font-weight="700">Source of truth — intent lives here, not on the boxes</text>
+      <rect x="120" y="72" width="760" height="46" rx="8" fill="#19243c" stroke="#4da3ff"/><text x="500" y="101" fill="#9cdcfe" font-size="15" text-anchor="middle" font-weight="700">Orchestration / pipeline — render, validate, stage, roll back</text>
+      <rect x="120" y="128" width="370" height="46" rx="8" fill="#12241d" stroke="#54e0c7"/><text x="305" y="157" fill="#54e0c7" font-size="15" text-anchor="middle" font-weight="700">Models — YANG / OpenConfig</text>
+      <rect x="510" y="128" width="370" height="46" rx="8" fill="#12241d" stroke="#54e0c7"/><text x="695" y="157" fill="#54e0c7" font-size="15" text-anchor="middle" font-weight="700">Telemetry — same paths, streamed</text>
+      <rect x="120" y="184" width="760" height="46" rx="8" fill="#152136" stroke="#9db0d0"/><text x="500" y="213" fill="#eaf0fb" font-size="15" text-anchor="middle" font-weight="700">Transport — NETCONF · RESTCONF · gNMI / gNOI</text>
+      <rect x="120" y="240" width="760" height="46" rx="8" fill="#0f2030" stroke="#ffcf6b"/><text x="500" y="269" fill="#ffcf6b" font-size="15" text-anchor="middle" font-weight="700">The network — still running OSPF, BGP, EVPN, SR</text>
+    </svg>
+    <div class="key"><b>Note the bottom layer.</b> The routing protocols did not go away. Modern SDN sits <i>above</i> a distributed control plane and tells it what to want — it does not replace it. That is the single most important structural fact in this round.</div>
+    <div class="foot"><span>4 · The stack</span><span>4</span></div>
+  </section>
+
+  <!-- 5 · what a model is -->
+  <section class="slide">
+    <div class="kicker">The thing you actually did at Sky</div>
+    <h2>What a data model <i>is</i>, and why it changed everything</h2>
+    <p>A YANG model is a <b>typed schema for a network's configuration and state</b> — a contract. Not a script, not a template: a definition of what a valid network looks like, in a form a machine can check.</p>
+    <div class="cols">
+      <div class="col"><div class="box"><h3>Screen-scraping the CLI</h3><p>Encodes <b>syntax</b>. Breaks when output formatting changes. No types, no validation. Vendor-specific by definition. You can push config but you can't meaningfully ask "is the network what I asked for?"</p></div></div>
+      <div class="col"><div class="box"><h3>Model-driven</h3><p>Encodes <b>intent</b>. Validated <i>before</i> it touches a box. Same intent renders to multiple vendors. Config <b>and</b> operational state in one vocabulary — so you can <span class="em">diff what you wanted against what is</span>.</p></div></div>
+    </div>
+    <ul>
+      <li><b>OpenConfig</b> — models written by <span class="em">operators</span> (Google and the hyperscale/carrier group), not vendors, precisely to escape per-vendor trees. This is the one you used.</li>
+      <li><b>Native models</b> — the vendor's own tree. Richer, complete, and a lock-in. Most real estates run OpenConfig where it covers the feature and native where it doesn't.</li>
+    </ul>
+    <div class="say">"The hard part of model-driven networking isn't the tooling — it's the translation. Turning a network architecture into a schema forces you to make every implicit design decision explicit. That's where the work is."</div>
+    <div class="foot"><span>5 · Models</span><span>5</span></div>
+  </section>
+
+  <!-- 6 · transports -->
+  <section class="slide">
+    <div class="kicker">Know the differences, not the RFCs</div>
+    <h2>NETCONF · RESTCONF · gNMI · gNOI</h2>
+    <table>
+      <tr><th>&nbsp;</th><th>Transport / encoding</th><th>Its distinguishing feature</th><th>Reach for it when</th></tr>
+      <tr><td><b>NETCONF</b></td><td>XML over SSH, RPC</td><td><span class="em">Transactional</span> — candidate config, commit, <b>confirmed-commit with auto-rollback</b></td><td>You want a change to be atomic and self-reverting</td></tr>
+      <tr><td><b>RESTCONF</b></td><td>HTTP + JSON</td><td>Simple, web-native, same YANG models — weaker transaction story</td><td>A quick integration, or a tool that speaks REST</td></tr>
+      <tr><td><b>gNMI</b></td><td>gRPC / HTTP2, protobuf</td><td><span class="em">Streaming telemetry</span> (Subscribe) as a first-class citizen, plus Get/Set. Binary, efficient, scales</td><td>Telemetry at scale, or a modern estate</td></tr>
+      <tr><td><b>gNOI</b></td><td>gRPC</td><td><b>Operations, not config</b> — reboot, install certs, file transfer, ping</td><td>The actions that were never config in the first place</td></tr>
+    </table>
+    <div class="key"><b>The point to make:</b> confirmed-commit is the underrated one. A change that <i>automatically reverts if you don't confirm within N seconds</i> means a config that cuts off your own management access repairs itself. That single feature is why NETCONF survives alongside gNMI.</div>
+    <div class="foot"><span>6 · Transports</span><span>6</span></div>
+  </section>
+
+  <!-- 7 · telemetry -->
+  <section class="slide">
+    <div class="kicker">Your strongest technical bridge</div>
+    <h2>Streaming telemetry vs SNMP — and why a trading firm cares</h2>
+    <div class="cols">
+      <div class="col"><div class="box"><h3>SNMP polling</h3><p>You <b>ask</b>, typically every 30–60s. Per-OID, UDP, and the box burns CPU building the reply. The answer is an <span class="warn">average over the interval</span>.</p></div></div>
+      <div class="col"><div class="box"><h3>Streaming telemetry</h3><p>The box <b>pushes</b> on subscription — sub-second, structured, over a persistent gRPC channel, <b>on-change</b> or sample-interval. Same YANG paths as config.</p></div></div>
+    </div>
+    <p><b>Why it matters here specifically:</b> the congestion that hurts a trading network lasts <span class="em">microseconds</span>. A microburst that fills an egress buffer and drops market data is completely invisible in a 30-second average — the interface will read 40% utilised while it is dropping. Polling cannot see the event that matters.</p>
+    <div class="say">"You can't poll your way to microsecond visibility. If the events you care about are shorter than your polling interval, your monitoring is telling you a comforting story about a network that's dropping packets."</div>
+    <div class="key"><b>This is the slide that connects SDN to everything else you know</b> — buffers, microbursts, incast, p99. Use it: it turns an SDN question into a conversation about the fabric, where you're strong.</div>
+    <div class="foot"><span>7 · Telemetry</span><span>7</span></div>
+  </section>
+
+  <!-- 8 · source of truth -->
+  <section class="slide">
+    <div class="kicker">The operating model</div>
+    <h2>Source of truth, drift, and the reconciliation loop</h2>
+    <ol>
+      <li><b>Intent lives in one place</b> — a repo / IPAM / database. The network is a <span class="em">rendering</span> of it, never the master. If the only record of why a box is configured that way is the box, you have no source of truth.</li>
+      <li><b>The pipeline is the only write path.</b> Render intent → validate against the model → stage → apply.</li>
+      <li><b>Read the network back continuously</b> and diff operational state against intent. This is the loop most people skip, and it's the one that makes the rest true.</li>
+      <li><b>Drift is inevitable</b> — someone fixes something on the CLI at 3am, and they were right to. The question is whether the system <i>notices</i>. Break-glass is fine; unrecorded break-glass turns your model into fiction.</li>
+    </ol>
+    <div class="key"><b>Intent-based networking, demystified:</b> it's this loop with a marketing name — declare desired state, render it, continuously verify, remediate the delta. Say it that plainly and you sound like you've built one rather than read about one.</div>
+    <div class="foot"><span>8 · Source of truth</span><span>8</span></div>
+  </section>
+
+  <!-- 9 · controller dies -->
+  <section class="slide">
+    <div class="kicker">The question they will definitely ask</div>
+    <h2>"The controller dies. What happens?"</h2>
+    <p>The correct architecture answer is <b>fail-static</b>: the <span class="em">data plane keeps forwarding on the state it already has</span>. The controller's absence costs you <b>change and visibility</b>, never <b>traffic</b>.</p>
+    <div class="cols">
+      <div class="col"><div class="box"><h3>What you lose</h3><p>Ability to push changes. New provisioning. Telemetry aggregation. Central path optimisation.</p></div></div>
+      <div class="col"><div class="box"><h3>What must keep working</h3><p>Forwarding. IGP and BGP convergence. Fast reroute. Everything on the trade path.</p></div></div>
+    </div>
+    <div class="danger"><b>The failure to name:</b> any design where a controller outage drops packets is broken, regardless of how good the controller is. Blast radius of "we can't make changes for an hour" is survivable. Blast radius of "the fabric is down" is not.</div>
+    <div class="say">"I'd design so the distributed control plane stays authoritative for forwarding, and the controller owns intent, provisioning and telemetry. Then a controller outage is an operational inconvenience, not an outage."</div>
+    <div class="foot"><span>9 · Fail-static</span><span>9</span></div>
+  </section>
+
+  <!-- 10 · distributed vs central -->
+  <section class="slide">
+    <div class="kicker">The design principle underneath all of it</div>
+    <h2>Distribute forwarding · centralise intent</h2>
+    <ul>
+      <li><b>Why EVPN beat controller-per-fabric in the DC:</b> EVPN is a <span class="em">distributed control plane</span> — it converges with no brain, survives partition, and scales by protocol design. The controller-centric fabric managers that competed with it all had a central dependency EVPN doesn't.</li>
+      <li><b>What a controller genuinely adds</b> is what no single router can see: intent, provisioning at scale, cross-domain policy, <b>path computation with global constraints</b>, and telemetry aggregation.</li>
+      <li><b>So the split is functional, not layered:</b> forwarding decisions distributed, policy and intent centralised. Centralising forwarding re-creates the single point of failure that routing protocols spent decades eliminating.</li>
+    </ul>
+    <div class="key"><b>This is the sentence to have ready:</b> "Distribute what must survive a partition; centralise what benefits from a global view." Everything else in this round derives from it.</div>
+    <div class="foot"><span>10 · The principle</span><span>10</span></div>
+  </section>
+
+  <!-- 11 · SDN in the WAN -->
+  <section class="slide">
+    <div class="kicker">Where SDN meets your strong ground</div>
+    <h2>Centralised path computation — and why SR is the SDN data plane</h2>
+    <ol>
+      <li><b>BGP-LS</b> carries the IGP link-state database <span class="em">northbound</span> — nodes, links, TE attributes, SRLGs, SR SIDs. The controller gets a live topology <b>without joining the IGP</b>. It's a reporting protocol; you don't route on it.</li>
+      <li><b>The PCE computes</b> a constrained path over that topology — global view, so it can do what no single headend can.</li>
+      <li><b>Push it back down</b> via <b>PCEP</b> (stateful PCE keeps ownership and re-optimises) or <b>BGP SR Policy</b> (SAFI 73 — the path distributed as a route). <span class="warn">Arista EOS has no PCEP</span> — so on an EOS network the answer is BGP SR Policy or controller-driven config.</li>
+    </ol>
+    <div class="key"><b>Why SR is the thing that made this work:</b> the path is a <span class="em">stack of SIDs imposed at the head end</span> — no per-hop signalling, <b>no state in the core</b>. The controller changes a path by talking to one router. RSVP-TE couldn't do that: every midpoint held state, so central control meant touching the whole mesh.</div>
+    <div class="say">"Segment Routing is what made centralised path control practical. Put the path in the packet and the controller only has to talk to the edge — that's the property RSVP-TE never had."</div>
+    <div class="foot"><span>11 · PCE / SR</span><span>11</span></div>
+  </section>
+
+  <!-- 12 · blast radius -->
+  <section class="slide">
+    <div class="kicker">The operational maturity question</div>
+    <h2>Automation lets you break everything, uniformly, instantly</h2>
+    <ul>
+      <li><b>Dry-run and diff</b> before apply — always. The diff is the change review.</li>
+      <li><b>Canary → rings → fleet.</b> One device, then one failure domain, then the rest — with <span class="em">automated health gates between rings</span> so the pipeline stops <i>itself</i> rather than waiting for a human to notice.</li>
+      <li><b>Change budgets</b> — never more than N devices or one failure domain per window. A pipeline that <i>can</i> touch everything at once eventually will.</li>
+      <li><b>Confirmed-commit / rollback timers</b> so a box that loses management reverts on its own.</li>
+      <li><b>Guardrails in the model</b> — policy that refuses a change which would, say, drain both spines at once. The model is where "physically stupid" gets caught.</li>
+      <li><b>Pre- and post-checks</b> on every change: capture state before, compare after, fail loudly on a delta you didn't intend.</li>
+    </ul>
+    <div class="say">"The scary thing about automation isn't that it makes mistakes — humans make more. It's that it makes them uniformly, everywhere, at once. So the pipeline has to be more conservative than a human would be."</div>
+    <div class="foot"><span>12 · Blast radius</span><span>12</span></div>
+  </section>
+
+  <!-- 13 · ZTP -->
+  <section class="slide">
+    <div class="kicker">A small question with a senior answer</div>
+    <h2>ZTP — and the bit most people miss</h2>
+    <p>A box is racked and cabled with no config. It boots, <b>DHCP</b> hands it an option pointing at a script/image server, it pulls image and initial config, then registers with the automation. Fine — that's the mechanical answer everyone gives.</p>
+    <div class="key"><b>The question to raise unprompted:</b> <span class="em">trust bootstrap.</span> How does the box prove it's yours, and how does the server prove it isn't an impostor? Answer: <b>secure device identity</b> — a vendor-installed, TPM-backed certificate (802.1AR IDevID) — plus <b>signed images</b> and a voucher exchange (secure ZTP / BRSKI-style), rather than "trust whatever answers DHCP on this VLAN."</div>
+    <p>Raising that unprompted is the difference between an ops answer and an architecture answer. It also lands well at a firm where the network carries money.</p>
+    <div class="foot"><span>13 · ZTP &amp; trust</span><span>13</span></div>
+  </section>
+
+  <!-- 14 · build vs buy -->
+  <section class="slide">
+    <div class="kicker">The decision you actually made</div>
+    <h2>Build versus buy — the axes</h2>
+    <table>
+      <tr><th>Axis</th><th>Buy leans...</th><th>Build leans...</th></tr>
+      <tr><td><b>Fit to operating model</b></td><td>You adopt the product's opinion of how networks are run</td><td>The tool fits how you actually run</td></tr>
+      <tr><td><b>Multi-vendor reality</b></td><td>A controller that speaks one vendor is a <i>strategy</i>, not a tool</td><td>You integrate whatever's in the estate</td></tr>
+      <tr><td><b>Feature latency</b></td><td>"We need X" → a roadmap conversation</td><td>"We need X" → a sprint</td></tr>
+      <tr><td><b>Lock-in / exit cost</b></td><td>High, and grows quietly</td><td>You own the exit — and everything else</td></tr>
+      <tr><td><b>Cost of ownership</b></td><td>Someone else carries it</td><td><span class="warn">You own it forever</span> — staffing and on-call, not a project</td></tr>
+    </table>
+    <div class="key"><b>Say the counterweight yourself.</b> "In-house won for us, and the honest cost is that you own it forever — that's a permanent staffing commitment, not a delivery." Volunteering the downside of your own decision is what makes the decision sound made rather than defended.</div>
+    <div class="foot"><span>14 · Build vs buy</span><span>14</span></div>
+  </section>
+
+  <!-- 15 · your story -->
+  <section class="slide">
+    <div class="kicker">The answer to "tell us about your SDN experience"</div>
+    <h2>Your ground — lead with the doing</h2>
+    <div class="danger"><b>They want hands-on, not the architect who drove it.</b> So <span class="em">do not open with "I made the build-versus-buy call"</span> — that is the exact sentence that gets you filed under "manager". Open with what you were doing with your hands, and let the decisions come out as context later, if at all.</div>
+    <div class="say">"At Sky I worked the model-driven transformation on <b>OpenConfig</b>. I was in the data model itself with the developers — taking the real designs and turning them into the schema — and I ran the migrations and troubleshot them when they broke."</div>
+    <p>Then, only when it's asked for, the surrounding context: <span class="muted">the build-vs-buy assessment (in-house end-to-end orchestration won), deciding automation scope, designing the transition.</span> <b>Context, after the doing.</b></p>
+    <ul>
+      <li><b>Take every question to the box.</b> If they probe, go to a concrete thing you did: what the model looked like, what broke in a migration, how you found it, what the fix was. Specifics are the proof of hands-on; summaries are the proof of the opposite.</li>
+      <li><b>Your hands-on credibility is 25 years in the CLI, CCIE and JNCIE</b> — that is the ground to stand on if the SDN questions run thin: <span class="em">"I'm the person who configures it and fixes it when it's broken."</span></li>
+      <li><span class="warn"><b>Never cite lab work as experience.</b></span> Labs are how you get fluent enough to reason in the room — they are <b>not</b> a credential and mentioning one to this panel reads as padding. If you know it, just answer; where the answer came from is nobody's business.</li>
+      <li><b>Never say "I oversaw" or "I owned" or "my team did".</b> Say what <i>you</i> touched.</li>
+    </ul>
+    <div class="danger"><b>Do not claim:</b> ACI, NSX, Contrail, or any controller product you haven't run — and do not claim you wrote the automation code, because the developers did. If asked directly — <i>"I haven't run those products. My modelling work was OpenConfig — I was hands-on in the model and in the migrations, not writing the orchestration code."</i> A clean "I haven't" costs you nothing; a bluff that unravels costs you the round.</div>
+    <div class="foot"><span>15 · Your story</span><span>15</span></div>
+  </section>
+
+  <!-- 16 · grading axes -->
+  <section class="slide">
+    <div class="kicker">What this round is actually scoring</div>
+    <h2>The six things to land</h2>
+    <ul>
+      <li><b>1 · You know SDN isn't one thing</b> — and can say which of the three you're answering about.</li>
+      <li><b>2 · You know what died and why</b> — the OpenFlow post-mortem, given as engineering reasons, not fashion.</li>
+      <li><b>3 · Distribute forwarding, centralise intent</b> — and fail-static when the controller dies.</li>
+      <li><b>4 · Model-driven means diffing intent against state</b>, not scripting a CLI faster.</li>
+      <li><b>5 · Blast radius is a design parameter</b> — canary, rings, gates, confirmed-commit, guardrails.</li>
+      <li><b>6 · You did it with your hands</b> — in the data model with the developers, running the migrations, fixing them when they broke. Concrete, specific, first person.</li>
+    </ul>
+    <div class="key"><b>Your position, in one line:</b> you're not an SDN product operator and you don't need to pretend to be — you're the engineer who worked the data model, ran the migrations, and fixed them when they broke, on top of 25 years of actually configuring and troubleshooting networks. At a firm running plain IP on Arista and SONiC that wants <span class="em">hands-on people</span>, that's the person they're hiring.</div>
+    <div class="danger"><b>The single behaviour to hold all round:</b> every answer starts with something you <i>did</i>, not something you <i>decided</i>, <i>owned</i>, or <i>oversaw</i>. Those three words are the ones that get you filed as the architect they said they don't want.</div>
+    <div class="foot"><span>16 · The grading axes</span><span>16</span></div>
+  </section>
+
+</div>
+<div class="nav">← → navigate · F fullscreen · (phone: just scroll)</div>
+<script>
+  const slides=[...document.querySelectorAll('.slide')];let i=0;
+  function show(n){slides[i].classList.remove('active');i=(n+slides.length)%slides.length;slides[i].classList.add('active');slides[i].scrollTop=0;}
+  document.addEventListener('keydown',e=>{
+    if(e.key==='ArrowRight'||e.key==='PageDown'){show(i+1);e.preventDefault();}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){show(i-1);e.preventDefault();}
+    else if(e.key==='Home')show(0);else if(e.key==='End')show(slides.length-1);
+    else if(e.key.toLowerCase()==='f'){if(!document.fullscreenElement)document.documentElement.requestFullscreen();else document.exitFullscreen();}
+  });
+  document.addEventListener('click',e=>{ if(e.target.closest('button,a'))return; (e.clientX>innerWidth/2?show(i+1):show(i-1)); });
+  ['prev','next'].forEach(d=>{const b=document.createElement('button');b.className='pgbtn '+d;b.textContent=d==='prev'?'‹':'›';b.onclick=ev=>{ev.stopPropagation();show(d==='prev'?i-1:i+1);};document.body.appendChild(b);});
+</script>
+</body>
+</html>

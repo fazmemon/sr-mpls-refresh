@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reading pcaps — you read shapes, not packets</title>
+<style>
+  :root{--bg:#0e1726;--panel:#152136;--panel2:#19243c;--ink:#eaf0fb;--muted:#9db0d0;--accent:#4da3ff;--accent2:#54e0c7;--warn:#ffcf6b;--line:#2b3a56;--ex:#0f2030;--red:#ff7b8a}
+  *{box-sizing:border-box}html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--ink);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  #deck{height:100vh;width:100vw;overflow:hidden;position:relative}
+  .slide{position:absolute;inset:0;padding:4vh 6vw 8vh;display:none;flex-direction:column;justify-content:center;animation:fade .3s ease;overflow-y:auto}
+  .slide.active{display:flex}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  h1{font-size:min(4.8vw,46px);line-height:1.1;margin:0 0 .35em;letter-spacing:-.5px}
+  h2{font-size:min(3vw,30px);margin:0 0 .5em;letter-spacing:-.3px}
+  .kicker{color:var(--accent);font-weight:700;text-transform:uppercase;letter-spacing:2px;font-size:12px;margin-bottom:10px}
+  p{font-size:min(1.95vw,18px);max-width:84ch;margin:.45em 0;color:#dbe6f7}
+  .lead{color:var(--muted);font-size:min(1.95vw,18px);max-width:82ch}
+  .em{color:var(--accent2);font-weight:600}.em2{color:var(--accent);font-weight:600}.warn{color:var(--warn)}
+  b{color:#fff}
+  code{background:#1e2a3e;padding:1px 6px;border-radius:3px;color:#ffd9a0;font-size:.92em}
+  ul{margin:.3em 0;padding-left:0;list-style:none}
+  li{margin:.42em 0;padding-left:1.3em;position:relative;font-size:min(1.9vw,17px);max-width:86ch}
+  li:before{content:"";position:absolute;left:0;top:.55em;width:8px;height:8px;border-radius:2px;background:var(--accent2)}
+  ol{margin:.3em 0;padding-left:1.4em}
+  ol li{padding-left:.2em}ol li:before{display:none}
+  .key{background:var(--ex);border-left:3px solid var(--accent2);border-radius:0 8px 8px 0;padding:10px 15px;margin:.6em 0 0;font-size:min(1.85vw,16px);color:#bfe9df;max-width:88ch}
+  .key b{color:var(--accent2)}
+  .say{background:#12202f;border:1px solid #2e6e5e;border-radius:10px;padding:10px 15px;margin:.6em 0 0;font-size:min(1.9vw,17px);color:#eaf0fb;max-width:88ch}
+  .say:before{content:"HOW TO SAY IT";color:var(--accent2);font-size:10px;font-weight:700;letter-spacing:1.5px;display:block;margin-bottom:4px}
+  .danger{background:#2a1620;border-left:3px solid var(--red);border-radius:0 8px 8px 0;padding:10px 15px;margin:.6em 0 0;font-size:min(1.85vw,16px);color:#ffd4da;max-width:88ch}
+  .danger b{color:#ff9aa6}
+  .cols{display:flex;gap:2.2vw;flex-wrap:wrap;margin-top:.2em}
+  .col{flex:1;min-width:300px}
+  .box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px 18px;margin:.4em 0}
+  .box h3{margin:.05em 0 .3em;font-size:min(2vw,19px);color:#9cdcfe}.box p{font-size:min(1.8vw,16px);margin:.2em 0}
+  table{border-collapse:collapse;width:100%;margin-top:.4em;font-size:min(1.75vw,16px)}
+  td,th{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+  th{color:var(--accent);font-weight:700}
+  .foot{position:fixed;bottom:14px;left:6vw;right:6vw;display:flex;justify-content:space-between;color:var(--muted);font-size:12px;border-top:1px solid var(--line);padding-top:7px}
+  .nav{position:fixed;bottom:1px;left:50%;transform:translateX(-50%);color:var(--muted);font-size:11px;opacity:.5}
+  svg{width:100%;max-height:52vh}
+  .pgbtn{position:fixed;top:50%;transform:translateY(-50%);width:46px;height:66px;border:1px solid var(--line);background:rgba(21,33,54,.9);color:var(--ink);font-size:26px;border-radius:10px;cursor:pointer;z-index:20}
+  .pgbtn.prev{left:10px}.pgbtn.next{right:10px}
+  @media(max-width:820px){
+    .cols{flex-direction:column;gap:0}
+    #deck{height:auto;overflow:visible}
+    .slide{display:flex!important;position:static;inset:auto;height:auto;min-height:auto;padding:5vh 7vw 4vh;border-bottom:1px solid var(--line);justify-content:flex-start}
+    .foot,.nav,.pgbtn{display:none}
+    svg{max-height:none}
+    table{font-size:13px}
+  }
+</style>
+</head>
+<body>
+<div id="deck">
+
+  <!-- 1 -->
+  <section class="slide active">
+    <div class="kicker">HRT · pcaps are in scope · teach deck</div>
+    <h1>You read shapes, not packets</h1>
+    <p class="lead">A capture is fifty thousand packets and nobody diagnoses by reading them. Every fault has a <b>shape</b> — a constant 40ms, a cohort of retransmits, a window that goes to zero, a burst that never appears in the utilisation graph. Learn ten shapes and you diagnose from the pattern in seconds.</p>
+    <p class="lead">And before any of that, one habit that separates senior from not: <span class="em">ask what the capture is lying to you about.</span></p>
+    <div class="foot"><span>pcap</span><span>1</span></div>
+  </section>
+
+  <!-- 2 -->
+  <section class="slide">
+    <div class="kicker">Question zero</div>
+    <h2>Where did you capture, and what did that cost you?</h2>
+    <table>
+      <tr><th>Capture point</th><th>Sees</th><th>Hides / lies</th></tr>
+      <tr><td><b>Optical / passive tap</b></td><td>Everything, including L1/L2 errors. Doesn't drop under load.</td><td>Nothing — this is ground truth. Needs to be pre-installed.</td></tr>
+      <tr><td><b>SPAN / mirror</b></td><td>Convenient, available everywhere.</td><td><span class="warn">Drops silently when the mirror oversubscribes the destination port.</span> Deprioritised vs real traffic. Strips CRC/runt errors.</td></tr>
+      <tr><td><b>Host capture</b></td><td>What the kernel received.</td><td>Post-NIC-offload and pre-application — so it proves nothing about what was on the wire.</td></tr>
+    </table>
+    <div class="danger"><b>The trap:</b> "the capture shows loss" on a SPAN may mean <b>the SPAN dropped it</b>, not the network. You will be handed exactly this.</div>
+    <div class="say">"First I'd confirm the capture point isn't the source of the symptom — a SPAN under load drops silently and looks identical to network loss."</div>
+    <div class="foot"><span>2 · Capture point</span><span>2</span></div>
+  </section>
+
+  <!-- 3 -->
+  <section class="slide">
+    <div class="kicker">Question zero, part two</div>
+    <h2>The capture is lying to you</h2>
+    <ul>
+      <li><b>64KB segments on a 1500-MTU link.</b> Not a bug — <span class="em">TSO/GSO</span> on transmit and <span class="em">LRO/GRO</span> on receive mean the host hands the NIC one giant buffer and the NIC segments it. The super-frame never existed on the wire.</li>
+      <li><b>"Bad" checksums on everything outbound.</b> <span class="em">Checksum offload</span> — the NIC hasn't computed them yet when your local capture sees the packet.</li>
+      <li><b>Software timestamps</b> are applied when the <b>kernel</b> sees the packet — after interrupt coalescing, NAPI batching and scheduling. Tens of microseconds of noise, useless for latency work.</li>
+    </ul>
+    <div class="key"><b>The fix when it matters:</b> capture on a <b>tap</b>, or disable offloads for the test (<code>ethtool -K</code>). Knowing this stops you chasing a phantom MTU problem for an afternoon.</div>
+    <div class="foot"><span>3 · Offload</span><span>3</span></div>
+  </section>
+
+  <!-- 4 -->
+  <section class="slide">
+    <div class="kicker">Produce these cold</div>
+    <h2>The tcpdump you must not have to look up</h2>
+    <div class="cols">
+      <div class="col"><div class="box"><h3>Capture properly</h3>
+        <p><code>-w cap.pcap</code> write to disk, don't print<br>
+        <code>-s0</code> full packet — <span class="warn">a short snaplen truncates silently</span><br>
+        <code>-nn</code> no name resolution in the hot path<br>
+        <code>-W 10 -C 100</code> ring buffer for a long hunt</p></div></div>
+      <div class="col"><div class="box"><h3>Filters</h3>
+        <p><code>host 10.1.1.1 and port 179</code><br>
+        <code>net 10.1.0.0/16</code><br>
+        <code>'tcp[tcpflags] &amp; tcp-syn != 0'</code><br>
+        <code>'tcp[tcpflags] &amp; tcp-rst != 0'</code><br>
+        <code>udp port 4789</code> VXLAN · <code>udp port 4791</code> RoCEv2<br>
+        <code>host 239.1.1.1</code> a multicast group</p></div></div>
+    </div>
+    <div class="key"><b>The one people get wrong:</b> <code>-s0</code>. Default snaplen on some builds truncates the payload, and you discover it after the fault has gone away.</div>
+    <div class="foot"><span>4 · tcpdump</span><span>4</span></div>
+  </section>
+
+  <!-- 5 -->
+  <section class="slide">
+    <div class="kicker">Shape 1</div>
+    <h2>Retransmission · out-of-order · duplicate</h2>
+    <p class="lead">Three things that look similar and mean completely different things. Tell them apart by <b>sequence number versus arrival time</b>.</p>
+    <table>
+      <tr><th>Shape</th><th>What you see</th><th>What it means</th></tr>
+      <tr><td><b>Retransmission</b></td><td>Same sequence, arriving <em>after</em> the gap — following an RTO or 3 dup-ACKs</td><td><span class="warn">Real loss</span> (or a lost ACK)</td></tr>
+      <tr><td><b>Out-of-order</b></td><td>A lower sequence arriving <em>between</em> higher ones, with a <b>tiny</b> time delta</td><td><span class="em">No loss at all</span> — reordering. ECMP/parallel-path asymmetry. A <b>design</b> finding.</td></tr>
+      <tr><td><b>Duplicate</b></td><td>Same segment twice, no gap to fill</td><td>Usually <b>your capture</b> — the same packet mirrored from two ports</td></tr>
+    </table>
+    <div class="key"><b>Why the distinction earns marks:</b> calling reordering "loss" sends someone hunting a nonexistent fault. Out-of-order on a fabric means <b>flows are being spread across paths with different latency</b> — that's a load-balancing conversation, not a packet-loss one.</div>
+    <div class="foot"><span>5 · Loss shapes</span><span>5</span></div>
+  </section>
+
+  <!-- 6 -->
+  <section class="slide">
+    <div class="kicker">Shape 2</div>
+    <h2>Recovering well vs falling off a cliff</h2>
+    <svg viewBox="0 0 1000 250" role="img" aria-label="Fast retransmit versus RTO">
+      <rect x="20" y="30" width="460" height="190" rx="12" fill="#12241d" stroke="#54e0c7" stroke-width="2"/>
+      <text x="250" y="60" fill="#54e0c7" font-size="16" text-anchor="middle" font-weight="700">Dup-ACKs → fast retransmit</text>
+      <polyline points="50,180 110,150 170,120 230,150 290,120 350,100 420,90" fill="none" stroke="#54e0c7" stroke-width="3"/>
+      <text x="250" y="205" fill="#9db0d0" font-size="12" text-anchor="middle">3 dup-ACKs, resend immediately, SACK names the hole</text>
+      <text x="250" y="225" fill="#9db0d0" font-size="12" text-anchor="middle">throughput dips and recovers — moderate loss, healthy stack</text>
+      <rect x="520" y="30" width="460" height="190" rx="12" fill="#2a1620" stroke="#ff7b8a" stroke-width="2"/>
+      <text x="750" y="60" fill="#ff9aa6" font-size="16" text-anchor="middle" font-weight="700">RTO timeout</text>
+      <polyline points="550,110 610,105 670,100 680,190 750,188 820,185 920,180" fill="none" stroke="#ff7b8a" stroke-width="3"/>
+      <text x="750" y="205" fill="#9db0d0" font-size="12" text-anchor="middle">a long silent gap, then a retransmit, then the window collapses</text>
+      <text x="750" y="225" fill="#9db0d0" font-size="12" text-anchor="middle">throughput falls off a cliff — this is the one that hurts</text>
+    </svg>
+    <div class="key"><b>A receiver that gets an out-of-order segment re-ACKs the last in-order byte</b> — that's a dup-ACK. Three of them trigger fast retransmit. <b>SACK</b> blocks tell the sender exactly which ranges arrived so it resends only the hole. Lots of dup-ACKs is a stack coping. <b>RTOs instead of dup-ACKs</b> means loss so heavy there weren't enough packets left to trigger fast retransmit.</div>
+    <div class="foot"><span>6 · Recovery</span><span>6</span></div>
+  </section>
+
+  <!-- 7 -->
+  <section class="slide">
+    <div class="kicker">Shape 3</div>
+    <h2>Zero window — the network did its job</h2>
+    <p><b>ZeroWindow</b> means the receiver told the sender to stop: its application isn't draining the socket buffer, so it advertised a window of zero. The sender then window-probes. <span class="em">The network delivered perfectly.</span></p>
+    <ul>
+      <li>Causes: a <b>stalled or slow application</b>, a blocked thread, an undersized <code>SO_RCVBUF</code>.</li>
+      <li><b>Window Full</b> is the other side of it — the sender has filled the advertised window and must wait for an ACK to free space.</li>
+      <li><b>The UDP twin:</b> exactly the same disease with no backpressure — the kernel just drops, and it shows as <code>RcvbufErrors</code> in <code>nstat</code>/<code>netstat -su</code>. No zero-window warning, because UDP has no way to say "stop".</li>
+    </ul>
+    <div class="say">"Zero-window means the network delivered fine and the application couldn't keep up — I'd be looking at the consumer, not the path."</div>
+    <div class="foot"><span>7 · Zero window</span><span>7</span></div>
+  </section>
+
+  <!-- 8 -->
+  <section class="slide">
+    <div class="kicker">Shape 4 — the classic</div>
+    <h2>A suspiciously constant ~40 ms</h2>
+    <p>Request/response stalling by the same amount every time. <b>Nothing is broken</b> — two optimisations are deadlocking each other.</p>
+    <ul>
+      <li><b>Nagle</b> holds a small write until the previous small segment is ACKed (to avoid tinygrams).</li>
+      <li><b>Delayed ACK</b> holds the ACK up to ~40 ms hoping to piggyback it on data going the other way.</li>
+      <li>Together: the sender waits for an ACK that is deliberately being delayed. <span class="em">Quantised ~40 ms stalls.</span></li>
+    </ul>
+    <div class="key"><b>The tells in the capture:</b> the delay is <b>suspiciously constant</b> rather than variable, it only affects <b>small</b> writes, and it disappears on large transfers. Fix: <code>TCP_NODELAY</code>, and write whole messages in one call instead of header-then-body.</div>
+    <div class="key"><b>Why it matters here:</b> this is the canonical "our order path has a mysterious 40 ms" answer, and it's a host/application fault that gets blamed on the network every time.</div>
+    <div class="foot"><span>8 · The 40ms</span><span>8</span></div>
+  </section>
+
+  <!-- 9 -->
+  <section class="slide">
+    <div class="kicker">Shape 5</div>
+    <h2>Handshake fine, large transfers hang</h2>
+    <ol>
+      <li>The <b>three-way handshake completes</b> and small packets flow — so people conclude the path is fine.</li>
+      <li>Full-size segments with <b>DF set</b> are sent, repeatedly, and <b>never ACKed</b>.</li>
+      <li>No <b>ICMP fragmentation-needed</b> comes back — because a firewall ate it.</li>
+    </ol>
+    <p>That's a <b>PMTU black hole</b>. The sender never learns the real MTU and retransmits full-size forever.</p>
+    <div class="key"><b>Confirm it:</b> a large ping with DF set, walking the size down until it succeeds. <b>Fix:</b> permit ICMP type 3 code 4, or <b>MSS-clamp</b> at the edge. <b>The DC version:</b> a VXLAN or VPN overlay adding ~50 bytes on a 1500-byte underlay produces exactly this signature — which is why overlays want a 9000-byte underlay.</div>
+    <div class="foot"><span>9 · PMTU</span><span>9</span></div>
+  </section>
+
+  <!-- 10 -->
+  <section class="slide">
+    <div class="kicker">Shape 6</div>
+    <h2>RST — and the tell that impresses</h2>
+    <ul>
+      <li><b>Nothing listening</b> on the port — connection refused.</li>
+      <li><b>Abortive close</b> — the application used <code>SO_LINGER 0</code> instead of a graceful FIN. Common in trading stacks that want the socket gone now.</li>
+      <li><b>A middlebox injecting it</b> — a firewall tearing the session down. <span class="em">The tell: the TTL or IP-ID doesn't match the real peer's other packets.</span></li>
+      <li><b>No state for the connection</b> — after a reboot, a failover, or a NAT/state-table timeout. This is the classic "idle sessions die after N minutes".</li>
+    </ul>
+    <div class="key"><b>The middlebox-injection tell is the one worth having ready</b> — spotting a forged RST by its TTL is the difference between blaming the application and finding the firewall.</div>
+    <div class="foot"><span>10 · RST</span><span>10</span></div>
+  </section>
+
+  <!-- 11 -->
+  <section class="slide">
+    <div class="kicker">Shape 7 — multicast</div>
+    <h2>Proving where the tree broke</h2>
+    <p class="lead">Work the path in order, and say what each capture <b>rules out</b>:</p>
+    <ol>
+      <li><b>At the receiver</b> — is an <b>IGMP membership report</b> leaving it, and for v3 is it an <b>INCLUDE (S,G)</b>? A host that never joined is an application fault, not a network one.</li>
+      <li><b>On the access switch</b> — is <b>snooping</b> programming the port, and is there a <b>querier</b> on the VLAN? No querier → tables age out → <span class="em">it works, then dies after a couple of minutes</span>.</li>
+      <li><b>At the first-hop router</b> — PIM. With <b>ASM</b> you should see the <b>(*,G) join toward the RP</b>, then the <b>(S,G) switchover</b>. With <b>SSM</b> there's no RP and no shared tree at all.</li>
+      <li><b>Anywhere</b> — <b>RPF</b>. The source must be reachable out the interface the traffic arrived on, or it's dropped silently. Asymmetric routing kills multicast on its own.</li>
+    </ol>
+    <div class="key"><b>The structure is the answer</b> — source → host stack → L2 snooping → RPF → hop-by-hop state. The commands are vendor trivia.</div>
+    <div class="foot"><span>11 · Multicast</span><span>11</span></div>
+  </section>
+
+  <!-- 12 -->
+  <section class="slide">
+    <div class="kicker">Shape 8 — the one they care most about</div>
+    <h2>Market data gapped. Network or host?</h2>
+    <svg viewBox="0 0 1000 190" role="img" aria-label="Gap attribution decision">
+      <rect x="20" y="20" width="260" height="70" rx="10" fill="#152136" stroke="#4da3ff"/>
+      <text x="150" y="48" fill="#9cdcfe" font-size="14" text-anchor="middle" font-weight="700">App reports a gap</text>
+      <text x="150" y="70" fill="#9db0d0" font-size="12" text-anchor="middle">at sequence N</text>
+      <line x1="280" y1="55" x2="360" y2="55" stroke="#9db0d0" stroke-width="2" marker-end="url(#a)"/>
+      <rect x="360" y="20" width="290" height="70" rx="10" fill="#19243c" stroke="#54e0c7"/>
+      <text x="505" y="48" fill="#54e0c7" font-size="14" text-anchor="middle" font-weight="700">Is seq N in the capture</text>
+      <text x="505" y="70" fill="#9db0d0" font-size="12" text-anchor="middle">taken at the host NIC?</text>
+      <line x1="650" y1="42" x2="730" y2="25" stroke="#9db0d0" stroke-width="2"/>
+      <line x1="650" y1="68" x2="730" y2="120" stroke="#9db0d0" stroke-width="2"/>
+      <rect x="730" y="0" width="250" height="60" rx="10" fill="#2a1620" stroke="#ff7b8a"/>
+      <text x="855" y="24" fill="#ff9aa6" font-size="13" text-anchor="middle" font-weight="700">YES → host dropped it</text>
+      <text x="855" y="45" fill="#9db0d0" font-size="11" text-anchor="middle">RcvbufErrors, ring overrun, SO_RCVBUF</text>
+      <rect x="730" y="100" width="250" height="60" rx="10" fill="#12241d" stroke="#54e0c7"/>
+      <text x="855" y="124" fill="#54e0c7" font-size="13" text-anchor="middle" font-weight="700">NO → walk upstream</text>
+      <text x="855" y="145" fill="#9db0d0" font-size="11" text-anchor="middle">next tap toward the source</text>
+      <defs><marker id="a" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6" fill="#9db0d0"/></marker></defs>
+    </svg>
+    <div class="key"><b>Then the A/B test, which is the part that shows you've worked a market-data network:</b> A and B are independent paths carrying the same sequence space. A gap on <b>A only</b> is a path problem and arbitration should have covered it. The same gap on <b>A and B at the same sequence</b> is at the source or on a shared segment — which also means your "disjoint" feeds aren't.</div>
+    <div class="foot"><span>12 · Gap attribution</span><span>12</span></div>
+  </section>
+
+  <!-- 13 -->
+  <section class="slide">
+    <div class="kicker">Shape 9</div>
+    <h2>40% utilised and dropping</h2>
+    <p>Utilisation counters are <b>averages over the polling interval</b>. A burst that hit line rate for 200 µs and overflowed the egress buffer is <span class="em">completely invisible</span> in a 30-second average. The port is drop-free at the average and lossy at the instant.</p>
+    <ul>
+      <li><b>Prove it:</b> a Wireshark IO graph at <b>1 ms or finer</b>, on a capture with <b>hardware timestamps</b> — the burst appears. Or read the box's <b>queue-depth and drop counters</b> instead of utilisation.</li>
+      <li><b>Cause:</b> usually <b>incast</b> — many senders synchronising onto one receiver — or a speed mismatch, 100G into 10G.</li>
+      <li><b>Fix:</b> buffer, pacing, or ECN. <span class="warn">Not "add bandwidth"</span> — the link isn't full.</li>
+    </ul>
+    <div class="key"><b>This is the most common argument you will be asked to demolish</b> — someone points at a graph showing 40% and concludes the network is fine.</div>
+    <div class="foot"><span>13 · Microburst</span><span>13</span></div>
+  </section>
+
+  <!-- 14 -->
+  <section class="slide">
+    <div class="kicker">Measuring, not just reading</div>
+    <h2>Do you trust the timestamps?</h2>
+    <ul>
+      <li><b>Software timestamps</b> — applied when the kernel sees the packet. Interrupt coalescing, NAPI batching and scheduling put tens of microseconds of noise on them.</li>
+      <li><b>Hardware timestamping</b> on the NIC or tap — what you use when the number actually matters.</li>
+      <li><b>Comparing two capture points</b> requires a shared clock discipline: <b>PTP</b> with hardware timestamping (boundary clocks ideally), <span class="warn">not NTP</span>. Without it the delta between two captures is meaningless.</li>
+    </ul>
+    <div class="say">"Before quoting a latency from captures I'd establish whether the timestamps are hardware and whether the two capture points are PTP-disciplined — otherwise the delta is noise."</div>
+    <div class="foot"><span>14 · Timestamps</span><span>14</span></div>
+  </section>
+
+  <!-- 15 -->
+  <section class="slide">
+    <div class="kicker">Overlay and RDMA</div>
+    <h2>VXLAN and RoCEv2 in a capture</h2>
+    <div class="cols">
+      <div class="col"><div class="box"><h3>VXLAN — UDP 4789</h3>
+        <p>Outer MAC/IP/UDP → 8-byte VXLAN header (<b>VNI</b>) → the original L2 frame.</p>
+        <p><b>Check two things:</b> the <b>outer UDP source port</b>, which is a hash of the inner flow and the <span class="em">only entropy ECMP has</span> — if it's constant, all overlay traffic pins to one path. And <b>MTU</b>, per slide 9.</p></div></div>
+      <div class="col"><div class="box"><h3>RoCEv2 — UDP 4791</h3>
+        <p>InfiniBand transport headers over UDP. Look for the <b>lossless machinery</b>:</p>
+        <p><b>ECN marks + CNPs</b> coming back = congestion being managed properly under DCQCN. <b>PFC pause frames</b> = you've reached the blunt instrument, with head-of-line blocking and deadlock risk.</p></div></div>
+    </div>
+    <div class="key"><b>The design point:</b> ECN/DCQCN should be doing the work. <b>PFC is the last resort</b> — lots of pause frames in a capture is a finding, not a healthy fabric.</div>
+    <div class="foot"><span>15 · Overlay</span><span>15</span></div>
+  </section>
+
+  <!-- 16 -->
+  <section class="slide">
+    <div class="kicker">The method</div>
+    <h2>What the room is grading</h2>
+    <ul>
+      <li><b>1 · You question the capture before the network.</b> Capture point, offload, timestamps — asked unprompted.</li>
+      <li><b>2 · You reason from shapes,</b> not by scrolling packets. Name the pattern, then confirm it.</li>
+      <li><b>3 · You say what each observation rules OUT,</b> not just what it suggests. That's diagnosis rather than guessing.</li>
+      <li><b>4 · You separate "the network delivered it" from "the host lost it"</b> — the single most valuable distinction in a trading environment, and the one most people can't make.</li>
+      <li><b>5 · You don't confuse averages with instants.</b> Utilisation lies; queue depth and ms-resolution don't.</li>
+    </ul>
+    <div class="key"><b>Practice target:</b> <code>captures/pcap-drill-01.html</code> — a planted market-data gapping fault, built and waiting. Diagnose it cold: network or host, which stage, the fix.</div>
+    <div class="foot"><span>16 · Grading axes</span><span>16</span></div>
+  </section>
+
+</div>
+<div class="nav">← → navigate · F fullscreen · (phone: just scroll)</div>
+<script>
+  const slides=[...document.querySelectorAll('.slide')];let i=0;
+  function show(n){slides[i].classList.remove('active');i=(n+slides.length)%slides.length;slides[i].classList.add('active');slides[i].scrollTop=0;}
+  document.addEventListener('keydown',e=>{
+    if(e.key==='ArrowRight'||e.key==='PageDown'){show(i+1);e.preventDefault();}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){show(i-1);e.preventDefault();}
+    else if(e.key==='Home')show(0);else if(e.key==='End')show(slides.length-1);
+    else if(e.key.toLowerCase()==='f'){if(!document.fullscreenElement)document.documentElement.requestFullscreen();else document.exitFullscreen();}
+  });
+  document.addEventListener('click',e=>{ if(e.target.closest('button,a'))return; (e.clientX>innerWidth/2?show(i+1):show(i-1)); });
+  ['prev','next'].forEach(d=>{const b=document.createElement('button');b.className='pgbtn '+d;b.textContent=d==='prev'?'‹':'›';b.onclick=ev=>{ev.stopPropagation();show(d==='prev'?i-1:i+1);};document.body.appendChild(b);});
+</script>
+</body>
+</html>
