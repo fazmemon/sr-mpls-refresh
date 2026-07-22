@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design round — the attack, not the scenarios</title>
+<style>
+  :root{--bg:#0e1726;--panel:#152136;--panel2:#19243c;--ink:#eaf0fb;--muted:#9db0d0;--accent:#4da3ff;--accent2:#54e0c7;--warn:#ffcf6b;--line:#2b3a56;--ex:#0f2030}
+  *{box-sizing:border-box}html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--ink);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  #deck{height:100vh;width:100vw;overflow:hidden;position:relative}
+  .slide{position:absolute;inset:0;padding:4vh 6vw 8vh;display:none;flex-direction:column;justify-content:center;animation:fade .3s ease;overflow-y:auto}
+  .slide.active{display:flex}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  h1{font-size:min(4.8vw,46px);line-height:1.1;margin:0 0 .35em;letter-spacing:-.5px}
+  h2{font-size:min(3vw,30px);margin:0 0 .5em;letter-spacing:-.3px}
+  .kicker{color:var(--accent);font-weight:700;text-transform:uppercase;letter-spacing:2px;font-size:12px;margin-bottom:10px}
+  p{font-size:min(1.95vw,18px);max-width:84ch;margin:.45em 0;color:#dbe6f7}
+  .lead{color:var(--muted);font-size:min(1.95vw,18px);max-width:82ch}
+  .em{color:var(--accent2);font-weight:600}.em2{color:var(--accent);font-weight:600}.warn{color:var(--warn)}
+  b{color:#fff}
+  code{background:#1e2a3e;padding:1px 6px;border-radius:3px;color:#ffd9a0;font-size:.92em}
+  ul{margin:.3em 0;padding-left:0;list-style:none}
+  li{margin:.42em 0;padding-left:1.3em;position:relative;font-size:min(1.9vw,17px);max-width:86ch}
+  li:before{content:"";position:absolute;left:0;top:.55em;width:8px;height:8px;border-radius:2px;background:var(--accent2)}
+  .key{background:var(--ex);border-left:3px solid var(--accent2);border-radius:0 8px 8px 0;padding:10px 15px;margin:.6em 0 0;font-size:min(1.85vw,16px);color:#bfe9df;max-width:88ch}
+  .key b{color:var(--accent2)}
+  .say{background:#12202f;border:1px solid #2e6e5e;border-radius:10px;padding:10px 15px;margin:.6em 0 0;font-size:min(1.9vw,17px);color:#eaf0fb;max-width:88ch}
+  .say:before{content:"SAY IT LIKE THIS  ";color:var(--accent2);font-size:10px;font-weight:700;letter-spacing:1.5px}
+  .cols{display:flex;gap:2.2vw;flex-wrap:wrap;margin-top:.2em}
+  .col{flex:1;min-width:300px}
+  .box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px 18px;margin:.4em 0}
+  .box h3{margin:.05em 0 .3em;font-size:min(2vw,19px);color:#9cdcfe}.box p{font-size:min(1.8vw,16px);margin:.2em 0}
+  table{border-collapse:collapse;width:100%;margin-top:.4em;font-size:min(1.75vw,16px)}
+  td,th{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+  th{color:var(--accent);font-weight:700}
+  .foot{position:fixed;bottom:14px;left:6vw;right:6vw;display:flex;justify-content:space-between;color:var(--muted);font-size:12px;border-top:1px solid var(--line);padding-top:7px}
+  .nav{position:fixed;bottom:1px;left:50%;transform:translateX(-50%);color:var(--muted);font-size:11px;opacity:.5}
+  svg{width:100%;max-height:56vh}
+  .pgbtn{position:fixed;top:50%;transform:translateY(-50%);width:46px;height:66px;border:1px solid var(--line);background:rgba(21,33,54,.9);color:var(--ink);font-size:26px;border-radius:10px;cursor:pointer;z-index:20}
+  .pgbtn.prev{left:10px}.pgbtn.next{right:10px}
+  @media(max-width:820px){
+    .cols{flex-direction:column;gap:0}
+    #deck{height:auto;overflow:visible}
+    .slide{display:flex!important;position:static;inset:auto;height:auto;min-height:auto;padding:5vh 7vw 4vh;border-bottom:1px solid var(--line);justify-content:flex-start}
+    .foot,.nav,.pgbtn{display:none}
+    svg{max-height:none}
+    table{font-size:13px}
+  }
+</style>
+</head>
+<body>
+<div id="deck">
+
+  <!-- 1 · cover -->
+  <section class="slide active">
+    <div class="kicker">HRT · the round you lead · teach deck</div>
+    <h1>The design round — drill the attack, never the scenario</h1>
+    <p class="lead">You've done ~100 design interviews; the design body is lived ground. What this deck holds is the <b>attack made explicit</b> — the order, the sizing reflex, and the judgment through-line — so it fires cold into ANY scenario they pose. The reframe that unlocks it: <span class="em">a design round is your day job narrated out loud.</span> Only the structure is new, and the structure is four moves.</p>
+    <div class="foot"><span>Design-round attack</span><span>1</span></div>
+  </section>
+
+  <!-- 2 · the four moves -->
+  <section class="slide">
+    <div class="kicker">The spine — order IS the seniority signal</div>
+    <h2>Four moves, in order, every time</h2>
+    <svg viewBox="0 0 1000 200" role="img" aria-label="The four steps">
+      <g font-size="14" text-anchor="middle">
+        <rect x="30" y="50" width="200" height="90" rx="10" fill="#152136" stroke="#4da3ff" stroke-width="2"/>
+        <text x="130" y="82" fill="#4da3ff" font-weight="700">1 · SCOPE</text>
+        <text x="130" y="104" fill="#9db0d0" font-size="11">don't design yet —</text>
+        <text x="130" y="120" fill="#9db0d0" font-size="11">PROPOSE the NFRs, confirm</text>
+        <rect x="280" y="50" width="200" height="90" rx="10" fill="#152136" stroke="#54e0c7" stroke-width="2.5"/>
+        <text x="380" y="82" fill="#54e0c7" font-weight="700">1.5 · SIZE IT</text>
+        <text x="380" y="104" fill="#9db0d0" font-size="11">back-of-envelope — the</text>
+        <text x="380" y="120" fill="#9db0d0" font-size="11">numbers force the architecture</text>
+        <rect x="530" y="50" width="200" height="90" rx="10" fill="#152136" stroke="#4da3ff" stroke-width="2"/>
+        <text x="630" y="82" fill="#4da3ff" font-weight="700">2 · HIGH-LEVEL</text>
+        <text x="630" y="104" fill="#9db0d0" font-size="11">boxes + dataflow,</text>
+        <text x="630" y="120" fill="#9db0d0" font-size="11">happy path, get buy-in</text>
+        <rect x="780" y="50" width="200" height="90" rx="10" fill="#152136" stroke="#ffcf6b" stroke-width="2"/>
+        <text x="880" y="82" fill="#ffcf6b" font-weight="700">3 · DEEP-DIVE</text>
+        <text x="880" y="104" fill="#9db0d0" font-size="11">bottlenecks, tradeoffs,</text>
+        <text x="880" y="120" fill="#9db0d0" font-size="11">what breaks at 3am — YOUR ground</text>
+      </g>
+      <g stroke="#9db0d0" stroke-width="2"><line x1="230" y1="95" x2="280" y2="95"/><line x1="480" y1="95" x2="530" y2="95"/><line x1="730" y1="95" x2="780" y2="95"/></g>
+      <text x="500" y="180" fill="#9db0d0" font-size="13" text-anchor="middle">wrap: recap · what you'd monitor · what you'd do with more time. Time-box: ~10 min scope · ~10 high-level · the rest deep-dive.</text>
+    </svg>
+    <ul>
+      <li><b>Scope in the trading register:</b> what traffic — one-to-many market-data / many-to-one order flow / control? Latency and loss profile — deterministic or throughput? Scale — nodes, rate each, one DC or across colos?</li>
+      <li><b>The senior move:</b> don't ask open questions — <span class="em">propose</span> the requirements and confirm: "I'll assume market-data distribution, N consumers, latency-critical, gap-free — right?"</li>
+    </ul>
+    <div class="foot"><span>2 · The four moves</span><span>2</span></div>
+  </section>
+
+  <!-- 3 · sizing reflex -->
+  <section class="slide">
+    <div class="kicker">Your self-named rust — made reflex</div>
+    <h2>Size it: the numbers force the architecture</h2>
+    <div class="cols">
+      <div class="col box"><h3>The worked example (own it cold)</h3>
+        <p>300 consumers × 10G of one fat stream = 3T of <b>duplication</b> — and the wall is the <b>SOURCE's egress</b> (one host cannot produce 300 copies), not the switch fabric. <span class="em">You didn't choose multicast; the arithmetic did.</span></p></div>
+      <div class="col box"><h3>Reflex numbers (keep hot)</h3>
+        <p>1 ms ≈ <b>200 km</b> in fibre · air/microwave ≈ <b>300 km/ms</b> (1.5× fibre) · bytes × 8 = bits · a 100G NIC ≈ <b>12.5 GB/s</b> · serialisation = header bits ÷ line rate.</p></div>
+    </div>
+    <div class="key"><b>The two-buffers seam (your own realisation — HFT panels probe exactly this):</b> BDP = bandwidth × RTT = data <i>in flight</i> = the <b>TCP window / socket buffer</b> needed to keep a long fat pipe full — too small and the pipe <i>starves</i> (a throughput problem). The <b>router egress buffer</b> is different: packets queued at an output port, fills on microburst, tail-drops (an <i>overflow</i> problem). BOTH are sized bandwidth × delay — that's why they pattern-match: 100G × 60 ms = 6 Gbit ÷ 8 = <b>750 MB window</b>; 50 ms × 100G ≈ <b>625 MB egress buffer</b>. Same product, two different problems.</div>
+    <div class="key"><b>Worked example:</b> 50,000 messages a second at 100 bytes = 5 MB/s = 40 megabits. Bandwidth is trivial; determinism and the message rate drive the design, not throughput.</div>
+    <div class="foot"><span>3 · Sizing</span><span>3</span></div>
+  </section>
+
+  <!-- 4 · deep-dive -->
+  <section class="slide">
+    <div class="kicker">Where 25 years wins — structured, not recalled</div>
+    <h2>Deep-dive: the failure-mode sweep</h2>
+    <ul>
+      <li><b>Run the sweep in a fixed order</b> so nothing hides: single link · single node · the SHARED-fate pair (SRLG — "two of everything" in one duct is one of everything) · the slow consumer · the control-plane loss (does it degrade to "no changes" or to "no forwarding"?) · the operational failure (who fat-fingers what).</li>
+      <li><b>Quantify the failover:</b> what carries the load the instant it breaks (pre-installed repair, ECMP survivors) vs after reconvergence — and does the surviving capacity actually hold the inherited reroute (the N-1 budget question).</li>
+      <li><b>Validate before capex</b> — "why has nobody complained?" is a design input: if the pain isn't real, the build isn't justified. Commercial judgment is screened for.</li>
+      <li><b>Monitoring closes it:</b> say what you'd watch — tail percentiles not averages, one-way latency (PTP-disciplined), the per-stage drop counters.</li>
+    </ul>
+    <div class="key"><b>Whiteboard discipline:</b> draw first, talk to the drawing — you design against a picture, not prose. Happy path fully drawn BEFORE any failure talk. When corrected on a hard fact, concede fast and fold it in; otherwise hold your line.</div>
+    <div class="foot"><span>4 · Deep-dive</span><span>4</span></div>
+  </section>
+
+  <!-- 5 · the SR judgment -->
+  <section class="slide">
+    <div class="kicker">The through-line they advanced you for</div>
+    <h2>"Should we use SR?" — the judgment, not the sell</h2>
+    <table>
+      <tr><th>The ask</th><th>The tool you already own (no SR)</th><th>SR needed?</th></tr>
+      <tr><td>Spread load by capacity (UCMP)</td><td>BGP link-bandwidth → weighted FIB</td><td><span class="em">NO</span> — never sell SR on UCMP; you'd lose to anyone who knows DMZ link-bandwidth</td></tr>
+      <tr><td>Pin a CLASS to a path/plane</td><td>metric = one tree for all; PBR doesn't scale</td><td><span class="warn">YES</span> — source routing is the definition of the problem (SR-TE colour policy)</td></tr>
+      <tr><td>Sub-50ms deterministic protection</td><td>LFA — coverage gaps, arbitrary backup path</td><td><span class="warn">YES</span> — TI-LFA: guaranteed coverage, repair = the post-convergence path</td></tr>
+      <tr><td>Fewer control planes</td><td>IGP + LDP + RSVP-TE stack</td><td><span class="warn">YES</span> — labels ride the IGP; LDP and RSVP soft-state retire</td></tr>
+      <tr><td>Deterministic one-to-many feed</td><td>PIM-SSM, its own plane</td><td><span class="em">NO</span> — keep market-data OFF the SR fabric; steering + protection + consolidation carry the case</td></tr>
+    </table>
+    <div class="key"><b>Practise BOTH verdicts:</b> the market-data problem where SR is the WRONG tool, and the steering/protection problem where it earns its keep. Making the call — not reciting the tech — is the seniority signal, and it's the exact judgment your migration deck walks.</div>
+    <div class="foot"><span>5 · The SR call</span><span>5</span></div>
+  </section>
+
+  <!-- 6 · the problem surfaces -->
+  <section class="slide">
+    <div class="kicker">Vary the surface, never repeat the rep</div>
+    <h2>The eight surfaces the attack must fire into</h2>
+    <div class="cols">
+      <div class="col">
+        <ul>
+          <li><b>Market-data distribution</b> — fan-out → multicast, A/B + sequence arbitration, slow consumer</li>
+          <li><b>Order-entry / gateway path</b> — asymmetry: multicast in, <i>reliable unicast</i> out; risk inline; kill switch; the RATE drives it, not bandwidth</li>
+          <li><b>Inter-DC / colo transport</b> — latency budget picks the medium (microwave vs fibre vs λ), diversity SRLG-audited</li>
+          <li><b>Time distribution (PTP)</b> — why, fan-out, accuracy budget, failure modes</li>
+        </ul>
+      </div>
+      <div class="col">
+        <ul>
+          <li><b>Risk / kill-switch fan-in</b> — stateless inline vs stateful beside the path; fail-closed; blast radius</li>
+          <li><b>Exchange connectivity</b> — cross-connect pairs, session failover, drop copy, cancel-on-disconnect</li>
+          <li><b>SR-earns-it design</b> — per-class steering / TI-LFA / consolidation on ground you own</li>
+          <li><b>Hub-and-spoke at scale</b> — push the failure: hub = SPOF + bottleneck → regional hubs / hierarchy</li>
+        </ul>
+      </div>
+    </div>
+    <div class="key"><b>The law:</b> what becomes reflex is the ATTACK — scope → size → draw → break — never any one scenario. Memorised scenarios break on a new case; the varied rep transfers. Each rep = a fresh surface, cold, timed.</div>
+    <div class="foot"><span>6 · The surfaces</span><span>6</span></div>
+  </section>
+
+  <!-- 7 · delivery -->
+  <section class="slide">
+    <div class="kicker">How it lands in the room</div>
+    <h2>Delivery — the half that isn't networking</h2>
+    <ul>
+      <li><b>~90 seconds per answer</b> — land the point, then offer to go deeper. Rambling is the failure mode they name.</li>
+      <li><b>You lead.</b> Set the agenda, state assumptions, propose the architecture, invite them to pick the deep-dive, lead that subdiscussion — your natural mode; the clock is the only new constraint.</li>
+      <li><b>Never STAR a technical question</b> — structured diagnosis for technical, STAR for "tell me about a time" only.</li>
+      <li><b>Calm narration IS the test</b> — for a trading-infra seat, composure while working a live problem is half the grade.</li>
+      <li><b>Defer on their network.</b> The verified facts you hold: massively multi-AS · deploying BGP communities · IGP is OSPF (as far as you know) · eBGP got a raised eyebrow. Assert nothing beyond that — ask.</li>
+    </ul>
+    <div class="foot"><span>7 · Delivery</span><span>7</span></div>
+  </section>
+
+</div>
+<div class="nav">← → navigate · F fullscreen · (phone: just scroll)</div>
+<script>
+  const slides=[...document.querySelectorAll('.slide')];let i=0;
+  function show(n){slides[i].classList.remove('active');i=(n+slides.length)%slides.length;slides[i].classList.add('active');slides[i].scrollTop=0;}
+  document.addEventListener('keydown',e=>{
+    if(e.key==='ArrowRight'||e.key==='PageDown'){show(i+1);e.preventDefault();}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){show(i-1);e.preventDefault();}
+    else if(e.key==='Home')show(0);else if(e.key==='End')show(slides.length-1);
+    else if(e.key.toLowerCase()==='f'){if(!document.fullscreenElement)document.documentElement.requestFullscreen();else document.exitFullscreen();}
+  });
+  document.addEventListener('click',e=>{ if(e.target.closest('button,a'))return; (e.clientX>innerWidth/2?show(i+1):show(i-1)); });
+  ['prev','next'].forEach(d=>{const b=document.createElement('button');b.className='pgbtn '+d;b.textContent=d==='prev'?'‹':'›';b.onclick=ev=>{ev.stopPropagation();show(d==='prev'?i-1:i+1);};document.body.appendChild(b);});
+</script>
+</body>
+</html>

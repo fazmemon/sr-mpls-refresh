@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>pcap drill 01 — market-data gapping</title>
+<style>
+  body{background:#0d1117;color:#c9d1d9;font-family:ui-monospace,Consolas,monospace;margin:0;padding:22px;font-size:13px;}
+  h1{color:#4ec9b0;font-family:Segoe UI,sans-serif;font-size:20px;margin:0 0 2px;}
+  .sub{color:#8a97a3;font-family:Segoe UI,sans-serif;font-size:14px;margin:0 0 16px;}
+  h2{color:#9cdcfe;font-family:Segoe UI,sans-serif;font-size:15px;margin:20px 0 6px;border-bottom:1px solid #30363d;padding-bottom:3px;}
+  table{border-collapse:collapse;width:100%;margin:4px 0;}
+  th{color:#4ec9b0;text-align:left;padding:3px 8px;border-bottom:1px solid #30363d;font-family:Segoe UI,sans-serif;}
+  td{padding:2px 8px;border-bottom:1px solid #1b2027;white-space:nowrap;}
+  .A{color:#7ee787;} .B{color:#79c0ff;} .burst{background:#1a2b1a;} .other{color:#6e7681;}
+  pre{background:#010409;border:1px solid #30363d;border-radius:6px;padding:10px 12px;color:#c9d1d9;overflow-x:auto;}
+  .note{color:#8a97a3;font-family:Segoe UI,sans-serif;font-size:12.5px;margin:6px 0;}
+  .q{background:#161b22;border-left:3px solid #d29922;padding:10px 14px;border-radius:4px;font-family:Segoe UI,sans-serif;font-size:14px;color:#e6edf3;margin-top:8px;}
+</style></head><body>
+
+<h1>pcap drill 01 — "a market-data feed is gapping"</h1>
+<p class="sub">Evidence only. Diagnose out loud: is it network or host, which stage, and the fix. No answer on this page.</p>
+
+<h2>1 · Tap capture at the receiver NIC (10.0.5.20), pre-socket — feeds A &amp; B</h2>
+<p class="note">Passive optical tap + hardware timestamps, captured on the wire ahead of the kernel. Feed A = (10.10.0.1 &rarr; 232.1.1.1:30001), Feed B = (10.20.0.1 &rarr; 232.2.2.2:30002), disjoint paths. seq = app sequence number in the UDP payload.</p>
+<table>
+<tr><th>No.</th><th>Time (s)</th><th>&Delta;t (&micro;s)</th><th>Source</th><th>Dest</th><th>Proto</th><th>Len</th><th>Info</th></tr>
+<tr><td>1</td><td>0.000000</td><td>—</td><td class="A">10.10.0.1</td><td>232.1.1.1</td><td>UDP</td><td>142</td><td class="A">feed A · seq=4515</td></tr>
+<tr><td>2</td><td>0.000002</td><td>2.1</td><td class="B">10.20.0.1</td><td>232.2.2.2</td><td>UDP</td><td>142</td><td class="B">feed B · seq=8838</td></tr>
+<tr><td>3</td><td>0.000205</td><td>203</td><td class="A">10.10.0.1</td><td>232.1.1.1</td><td>UDP</td><td>142</td><td class="A">feed A · seq=4516</td></tr>
+<tr><td>4</td><td>0.000207</td><td>2.0</td><td class="B">10.20.0.1</td><td>232.2.2.2</td><td>UDP</td><td>142</td><td class="B">feed B · seq=8839</td></tr>
+<tr><td>5</td><td>0.000410</td><td>203</td><td class="A">10.10.0.1</td><td>232.1.1.1</td><td>UDP</td><td>142</td><td class="A">feed A · seq=4517</td></tr>
+<tr><td>6</td><td>0.000412</td><td>2.0</td><td class="B">10.20.0.1</td><td>232.2.2.2</td><td>UDP</td><td>142</td><td class="B">feed B · seq=8840</td></tr>
+<tr><td>7</td><td>0.000615</td><td>203</td><td class="A">10.10.0.1</td><td>232.1.1.1</td><td>UDP</td><td>142</td><td class="A">feed A · seq=4518</td></tr>
+<tr><td>8</td><td>0.000617</td><td>2.0</td><td class="B">10.20.0.1</td><td>232.2.2.2</td><td>UDP</td><td>142</td><td class="B">feed B · seq=8841</td></tr>
+<tr class="burst"><td>9</td><td>0.000702</td><td>0.5</td><td class="A">10.10.0.1</td><td>232.1.1.1</td><td>UDP</td><td>142</td><td class="A">feed A · seq=4519</td></tr>
+<tr class="burst"><td>10</td><td>0.000702</td><td>0.4</td><td class="B">10.20.0.1</td><td>232.2.2.2</td><td>UDP</td><td>142</td><td class="B">feed B · seq=8842</td></tr>
+<tr class="burst"><td>11</td><td>0.000703</td><td>0.4</td><td class="A">10.10.0.1</td><td>232.1.1.1</td><td>UDP</td><td>142</td><td class="A">feed A · seq=4520</td></tr>
+<tr class="burst"><td>12</td><td>0.000703</td><td>0.4</td><td class="other">10.30.0.9</td><td>232.9.9.9</td><td>UDP</td><td>142</td><td class="other">feed C (other) · seq=201</td></tr>
+<tr class="burst"><td>13</td><td>0.000704</td><td>0.3</td><td class="B">10.20.0.1</td><td>232.2.2.2</td><td>UDP</td><td>142</td><td class="B">feed B · seq=8843</td></tr>
+<tr class="burst"><td>14</td><td>0.000704</td><td>0.4</td><td class="A">10.10.0.1</td><td>232.1.1.1</td><td>UDP</td><td>142</td><td class="A">feed A · seq=4521</td></tr>
+<tr class="burst"><td>15</td><td>0.000704</td><td>0.3</td><td class="other">10.30.0.9</td><td>232.9.9.9</td><td>UDP</td><td>142</td><td class="other">feed C (other) · seq=202</td></tr>
+<tr class="burst"><td>16</td><td>0.000705</td><td>0.4</td><td class="B">10.20.0.1</td><td>232.2.2.2</td><td>UDP</td><td>142</td><td class="B">feed B · seq=8844</td></tr>
+<tr class="burst"><td>17</td><td>0.000705</td><td>0.3</td><td class="A">10.10.0.1</td><td>232.1.1.1</td><td>UDP</td><td>142</td><td class="A">feed A · seq=4522</td></tr>
+<tr><td>18</td><td>0.000905</td><td>200</td><td class="A">10.10.0.1</td><td>232.1.1.1</td><td>UDP</td><td>142</td><td class="A">feed A · seq=4523</td></tr>
+<tr><td>19</td><td>0.000907</td><td>2.0</td><td class="B">10.20.0.1</td><td>232.2.2.2</td><td>UDP</td><td>142</td><td class="B">feed B · seq=8845</td></tr>
+<tr><td>20</td><td>0.001110</td><td>203</td><td class="A">10.10.0.1</td><td>232.1.1.1</td><td>UDP</td><td>142</td><td class="A">feed A · seq=4524</td></tr>
+</table>
+<p class="note">Tap shows every sequence number present and in order on both feeds through the burst (rows 9&ndash;17 are a ~15-packet microburst, &Delta;t ~0.3&ndash;0.5&micro;s, vs ~200&micro;s steady state).</p>
+
+<h2>2 · Feed-handler application log (same host, same window)</h2>
+<pre>12:31:07.400702  WARN  feedA  GAP  expected seq 4519, got 4523  (missing 4519,4520,4521,4522)
+12:31:07.400705  WARN  feedB  GAP  expected seq 8842, got 8845  (missing 8842,8843,8844)
+12:31:07.400706  INFO  arbiter  both A and B gapped over 4519-4522 window -> no clean side -> request recovery</pre>
+
+<h2>3 · Host counters (receiver 10.0.5.20)</h2>
+<pre>$ ethtool -S ens5 | egrep 'rx_dropped|no_buffer|rx_packets'
+     rx_packets: 18446744
+     rx_dropped: 0
+     rx_no_buffer: 0
+     ena_rx_empty_rx_ring: 0
+
+$ cat /proc/net/softnet_stat        # col1=processed col2=dropped col3=time_squeeze
+  0a1f4c22 00000000 000000b7 00000000 ...     # time_squeeze (col3) rising
+
+$ netstat -su | egrep -i 'packet receive errors|RcvbufErrors|InErrors'
+    142 packet receive errors
+    RcvbufErrors: 142          #  <-- was 138 one second ago
+    InErrors: 142
+
+$ ss -uapm 'sport = :30001 or sport = :30002'
+UDP  UNCONN  212992  0  232.1.1.1:30001  ...  skmem:(r212992,rb212992,...)   # Recv-Q pegged at rb
+UDP  UNCONN  212992  0  232.2.2.2:30002  ...  skmem:(r212992,rb212992,...)
+
+$ sysctl net.core.rmem_max net.core.rmem_default
+net.core.rmem_max = 212992
+net.core.rmem_default = 212992</pre>
+
+<div class="q">Diagnose: network or host? Which stage owns the loss? What's the tell that decides it? Then the fix — immediate and structural — and what it means for the A/B recovery model.</div>
+
+</body></html>

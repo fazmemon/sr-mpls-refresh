@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Drill bank — 177 cold questions</title><style>
+:root{--bg:#0e1726;--panel:#152136;--ink:#eaf0fb;--muted:#9db0d0;--accent:#4da3ff;--accent2:#54e0c7;--warn:#ffcf6b;--line:#2b3a56;--ex:#0f2030}
+@media(prefers-color-scheme:light){:root{--bg:#fbfbf8;--panel:#fff;--ink:#1a1a1a;--muted:#555;--accent:#0b5cad;--accent2:#0a7a63;--warn:#8a5a00;--line:#ddd;--ex:#f2f7f5}}
+*{box-sizing:border-box}
+body{margin:0 auto;max-width:820px;padding:22px 18px 90px;background:var(--bg);color:var(--ink);
+     font:17px/1.62 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Georgia,serif;-webkit-text-size-adjust:100%}
+h1{font-size:27px;color:var(--accent2);margin:.2em 0 .1em;letter-spacing:-.4px}
+.sub{color:var(--muted);margin:0 0 6px;font-size:15px}
+h2{font-size:19px;color:var(--accent);margin:34px 0 6px;border-bottom:1px solid var(--line);
+   padding-bottom:6px;letter-spacing:.5px;scroll-margin-top:12px}
+.q{margin:18px 0 0;font-weight:700;color:var(--ink)}
+.a{background:var(--ex);border-left:3px solid var(--accent2);border-radius:0 8px 8px 0;
+   padding:9px 14px;margin:5px 0 0;color:var(--muted);font-size:16px}
+.a p{margin:.35em 0}
+b,strong{color:var(--ink);font-weight:700}
+em{color:var(--accent);font-style:normal}
+code{background:var(--panel);border:1px solid var(--line);padding:1px 5px;border-radius:3px;
+     font-size:.88em;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--warn)}
+table{border-collapse:collapse;width:100%;margin:10px 0;font-size:15px;display:block;overflow-x:auto}
+td,th{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}
+th{color:var(--accent);background:var(--panel)}
+hr{border:0;border-top:1px solid var(--line);margin:26px 0}
+ul{padding-left:20px}li{margin:.3em 0}
+.toc{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin:14px 0}
+.toc a{display:block;color:var(--accent2);text-decoration:none;font-size:15px;padding:3px 0;font-weight:600}
+.toc a:hover{text-decoration:underline}
+.top{position:fixed;right:14px;bottom:14px;background:var(--panel);border:1px solid var(--line);
+     border-radius:999px;padding:9px 15px;color:var(--accent2);text-decoration:none;font-size:14px;font-weight:700}
+</style></head><body>
+<h1>Drill bank — 177 cold questions</h1><p class="sub">Read the question, cover the answer, say it out loud, then check. Works on phone, tablet and Kindle.</p>
+<div class="toc"><b>Jump to</b><a href="#s1">A · Spine-leaf / CLOS design</a><a href="#s2">B · Underlay (eBGP / OSPF, ECMP)</a><a href="#s3">C · VXLAN dataplane</a><a href="#s4">D · EVPN control plane</a><a href="#s5">E · IRB (the one to nail)</a><a href="#s6">F · Multihoming (ESI-LAG)</a><a href="#s7">G · BUM / replication</a><a href="#s8">H · MAC mobility / loop protection</a><a href="#s9">I · Cross-vendor interop (Juniper ↔ Cisco) — the Juniper edge</a><a href="#s10">J · Hardware / silicon internals (your new ask)</a><a href="#s11">K · Multicast (market-data tie-in)</a><a href="#s12">L · Linux receive path + low-latency (host side — HRT) — researched, drillable</a><a href="#s13">DRILL METHOD (Faz, 2026-06-19) — SPACED, not echo</a><a href="#s14">M · COMPETITOR LANDSCAPE — chassis / silicon / buffer / AI (the &quot;pure winner&quot;)</a><a href="#s15">N · NON-CLOS / AI-HPC TOPOLOGIES (Faz gap-fill 2026-06-20 — pre-sales AI-fabric edge)</a><a href="#s16">O · SILICON DEEP-DIVE — glossary · vendor map · generational evolution (Faz P0, built 2026-06-20)</a><a href="#s17">P · AWS networking (weak axis — ties to the hybrid lab DC→AWS leg)</a><a href="#s18">Q · Cloud/AI-DC build stack — how the cloud runs on the fabric (SE whole-stack frame, Monday)</a><a href="#s19">R · DC FABRIC EVOLUTION — what each iteration SOLVED (Faz ask 2026-06-26)</a><a href="#s20">S · AI FABRIC SIZING — quick calc cheat-sheet (Juniper &quot;Designing DCs for AI Clusters&quot;, verified from the PDF 2026-06-27)</a><a href="#s21">T · Virtualization &amp; containers (network view)</a><a href="#s22">U · AI-FABRIC ECONOMICS — the &quot;Andy (Google)&quot; brief (Nscale-facing, added 2026-07-14)</a><a href="#s23">V · TCP/IP STATE + TRANSPORT INTERNALS (cold source, added 2026-07-22)</a><a href="#s24">W · ENCAPSULATION — WHAT&#x27;S ACTUALLY ON THE WIRE (cold source, added 2026-07-22)</a><a href="#s25">X · SDN (own round, 27/28 Jul — cold source, added 2026-07-22)</a><a href="#s26">Y · PCAP READING (in scope, 27/28 Jul — cold source, added 2026-07-22)</a><a href="#s27">Z · BGP — QUIZ-ROUND DEPTH (cold source, added 2026-07-22)</a><a href="#s28">AA · OSPF — QUIZ-ROUND DEPTH (cold source, added 2026-07-22)</a><a href="#s29">AB · MPLS + SR — QUIZ-ROUND DEPTH (cold source, added 2026-07-22)</a><a href="#s30">AC · MULTICAST — QUIZ-ROUND DEPTH (cold source, added 2026-07-22)</a><a href="#s31">AD · GENERAL NETWORKING — THE CATCH-ALL (cold source, added 2026-07-22)</a><a href="#s32">AE · DESIGN + FAILURE SCENARIOS (cold source, added 2026-07-22)</a></div>
+<p><b>Use:</b> self-test in the sun (cover the answer, say it out loud, then check). Later, run cold with CC in a focus block — CC asks one, you answer, CC grades by what&#x27;s <em>missing/wrong</em> only. Pitch is senior; answers give the keeper mechanism + the precise terms a weak answer drops. No soundbites.</p>
+<p>Focus = HRT (DC fabric depth) + Juniper (EVPN/VXLAN, cross-vendor, GPU-fabric-adjacent). Cross-vendor gotchas (§I) and silicon internals (§J) are the edges most candidates can&#x27;t hold — lead with those.</p>
+<hr>
+<h2 id="s1">A · Spine-leaf / CLOS design</h2>
+<p class="q"><b>A1.</b> Why did DCs move from 3-tier (access/agg/core) to spine-leaf, and what specifically breaks in 3-tier that spine-leaf fixes?</p>
+<div class="a">
+<p>Traffic went <b>north-south → east-west</b> (VM-VM, GPU-GPU, distributed storage). 3-tier oversubscribes the core and leans on <b>STP</b> (blocks links, one active path). Spine-leaf is <b>routed (L3) with ECMP</b> — every leaf→leaf is a uniform <b>2 hops</b>, all uplinks active, no STP, scale bandwidth by adding spines. Weak answer stops at &quot;more bandwidth&quot; and misses the STP/uniform-latency/all-active points.</p>
+</div>
+<p class="q"><b>A2.</b> 4 spines, 32 leaves, each leaf has 4×100G uplinks (one per spine). A spine fails — quantify the impact. Then: what caps how many leaves you can add, and how many spines?</p>
+<div class="a">
+<p>Lose 1 of 4 spines = <b>lose 25% of fabric bandwidth</b>, zero connectivity loss (ECMP reweights to 3 spines). <b>Max leaves = spine port count</b>; <b>max spines = leaf uplink count</b> (4 here). Bisection = n_spines × uplink_speed. To grow past that → 5-stage Clos (pods + super-spine) for host count, or multi-plane for bandwidth on fixed silicon.</p>
+</div>
+<p class="q"><b>A3.</b> Where do you set oversubscription in a leaf-spine fabric, and what ratio for a trading fabric vs general compute?</p>
+<div class="a">
+<p>At the <b>leaf uplink:downlink ratio</b> (sum of host-facing vs sum of fabric-facing). Trading/AI = <b>1:1 (non-blocking)</b>; general compute up to <b>3:1</b>. Spine is non-blocking by construction. Weak answer says &quot;the spine&quot; — wrong, spine isn&#x27;t where oversub is set.</p>
+</div>
+<hr>
+<h2 id="s2">B · Underlay (eBGP / OSPF, ECMP)</h2>
+<p class="q"><b>B1.</b> Why is eBGP (RFC 7938) the dominant DC underlay over OSPF/IS-IS, and what&#x27;s the ASN plan?</p>
+<div class="a">
+<p>eBGP: <b>no flooding domain</b> (scales by ASN, contained blast radius), per-hop policy control, same protocol as the EVPN overlay. ASN plan: <b>unique private ASN per leaf</b> (64512–65534 / 4-byte), <b>shared ASN across all spines</b> (so a leaf sees the same AS from every spine → keeps paths as ECMP, and prevents a leaf&#x27;s route looping back through another leaf). Weak answer misses <em>why spines share an ASN</em>.</p>
+</div>
+<p class="q"><b>B2.</b> What does eBGP unnumbered (RFC 5549/8950) buy you, and what&#x27;s actually carried?</p>
+<div class="a">
+<p>No per-link /31s to plan — BGP peers over <b>IPv6 link-local</b> (auto, via RA), advertises <b>IPv4 NLRI with an IPv6 next-hop</b>. Saves an addressing plan across hundreds of fabric links; the host routes are still IPv4 /32 loopbacks. The <em>underlay&#x27;s only job is loopback (VTEP) reachability + ECMP.</em></p>
+</div>
+<p class="q"><b>B3.</b> Leaf1→Leaf3, 4 spines, all advertise Leaf3&#x27;s loopback equal-cost. One spine&#x27;s path goes stale on a link flap — what keeps the other three usable instantly, and what&#x27;s the failure if ECMP isn&#x27;t there?</p>
+<div class="a">
+<p>Multipath install of all 4 next-hops; a flap withdraws one, the FIB keeps 3 — <b>no reconvergence needed for the survivors</b>. Need <code>maximum-paths</code>/<code>multipath-relax</code> (eBGP paths differ in AS_PATH first-hop ASN → multipath-relax required to treat them equal). Without it: one best-path, no spread, flap = reconverge.</p>
+</div>
+<hr>
+<h2 id="s3">C · VXLAN dataplane</h2>
+<p class="q"><b>C1.</b> Walk a frame Server-A→Server-B across the fabric. What does the spine see, and what&#x27;s the encap byte-by-byte?</p>
+<div class="a">
+<p>Ingress leaf (VTEP) looks up B → behind Leaf3&#x27;s VTEP loopback → wraps: <b>[outer IP src=ingress-VTEP dst=egress-VTEP | UDP dst 4789, src=hash(inner flow) | VXLAN hdr + 24-bit VNI | original L2 frame]</b> (&quot;MAC-in-UDP&quot;). <b>Spine routes only the outer IP</b> — never sees tenant MAC/VNI. Egress VTEP decaps, delivers. Outer-src-UDP = inner-flow hash → gives spines ECMP entropy.</p>
+</div>
+<p class="q"><b>C2.</b> VXLAN adds ~50 bytes. What MTU do you set on the underlay and what&#x27;s the symptom if you forget?</p>
+<div class="a">
+<p>Underlay MTU must cover original 1500 + ~50 VXLAN/UDP/IP overhead → set <b>jumbo (9216)</b> fabric-wide. Forget it → <b>silent path-MTU blackhole / fragmentation</b> on encap, intermittent large-frame loss while pings work. Classic gotcha.</p>
+</div>
+<p class="q"><b>C3.</b> What gives the spines hash entropy when every flow between two VTEPs has the <em>same</em> outer IP pair?</p>
+<div class="a">
+<p>The <b>outer UDP source port = hash of the inner flow</b> (5-tuple). Same VTEP pair, different inner flows → different src-port → spines ECMP across uplinks. Without it all VTEP-to-VTEP traffic polarises onto one spine path.</p>
+</div>
+<hr>
+<h2 id="s4">D · EVPN control plane</h2>
+<p class="q"><b>D1.</b> Name the 5 EVPN route types and the one-line job of each.</p>
+<div class="a">
+<p><b>T2</b> MAC/IP advertisement (host reachability, ARP/ND suppression, MAC mobility). <b>T3</b> Inclusive Multicast (IMET — per-VNI BUM flood list). <b>T5</b> IP Prefix (L3/inter-subnet, symmetric IRB, summarisation, external). <b>T1</b> Ethernet A-D (multihoming: per-ES <b>mass-withdraw</b>, per-EVI <b>aliasing</b>). <b>T4</b> Ethernet Segment (<b>DF election</b>). T2/3/5 everyday; 1/4 appear once you multihome.</p>
+</div>
+<p class="q"><b>D2.</b> RD vs RT — what does each do, and which one is the tenant-isolation lever?</p>
+<div class="a">
+<p><b>RD</b> (Route Distinguisher) prepended per-EVI/VRF so overlapping tenant MAC/IP stay <b>unique in BGP</b> (often auto <code>RID:VNI</code>). <b>RT</b> (Route Target ext-community) controls <b>import/export</b> = which VRF/EVI a route lands in = <b>tenant isolation</b>. Flip an RT and the route stops importing on the far leaf — that&#x27;s the macro-seg lever.</p>
+</div>
+<p class="q"><b>D3.</b> AFI/SAFI for EVPN, and where do the route reflectors sit in an iBGP-EVPN design?</p>
+<div class="a">
+<p><b>AFI 25 / SAFI 70.</b> iBGP-EVPN: <b>spines as route-reflectors</b> (leaves are RR-clients), or eBGP-EVPN where the underlay eBGP also carries the EVPN AF. Spines reflect overlay routes but never become VTEPs in the classic design.</p>
+</div>
+<hr>
+<h2 id="s5">E · IRB (the one to nail)</h2>
+<p class="q"><b>E1.</b> Symmetric vs asymmetric IRB — mechanism, and why symmetric scales.</p>
+<div class="a">
+<p><b>Asymmetric</b>: ingress leaf routes into the <em>destination&#x27;s L2VNI</em>, egress just bridges (route-then-bridge). Needs <b>every VNI configured on every leaf</b> → doesn&#x27;t scale. <b>Symmetric</b>: ingress routes into a common per-VRF <b>L3VNI (transit VNI)</b>, egress routes out of it (bridge-route → L3VNI → route-bridge). Only the <b>L3VNI</b> must be everywhere, not every L2VNI → scales, the modern default. Weak answer can define both but misses &quot;asym needs all VNIs everywhere.&quot;</p>
+</div>
+<p class="q"><b>E2.</b> What is the anycast gateway and why does it make host mobility seamless?</p>
+<div class="a">
+<p>Same <b>virtual IP + virtual MAC</b> configured on <b>every leaf</b> for a subnet → a host&#x27;s default gateway is <b>always the local leaf</b>, identical everywhere. Move the host to any leaf and its gateway IP/MAC is unchanged → no ARP re-learn, no hairpin. Pairs with symmetric IRB.</p>
+</div>
+<p class="q"><b>E3.</b> Centralized routing (one spine routes all inter-subnet, leaves L2-only) — when is it used and what&#x27;s the EOS gotcha?</p>
+<div class="a">
+<p>Lesser-used contrast to distributed IRB — bigger blast radius (all inter-subnet hairpins to the central router), the central node does its own ARP. EOS gotcha (verify in lab): the central router needs <code>redistribute router-mac system ip</code> on the MAC-VRF or it won&#x27;t advertise host MAC+IP and routed traffic floods. Use as the &quot;why distributed/symmetric wins&quot; contrast.</p>
+</div>
+<hr>
+<h2 id="s6">F · Multihoming (ESI-LAG)</h2>
+<p class="q"><b>F1.</b> A server is dual-homed to leaf1+leaf2 (all-active). Three EVPN mechanisms make that work — name them and what each prevents.</p>
+<div class="a">
+<p><b>T4 (Ethernet Segment) → DF election</b>: one leaf is Designated Forwarder for BUM toward the host → prevents <b>duplicate broadcast/multicast</b> delivery. <b>T1 per-EVI → aliasing</b>: remote leaves load-balance unicast to the host&#x27;s MAC across <em>both</em> leaves even though only one advertised the T2 → uses both uplinks. <b>T1 per-ES → mass-withdraw</b>: on a leaf-host link failure, one withdraw clears all MACs on that ES → fast convergence (vs per-MAC withdraw). This is the standards-based replacement for MLAG/vPC.</p>
+</div>
+<p class="q"><b>F2.</b> How is the DF elected, and what changed in RFC 8584?</p>
+<div class="a">
+<p>Original RFC 7432: <b>modulo(VLAN-id, number-of-PEs-in-ES)</b> ordered by PE IP — deterministic but can imbalance and causes churn on membership change. <b>RFC 8584 HRW (Highest Random Weight / &quot;service carving&quot;)</b>: hash-based, minimises reassignment when a PE joins/leaves and spreads DF role better. Weak answer just says &quot;lowest IP.&quot;</p>
+</div>
+<hr>
+<h2 id="s7">G · BUM / replication</h2>
+<p class="q"><b>G1.</b> How does broadcast/unknown-unicast/multicast cross a VXLAN fabric, two methods, which is the DC default?</p>
+<div class="a">
+<p><b>Ingress replication (head-end replication)</b> — source VTEP unicasts a copy to each remote VTEP in the T3/IMET flood list; <b>no multicast underlay needed</b> → <b>DC default</b>. Or <b>multicast underlay (PIM)</b> — VNI→mcast group, fabric replicates; scales BUM better but needs PIM everywhere. ARP/ND suppression cuts most BUM anyway (VTEP answers locally from EVPN-learned MAC/IP).</p>
+</div>
+<hr>
+<h2 id="s8">H · MAC mobility / loop protection</h2>
+<p class="q"><b>H1.</b> Host moves leaf2→leaf5. How does EVPN converge without a loop, and what stops a flapping host melting the fabric?</p>
+<div class="a">
+<p>New leaf advertises a <b>T2 with an incremented MAC-Mobility ext-community sequence number</b>; <b>highest seq wins</b>, old route withdrawn → deterministic, no loop. <b>Duplicate-MAC detection</b>: N moves in M seconds (default e.g. 5 in 180s) → freeze + alarm (mis-cable/loop). <code>sticky-mac</code> pins a MAC so it can&#x27;t move (security). Weak answer misses the <b>sequence number</b> as the tiebreak.</p>
+</div>
+<hr>
+<h2 id="s9">I · Cross-vendor interop (Juniper ↔ Cisco) — the Juniper edge</h2>
+<p><em>All three: both vendors RFC-compliant, different defaults. This is the failure class that humbles single-vendor engineers — exactly the Juniper-interview differentiator.</em></p>
+<p class="q"><b>I1.</b> Junos QFX ↔ Cisco Nexus EVPN: BGP session <b>Established</b>, but <b>PfxRcd stuck at 0</b> and the log says <em>&quot;Received invalid Ethernet Tag ID 10999.&quot;</em> Diagnose and fix.</p>
+<div class="a">
+<p>Junos <b>vlan-aware MAC-VRF</b> stuffs the <b>VNI into the Ethernet Tag</b>; NX-OS <b>VLAN-based</b> service wants <b>Tag 0</b> and silently drops anything else → the type mismatch is two different <b>EVPN service interface types</b> (RFC 7432), both legal. Fix: align service type — <code>service-type vlan-based</code> (or make both vlan-aware bundle). This is a <em>service-model</em> mismatch, not a transport bug.</p>
+</div>
+<p class="q"><b>I2.</b> Sessions up, Type-2s present on the wire, but <b>routes never import</b> across the eBGP boundary. Why, and the two-part fix.</p>
+<div class="a">
+<p><b>Auto-RT derives from the local AS</b> (AS:VNI), so the two sides derive <b>different RTs across an eBGP boundary</b> → import never matches. Fix: <b>pin explicit RTs on both ends</b> (same import/export), and <b>remove <code>rewrite-evpn-rt-asn</code></b> which silently mangles the AS portion of the RT during import matching. Weak answer says &quot;RT mismatch&quot; but misses the rewrite knob.</p>
+</div>
+<p class="q"><b>I3.</b> ARP resolves both ways, MACs cross the fabric, but <b>unicast still drops</b> — traffic is <em>routing around the L2 stretch instead of bridging across it.</em> Root cause and fix.</p>
+<div class="a">
+<p>An <b>IRB subnet leaked into the underlay</b>; the resulting <b>BGP/underlay route (AD 20) beat the EVPN host route (AD 250)</b> → the box politely L3-routed around the stretch rather than bridging across it. Fix: if no L3 gateway is needed there, <b>pull the IRB, keep it pure L2</b> and let the routers route. The tell: bridging &quot;works&quot; at control plane but dataplane prefers an L3 path. This is overlay/underlay hygiene, not interop.</p>
+</div>
+<hr>
+<h2 id="s10">J · Hardware / silicon internals (your new ask)</h2>
+<p class="q"><b>J1.</b> Two buffer architectures in DC silicon — name them, the chips, and which goes spine vs leaf and why.</p>
+<div class="a">
+<p><b>Shallow on-chip shared-memory</b> (Broadcom <b>Tomahawk</b>, Trident) — MB-scale, sub-µs, cut-through-capable → <b>leaf and low-latency/AI spine</b>. <b>Deep off-chip HBM</b> (Broadcom <b>Jericho/J2/J2c+ DNX</b>, Cisco SiliconOne, Nokia FP5) — 100s MB–GBs, ~µs access, <b>VOQ + cell-based fabric</b> → <b>WAN-facing/peering/DCI or deep-buffer spine</b> (absorbs incast/RTT×BW). Pick wrong: HBM in a low-latency leaf over-buffers (queue latency kills RoCE/incast); shallow in peering = 50ms×100G = 625MB needed, 165MB → drops.</p>
+</div>
+<p class="q"><b>J2.</b> Walk a packet <b>through</b> a VOQ/cell-based chassis switch, ingress port → egress wire. Use the terms cells, pointers, VOQ, credits, fabric.</p>
+<div class="a">
+<p>1. <b>Ingress</b>: port → parser → forwarding lookup (L2/L3/EVPN) → resolves <b>egress port + queue</b>.</p>
+<p>2. Packet written to the <b>ingress packet buffer</b>; enqueued onto the <b>VOQ</b> = a <em>virtual output queue held at ingress, one per egress-port/queue</em> (not at egress).</p>
+<p>3. Packet <b>segmented into fixed-size cells</b>; cells stored in buffer, tracked by <b>pointers/descriptors</b> (the packet isn&#x27;t moved again — pointers are).</p>
+<p>4. Egress scheduler issues <b>credits/grants</b>; on grant, cells are <b>sprayed across all fabric links/planes</b> (load-spread) toward egress.</p>
+<p>5. <b>Egress reassembles</b> cells into the packet (pointer chain), egress queue/shape, transmit.</p>
+</div>
+<p class="q"><b>J3.</b> Why <b>cells</b> (fixed-size) and why <b>VOQ</b> — what does each specifically prevent?</p>
+<div class="a">
+<p><b>Cells</b> (fixed size) → uniform fabric scheduling and <b>even spray across fabric planes</b>; variable-length packets would make fabric load lumpy and scheduling unfair. <b>VOQ</b> → eliminates <b>head-of-line blocking</b>: a congested egress only backs up <em>its own</em> queue at ingress, so traffic to <em>uncongested</em> egresses behind it isn&#x27;t stalled. A single shared input FIFO (no VOQ) → one busy egress blocks everyone (HOL). Weak answer knows the words, misses &quot;cells = even fabric spread, VOQ = no HOL.&quot;</p>
+</div>
+<p class="q"><b>J4.</b> Shared-memory (Tomahawk) vs VOQ+HBM (Jericho) — the trade in one sentence each, and the MSD angle.</p>
+<div class="a">
+<p><b>Shared-memory</b>: one buffer pool all ports share, packet stored once + dequeued per egress by pointer → simple, shallow, lowest latency, <b>microburst-limited</b>. <b>VOQ+HBM</b>: deep buffering + no-HOL + cell fabric → absorbs sustained bursts/incast, costs <b>~µs</b> of buffer latency. <b>MSD (Max SID/label Depth)</b> = how deep a label stack the ingress can <em>push</em> — caps SR-TE path length + TI-LFA repair depth; deep-stack designs need MSD ≥ (policy depth + EL/ELI + service labels).</p>
+</div>
+<p><b>J4b — Juniper silicon map (verified 2026-06-19, interview-critical for Juniper).</b> Juniper builds its OWN deep-buffer/VOQ silicon — it does <b>not</b> use Broadcom Jericho (that&#x27;s what competitors Cisco NCS5500/5700 + Arista 7280R/7500R/7800R use):</p>
+<div class="a">
+<p>- <b>QFX10000</b> (10008/10016 DC spine/core) → <b>Q5 ASIC</b>: custom, deep buffers, <b>VOQ-based, queue+drop on INGRESS during congestion, no HOL</b> — Juniper&#x27;s own words; this is the Jericho-equivalent + the best deep-buffer example to cite.</p>
+<p>- <b>PTX</b> (core/peering) → <b>Express</b> (Express 5 ~28.8 Tb/s) — competes with Jericho-based Arista R-series.</p>
+<p>- <b>MX</b> (edge) → <b>Trio</b> (Trio 6) — VOQ + deep buffer + cell fabric.</p>
+<p>- <b>QFX5xxx</b> (5100/5120/5130/5200/5700 leaf/spine) → <b>Broadcom merchant</b> (Trident/Tomahawk), shallow buffer.</p>
+<p>Interview line if asked &quot;do you use Jericho&quot;: <em>&quot;deep-buffer platforms run our own VOQ/cell silicon — Q5/Express/Trio — same class as Jericho but in-house; shallow QFX5000 leaf/spine use Broadcom Trident/Tomahawk.&quot;</em></p>
+</div>
+<p><b>J4c — packet flow differs by chip CLASS (Faz asked 2026-06-19): TWO flows, not three.</b> Trident ≈ Tomahawk (same flow); Jericho is the different one. Forwarding <em>logic</em> identical (parse→lookup→queue→forward); <b>buffering + fabric</b> differ:</p>
+<div class="a">
+<p>- <b>Shallow (Trident/Tomahawk) = output-queued shared-memory:</b> wire→ingress→parse+lookup→<b>store ONCE in shared on-chip buffer</b>→enqueue to <b>EGRESS</b> queue by pointer→dequeue→wire. <b>No cells, no VOQ, no fabric spray.</b> Lowest latency, cut-through-capable, <b>shallow → microburst-limited.</b> Buffer at EGRESS.</p>
+<p>- <b>Deep (Jericho) = ingress-VOQ + cell fabric:</b> wire→ingress→parse+lookup→<b>segment into fixed cells</b>→<b>INGRESS VOQ</b> (per-egress, deep HBM, pointers)→egress scheduler <b>credits/grants</b>→<b>cells sprayed across fabric planes</b>→<b>egress reassembles</b>→wire. <b>No HOL, deep, scales across a modular chassis fabric</b>, ~µs latency. Buffer at INGRESS.</p>
+<p>Room line: &quot;forwarding logic same; buffering model is the differentiator — shallow = output-queued shared-memory (store once, no cells), deep = ingress-VOQ cell-fabric (segment, credit-schedule, reassemble); that&#x27;s <em>why</em> one is low-latency-shallow and the other deep-buffer-no-HOL.&quot; Bonus: VOQ/cell is also what makes a <b>modular chassis</b> work (cells across fabric modules between line cards); a fixed shallow box is single-die, no fabric.</p>
+</div>
+<p class="q"><b>J5.</b> Spine vs leaf as <em>hardware</em> — what does each role actually demand of the box?</p>
+<div class="a">
+<p><b>Leaf (ToR)</b>: host-port density + breakout, <b>is the VTEP</b> (VXLAN encap/decap line-rate), EVPN feature set, moderate buffer → Trident/Tomahawk. <b>Spine</b>: high uplink bandwidth + <b>wide ECMP</b>, <b>IP-only forwarding of the outer header</b> (no VTEP in classic design), low jitter → Tomahawk (shallow, low-latency, AI) or Jericho (if it also does DCI/peering deep-buffer). Weak answer treats them as the same box at different sizes.</p>
+</div>
+<hr>
+<h2 id="s11">K · Multicast (market-data tie-in)</h2>
+<p class="q"><b>K1.</b> Market-data is multicast; the EVPN-VXLAN fabric is unicast. How do you carry it, and what&#x27;s the senior answer?</p>
+<div class="a">
+<p>Default: <b>keep market-data multicast in its own PIM-SSM plane, off the EVPN fabric</b> — SSM <b>(S,G)</b> + <b>IGMPv3</b> (known source, no RP, A/B feeds trivial), two disjoint planes. EVPN-VXLAN is unicast; don&#x27;t tunnel a deterministic A/B feed through a controller-computed fabric. <em>If forced</em> across the SR/VXLAN core: <b>Tree-SID (SR P2MP)</b> or <b>BIER</b> (stateless). Know the boundary; don&#x27;t build it.</p>
+</div>
+<p class="q"><b>K2.</b> A multicast group goes dark on <em>one</em> switch only, others fine. Lead suspect and the tell?</p>
+<div class="a">
+<p><b>IGMP snooping</b> — lost <b>querier</b> → group entry ages out → that switch stops forwarding the group locally (packets arrive but aren&#x27;t forwarded = snooping signature). Fix: IGMP snooping <b>querier</b> on the VLAN. Tell: disable snooping → floods → works, which confirms it&#x27;s snooping not the network.</p>
+</div>
+<hr>
+<h2 id="s12">L · Linux receive path + low-latency (host side — HRT) — researched, drillable</h2>
+<p><em>The ladder, wire → app, with the one drop counter + knob at each stage. Anchor = the real ens5/ENA box we walked: RX ring 1024/8192 max, 4 queues, all counters 0 (idle). Sources: Rigtorp low-latency guide, packagecloud RX-path, Databento kernel-bypass.</em></p>
+<table>
+<tr><th>Stage</th><th>Drop counter (command)</th><th>Tuning knob</th></tr>
+<tr><td><b>NIC ring</b> (DMA)</td><td>ENA <code>rx_empty_rx_ring</code> / generic <code>rx_no_buffer</code>,<code>rx_dropped</code> (<code>ethtool -S</code>)</td><td>size <code>ethtool -g</code>; raise <code>ethtool -G ens5 rx 8192</code></td></tr>
+<tr><td><b>HW IRQ</b> (MSI-X, 1/queue)</td><td><code>/proc/interrupts</code></td><td>affinity <code>/proc/irq/N/smp_affinity</code>; coalescing <code>ethtool -C rx-usecs</code></td></tr>
+<tr><td><b>softirq / NAPI</b></td><td>softnet <code>col2 dropped</code> / <code>col3 time_squeeze</code></td><td>RSS, <code>net.core.netdev_budget</code></td></tr>
+<tr><td><b>socket buffer</b></td><td><b><code>RcvbufErrors</code></b> (<code>netstat -su</code>) ← gapping lives here</td><td><code>net.core.rmem_max</code> + <code>SO_RCVBUF</code></td></tr>
+<tr><td><b>app <code>recv()</code></b></td><td>app-level loss</td><td>busy-poll, <code>recvmmsg</code>, pin off IRQ core</td></tr>
+</table>
+<p class="q"><b>L1.</b> Consumer drops market-data under load — walk the path, the counter at each stage, where&#x27;s the gapping?</p>
+<div class="a">
+<p>wire → NIC ring → HW IRQ → softirq/NAPI → socket buffer → <code>recv()</code>. Ring <code>rx_no_buffer</code>/<code>rx_empty_rx_ring</code>; softirq softnet col2/col3; socket <b><code>RcvbufErrors</code></b>. <b>Gapping ≈ always the socket buffer</b> (app too slow → UDP drop → missing seq# → fail to B feed). Fix: <code>rmem_max</code>+<code>SO_RCVBUF</code> to burst×rate, pin consumer off the IRQ core. Tell: drops local to one consumer = receive path, not the network.</p>
+</div>
+<p class="q"><b>L2.</b> <code>RcvbufErrors</code> vs <code>InErrors</code> — difference, and which is bigger?</p>
+<div class="a">
+<p>Rcvbuf = socket receive buffer full; InErrors = superset (also corrupt / no-listening-port / bad-length). <code>InErrors ≥ RcvbufErrors</code> (a buffer-full drop charges both).</p>
+</div>
+<p class="q"><b>L3.</b> <code>ethtool -S</code> shows rx-no-buffer climbing but the app is idle — two possible causes?</p>
+<div class="a">
+<p>ring too small; OR softirq/CPU not draining the ring fast enough. (Not the app — idle.)</p>
+</div>
+<p class="q"><b>L4.</b> softnet <code>time_squeeze</code> climbing — what&#x27;s saturated, three fixes?</p>
+<div class="a">
+<p>softirq is CPU-bound on that core → RSS/RPS to spread queues across cores, pin the IRQ off the app core, raise <code>net.core.netdev_budget</code>.</p>
+</div>
+<p class="q"><b>L5.</b> Why won&#x27;t a huge <code>SO_RCVBUF</code> save a slow consumer?</p>
+<div class="a">
+<p>it absorbs a <em>burst</em>, not a <em>sustained</em> rate mismatch — if arrival &gt; drain, any finite buffer fills. Buffer = shock absorber, not a fix for a slow reader.</p>
+</div>
+<p class="q"><b>L6.</b> Tune this box for low latency — the checklist.</p>
+<div class="a">
+<p><b>Isolation:</b> <code>isolcpus</code> + <code>nohz_full</code> + <code>rcu_nocbs</code> (dedicate cores, kill the tick); SMT off. <b>Power:</b> governor performance, disable deep C-states, turbo on, <code>mitigations=off</code> (state the tradeoff). <b>IRQ:</b> pin NIC-queue IRQs to housekeeping cores, <b>ban</b> the isolated ones. <b>NIC:</b> ring up, coalescing down (<code>rx-usecs 0</code>), GRO/LRO off if latency&gt;throughput. <b>Steer:</b> RSS (hw hash→queue→core) + RFS (flow→app&#x27;s core = cache locality). <b>Socket:</b> <code>rmem_max</code>↑, <code>SO_BUSY_POLL</code> + <code>net.core.busy_poll=50</code>, <code>recvmmsg</code> to batch. <b>Mem:</b> <code>mlockall</code>, hugepages, THP off, <code>swapoff</code>, NIC + cores same NUMA node. <em>(idle wake ≈ 8µs → busy-poll ≈ 4µs.)</em></p>
+</div>
+<p class="q"><b>L7.</b> Kernel bypass — why, and Onload vs ef_vi vs DPDK?</p>
+<div class="a">
+<p>kernel stack caps ~1M pps (per-packet IRQ/copy/syscall); bypass = userspace stack + poll-mode driver + zero-copy → line-rate 10G+/sub-µs. <b>Onload</b> (Solarflare/AMD) = LD_PRELOAD, POSIX, no code change. <b>ef_vi</b> = low-level L2 API, max control. <b>DPDK</b> = full userspace PMD, write to its API. Cost: <b>burns a core at 100%</b>, no kernel TCP/firewall/tcpdump, NIC-specific. (RoCE = RDMA, bypass kernel both ends = the AI lossless transport, ties §M2.)</p>
+</div>
+<p><b>L8 (AWS/ENA — ties §P).</b> On EC2 what extra drop ceilings exist and where do you see them?</p>
+<div class="a">
+<p>ENA <code><em>_allowance_exceeded</code> (<code>bw_in</code>/<code>bw_out</code>/<code>pps</code>/<code>conntrack</code>/<code>linklocal</code>) = <b>Nitro per-instance caps</b>; <code>ethtool -S</code> is your </em>only* visibility when AWS shapes you. Honest line: real HFT = colocated bare-metal (Solarflare + kernel bypass), not EC2 — ENA can&#x27;t bypass and its coalescing knobs are limited.</p>
+</div>
+<hr>
+<h2 id="s13">DRILL METHOD (Faz, 2026-06-19) — SPACED, not echo</h2>
+<p><b>⚠️ DRILL DELIVERY FAILED 2026-06-19 — Faz ended the session over it. Do NOT repeat:</b> (a) several questions <b>telegraphed their own answer</b> (&quot;two ways… which is the DC default&quot; / &quot;what&#x27;s misconfigured&quot; with the fix implied) — he said &quot;the answer was in the question.&quot; Write questions that force recall, never hint it. (b) <b>method-talk smothered the drilling</b> — CC narrated spaced-rep theory + pushed Anki (he didn&#x27;t want it). He wants a peer who just runs good questions, ZERO meta. (c) in-session &quot;spacing&quot; is theatre (echo only) — real spacing is cross-session; use the QUEUE below at next session start, cold, no narration. (d) he reasons CONCEPTS well (RD/RT, spine-ASN, valley-vs-trombone, AI-fabric) — lean there; rote-list drilling over chat frustrates. Content is solid; delivery was the failure. Juniper interview still <b>Tue 2026-06-23</b>.</p>
+<p>Immediate re-ask after teaching = echo, tests nothing (Faz called this out, hard). Method: teach a small set → move to OTHER material → bring it back <b>several Qs later AND next session</b> (real gap). Interleave. Memorization (route types, silicon families, multihoming trio) needs spacing; concepts (RD/RT, spine-ASN, buffers, PIC) he reasons out fine.</p>
+<p><b>Spaced-recall QUEUE (re-test cold with a gap, incl. next session):</b> (1) EVPN route types 1-5 [aced cold 06-19 after reps — confirm tomorrow]; (2) multihoming trio DF=no-dupe / aliasing=use-both / mass-withdraw=fast-failover [taught 06-19, not yet spaced-tested]; (3) silicon families: Trident=leaf-shallow, Tomahawk=spine-shallow, Jericho=deep/DCI [06-19 got buffer classes, SWAPPED leaf/spine — recheck]; (4) AI: ECMP fails for all-reduce → packet-spray on lossless [was &quot;no clue&quot;]; (5) cross-vendor service-type mismatch (I1).</p>
+<h2 id="s14">M · COMPETITOR LANDSCAPE — chassis / silicon / buffer / AI (the &quot;pure winner&quot;)</h2>
+<p><em>Faz, 2026-06-18: detailing the full vendor landscape — chassis → line card → silicon → buffer → packet flow — is the differentiator most candidates can&#x27;t do. Verified 2026-06-19. THE Tuesday-Juniper edge. Packet-flow itself = §J.</em></p>
+<p><b>M0 · The organizing principle = Broadcom merchant-silicon map.</b> ~<b>86% of merchant ASIC is Broadcom</b> (Marvell <b>Teralynx</b> is #2, AI/hyperscale). Learn the three families and everything else hangs off them:</p>
+<table>
+<tr><th>Family</th><th>Role</th><th>Buffer</th><th>Architecture</th><th>Where</th></tr>
+<tr><td><b>Trident</b></td><td>DC <b>leaf</b> / feature-rich ToR</td><td>shallow on-chip</td><td>output/shared-memory</td><td>enterprise leaf, rich features</td></tr>
+<tr><td><b>Tomahawk</b></td><td>DC <b>spine</b> / low-latency / <b>AI leaf</b></td><td>shallow on-chip</td><td>high-radix, cut-through-ish</td><td>spine, AI (TH5 51.2T, <b>TH6 102.4T</b> Mar-2026)</td></tr>
+<tr><td><b>Jericho / J2/J2c+/J3/J4</b></td><td><b>deep-buffer</b>, DCI, peering, <b>AI scale-out</b></td><td><b>deep off-chip HBM</b></td><td><b>VOQ + cell fabric</b> (+ <b>Ramon</b> fabric chip)</td><td>WAN/DCI, deep-buffer spine, AI (<b>Jericho3-AI</b> 32k GPU, <b>Jericho4</b> 51.2T, 1M XPU)</td></tr>
+</table>
+<p>Shallow (Trident/Tomahawk) = leaf + low-latency/AI-leaf; Deep (Jericho) = DCI/peering/deep spine + AI scale-out. That&#x27;s the whole shallow-vs-deep split from §J, mapped to part numbers.</p>
+<p><b>M1 · Per-vendor chassis → silicon → role:</b></p>
+<table>
+<tr><th>Vendor</th><th>DC leaf (shallow)</th><th>DC spine</th><th>Deep-buffer / DCI / core</th><th>In-house?</th></tr>
+<tr><td><b>Arista</b></td><td>7050X/7060X (Trident/Tomahawk); <b>7060X6 = TH5, 64×800G/51.2T AI</b></td><td>7060/7300 (Tomahawk)</td><td><b>7280R/7500R/7800R = Jericho2/J2c+ (deep, VOQ)</b>; <b>7130 Metamako = L1, HFT ultra-low-latency</b></td><td>no — Broadcom merchant</td></tr>
+<tr><td><b>Cisco</b></td><td>Nexus 9300 (Cloud Scale ASIC)</td><td>Nexus 9300/9500 (Cloud Scale / <b>Silicon One</b>); <b>N9100 = NVIDIA Spectrum-X</b></td><td>NCS 5500/5700 (Jericho/J2/SiliconOne), 8000 (SiliconOne); <b>Silicon One G300 = 102.4T AI</b></td><td><b>part</b> (Silicon One in-house, also uses Broadcom + NVIDIA)</td></tr>
+<tr><td><b>Juniper</b></td><td><b>QFX5xxx</b> (5100/5120/5130/5200/5700 = Broadcom Trident/Tomahawk); <b>QFX5250 = TH6 102.4T, liquid-cooled, AI (Rubin/MI400)</b></td><td>QFX5xxx / QFX10000</td><td><b>QFX10000 = Q5 (deep, VOQ)</b>; <b>PTX = Express</b> (core/peering); <b>MX = Trio</b> (edge)</td><td><b>yes — Q5/Express/Trio in-house</b> (see §J4b)</td></tr>
+<tr><td><b>Nokia</b></td><td>7220 IXR (Broadcom Trident/Tomahawk)</td><td>7220/7250 IXR</td><td>7250 IXR (Jericho); 7750 SR (<b>FP4/FP5</b>, SP edge)</td><td><b>part</b> (FP silicon in-house for SR)</td></tr>
+</table>
+<p><b>Market share (Gartner 2026):</b> Cisco ~28% (Nexus 9000 + ACI), <b>Arista ~22% (fastest-growing, hyperscaler/AI)</b>, Juniper + Huawei next.</p>
+<p><b>M2 · AI / GPU fabric layer (his GPU gap → strength):</b></p>
+<ul><li><b>Merchant:</b> Broadcom <b>TH6 102.4T</b> (128×800G / 64×1.6T), <b>Jericho3-AI</b> (perfect load-balancing, congestion-free, ultra-high-radix, zero-impact failover, ≤32k GPU) + <b>Jericho4</b> (1M+ XPU across DCs); <b>Marvell Teralynx</b>.</li></ul>
+<ul><li><b>NVIDIA:</b> <b>Spectrum-X</b> (open Ethernet AI fabric) vs <b>Quantum</b> (InfiniBand); Spectrum-X1600 H2-2026.</li></ul>
+<ul><li><b>Cisco:</b> <b>Silicon One G300</b> (102.4T, gigawatt AI clusters).</li></ul>
+<ul><li><b>Juniper:</b> <b>QFX5250</b> (TH6, liquid-cooled, for Rubin/MI400) — Juniper&#x27;s current AI-fabric box.</li></ul>
+<ul><li><b>Concepts that matter</b> (tie to §C/§J): rail-optimized/rail-aligned CLOS, <b>packet-spray / adaptive routing</b> (drop per-flow ordering — only safe on lossless), <b>lossless Ethernet = PFC + ECN + DCQCN</b>, <b>UEC (Ultra Ethernet Consortium)</b> = the standard replacing per-flow ECMP + InfiniBand lock-in (TH5/Arista/Cisco/Juniper shipping into it 2026-27).</li></ul>
+<p><b>M3 · Drill prompts (self-test):</b></p>
+<ul><li>Name the 3 Broadcom families and which DC role + buffer each = (Trident/Tomahawk/Jericho). <em>(M0)</em></li></ul>
+<ul><li>&quot;Which silicon is in an Arista 7800R vs a 7060X6, and why does that map to spine-DCI vs AI-leaf?&quot; <em>(Jericho2 deep/VOQ vs TH5 shallow/AI)</em></li></ul>
+<ul><li>&quot;Juniper QFX10000 vs QFX5200 — different silicon, why?&quot; <em>(Q5 deep-buffer VOQ in-house vs Broadcom shallow merchant)</em></li></ul>
+<ul><li>&quot;What makes a fabric &#x27;AI-ready&#x27; beyond raw Tbps?&quot; <em>(packet-spray/adaptive routing, lossless PFC/ECN/DCQCN, rail-optimized, UEC, deep-buffer Jericho3-AI vs shallow TH5 trade)</em></li></ul>
+<ul><li>&quot;Why is ECMP not enough for AI all-reduce, and what replaces it?&quot; <em>(elephant flows polarise → packet-spray on lossless / UEC; ties §C/§J)</em></li></ul>
+<div class="a">
+<p><b>ANSWER (taught 2026-06-19):</b> all-reduce = few huge <b>elephant</b> flows; ECMP hashes <b>per-flow</b> → pins each to one path → elephants <b>collide/polarise</b> while links idle; all-reduce is <b>barrier-synced</b> so the slowest path stalls every GPU. Replacement = <b>packet spraying / adaptive routing</b> (spread one flow across all paths — Broadcom DLB, NVIDIA Spectrum-X adaptive routing, <b>UEC</b>). Safe ONLY on <b>lossless + reorder-tolerant transport</b>: <b>RoCEv2 over PFC+ECN+DCQCN</b> (or IB/UEC) — spray reorders, NIC reassembles, fabric must not drop. Plain TCP = disaster. Gap→strength line: <em>&quot;all-reduce is elephant-dominated, ECMP polarises → packet-spray/adaptive on lossless RoCE or UEC + rail-optimized topology; that&#x27;s the QFX5250/Spectrum-X layer.&quot;</em></p>
+</div>
+<hr>
+<h2 id="s15">N · NON-CLOS / AI-HPC TOPOLOGIES (Faz gap-fill 2026-06-20 — pre-sales AI-fabric edge)</h2>
+<p><em>Faz, 2026-06-20: every fabric drill so far is <b>Clos</b> (spine-leaf/fat-tree). Hyperscaler AI/TPU clusters run <b>non-Clos</b> fabrics and a Juniper AI-fabric <b>pre-sales SE</b> sells straight into those rooms → must speak them. The role frame (Faz-confirmed 2026-06-20): they KNOW he&#x27;s not DC-native; he&#x27;s a JNCIE veteran they&#x27;re betting they can <b>train into DC/AI</b> (his pitch: &quot;when MPLS came, you trained us — train me now, I&#x27;ll swap the 20% pay cut for the in&quot; — and it won the interview). So the bar is <b>credible + conversant + commercially fluent</b>, not deepest-engineer. This section + §M are the pre-sales winners.</em></p>
+<p><b>N0 · The organizing axis = scale-up vs scale-out.</b></p>
+<ul><li><b>Scale-up</b> = inside one server/node — GPUs glued by <b>NVLink / NVSwitch</b> (NVIDIA), memory-semantic, ~TB/s. Not Ethernet. The &quot;GPU domain.&quot;</li></ul>
+<ul><li><b>Scale-out</b> = the network <em>between</em> nodes — this is the fabric being sold. <b>Ethernet (Juniper/Broadcom/NVIDIA Spectrum-X + UEC) vs InfiniBand (NVIDIA Quantum).</b> Juniper&#x27;s whole AI play = <b>Ethernet scale-out</b> (open, multi-vendor, UEC) vs IB lock-in.</li></ul>
+<p><b>N1 · The topology map (one line each — structure / where / the trade):</b></p>
+<table>
+<tr><th>Topology</th><th>Structure</th><th>Where used</th><th>The trade</th></tr>
+<tr><td><b>Rail-optimized Clos</b></td><td>still Clos, but each GPU NIC lands on its <b>own rail/leaf</b> → same-rank GPUs across servers = <b>1 hop</b></td><td>NVIDIA SuperPOD/Spectrum-X default</td><td>the bridge from classic Clos; aligns traffic to all-reduce ranks</td></tr>
+<tr><td><b>Fat-tree / folded Clos</b></td><td>non-blocking multi-tier Clos, full bisection</td><td>baseline DC + many AI</td><td>simple, predictable; <b>optics/switch cost explodes</b> at GPU scale</td></tr>
+<tr><td><b>Dragonfly / Dragonfly+</b></td><td>switches in <b>groups</b>, groups <b>fully meshed</b> by high-BW global links</td><td>HPC (Cray/HPE <b>Slingshot</b>)</td><td>slashes long-haul optics; <b>needs adaptive routing (UGAL)</b> or it congests on adversarial traffic</td></tr>
+<tr><td><b>Torus (2D/3D)</b></td><td>nodes wired to neighbours in a <b>wrap-around grid, NO spine</b></td><td><b>Google TPU pods</b></td><td>cheapest, scales linearly; <b>multi-hop, traffic-pattern-sensitive</b>, hard routing</td></tr>
+<tr><td><b>OCS-reconfigurable</b></td><td><b>optical circuit switches physically rewire</b> topology per job</td><td><b>Google Jupiter</b></td><td>removes the spine tier; reconfig latency, optical not packet</td></tr>
+<tr><td><b>Butterfly / Beneš</b></td><td>multistage interconnect, minimal switch count</td><td>HPC / academic</td><td>basic butterfly <b>blocks</b> (no path diversity); Beneš = rearrangeably non-blocking. <b>⚠ lab-to-confirm before leaning on it in the room</b></td></tr>
+</table>
+<p><b>N2 · Why a customer picks non-Clos over Clos (the SE conversation):</b></p>
+<ul><li><b>Cost/optics at scale</b> — fat-tree bisection bandwidth needs huge optics counts; dragonfly/torus cut the long links. At 10k–100k GPUs optics $$ dominates → non-Clos gets attractive.</li></ul>
+<ul><li><b>Deterministic neighbour traffic</b> — torus suits nearest-neighbour HPC patterns; bad for all-to-all.</li></ul>
+<ul><li><b>Reconfigurability</b> — OCS lets one physical plant serve many job shapes (Google&#x27;s bet).</li></ul>
+<ul><li><b>Routing is the catch</b> — non-Clos kills simple ECMP; all of them lean on <b>adaptive routing / packet-spray + lossless</b> (ties §M2/all-reduce). That&#x27;s the consistent SE talking point: <em>topology is half the story, the routing/transport is the other half.</em></li></ul>
+<p><b>N3 · Juniper&#x27;s position to sell (verify current product names in-room — lab-to-confirm):</b></p>
+<ul><li>Juniper = <b>Ethernet scale-out, open, UEC-aligned</b> — counter to InfiniBand lock-in and to single-vendor Spectrum-X.</li></ul>
+<ul><li><b>QFX5240/5250 (Tomahawk5/6)</b> = the AI leaf/spine; <b>PTX (Express)</b> deep-buffer for scale-across/DCI between AI halls; <b>Apstra</b> = intention-based fabric automation (validates the build, the pre-sales &quot;day-2&quot; story).</li></ul>
+<ul><li>Honest concession (do NOT oversell): NVIDIA owns scale-up (NVLink) + a huge IB install base; Arista has the hyperscaler AI-Ethernet mindshare + Jericho deep-buffer track record. Juniper wins on <b>open Ethernet + automation (Apstra) + not-NVIDIA</b>.</li></ul>
+<p><b>N4 · Drill prompts (self-test):</b></p>
+<ul><li>Scale-up vs scale-out — what tech sits in each, and which one is Juniper selling? <em>(NVLink in-node vs Ethernet/IB between nodes; Juniper = Ethernet scale-out)</em></li></ul>
+<ul><li>Customer at 50k GPUs balks at fat-tree optics cost — what two topologies cut it, and what&#x27;s the routing catch? <em>(dragonfly/torus; lose simple ECMP → need adaptive routing/UGAL + lossless)</em></li></ul>
+<ul><li>Why does Google run torus + OCS instead of a Clos spine? <em>(cost/no-spine, reconfigurable plant, nearest-neighbour TPU traffic)</em></li></ul>
+<ul><li>What&#x27;s the one thing every non-Clos topology forces on the transport? <em>(adaptive routing / packet-spray on lossless — simple per-flow ECMP doesn&#x27;t work)</em></li></ul>
+<ul><li>Juniper vs Arista vs NVIDIA for an AI scale-out fabric — your pitch + your honest concession. <em>(open Ethernet/UEC/Apstra vs Arista mindshare+Jericho vs NVIDIA NVLink+IB lock-in)</em></li></ul>
+<hr>
+<h2 id="s16">O · SILICON DEEP-DIVE — glossary · vendor map · generational evolution (Faz P0, built 2026-06-20)</h2>
+<p><em>Faz&#x27;s P0 = this equipment layer (&quot;still much too weak&quot;, strong day Sunday 06-21). Reps via &quot;which box for X&quot; + <b>print the map AFTER his answer, never with the question</b> (caught telegraphing 06-20).</em></p>
+<p><b>O1 · Jargon glossary (plain — Faz asked for every word):</b></p>
+<ul><li><b>SerDes</b> = Serializer/Deserializer — turns the chip&#x27;s parallel bits into one fast serial stream on a wire (&quot;lane&quot;) and back. A port = several lanes.</li></ul>
+<ul><li><b>NRZ vs PAM4</b> = bits per signal. NRZ = on/off = 1 bit. PAM4 = 4 voltage levels = 2 bits → doubles speed on the same wire. Ladder 25G NRZ → 50G PAM4 → 100G PAM4 → 200G = the SerDes generations (the engine of &quot;each gen doubles&quot;).</li></ul>
+<ul><li><b>radix</b> = ports one chip fans out. High-radix = more ports/chip → fewer Clos tiers.</li></ul>
+<ul><li><b>on-chip (SRAM) vs off-chip (HBM)</b> = shallow buffer sits on the die (fast, ~MB); deep buffer = stacked DRAM (HBM) beside the chip (~100s MB–GB, a memory trip away).</li></ul>
+<ul><li><b>VOQ</b> = virtual output queue — per-egress queues held at INGRESS → kills head-of-line blocking.</li></ul>
+<ul><li><b>cells</b> = deep chips chop the packet into fixed-size cells, spray across fabric, reassemble at egress.</li></ul>
+<ul><li><b>credit/grant</b> = ingress VOQ must request + be granted by the egress scheduler before sending → adds latency + jitter.</li></ul>
+<ul><li><b>Ramon</b> = Broadcom FABRIC chip. Jericho = the ports; Ramon = internal switch between Jerichos across line cards = a scalable chassis.</li></ul>
+<ul><li><b>DNX vs StrataXGS</b> = just Broadcom&#x27;s two product-line brand names (DNX = deep Jericho family; StrataXGS = shallow Trident/Tomahawk). Don&#x27;t memorize — nobody asks the brand.</li></ul>
+<p><b>O2 · Vendor silicon map (in-house vs merchant):</b></p>
+<table>
+<tr><th>Role / buffer</th><th>Broadcom</th><th>Arista</th><th>Cisco</th><th>Juniper</th><th>Nokia</th></tr>
+<tr><td><b>Deep (VOQ+HBM)</b></td><td>Jericho2/3/4</td><td>7280<b>R</b>/7500<b>R</b>/7800<b>R</b></td><td>NCS5500/5700; 8000=Silicon One</td><td><b>QFX10000=Q5</b>; PTX=Express; MX=Trio</td><td>7250 IXR=Jericho; <b>7750 SR=FP5</b></td></tr>
+<tr><td><b>Shallow</b> leaf/spine</td><td>Trident/Tomahawk</td><td>7050X/7060X</td><td>Nexus 9300/9200=Cloud Scale</td><td>QFX5xxx (Broadcom)</td><td>7220 IXR (Broadcom)</td></tr>
+<tr><td><b>Ultra-low L1</b></td><td>—</td><td>7130 Metamako</td><td>Nexus 3550 / Exablaze</td><td>—</td><td>—</td></tr>
+<tr><td><b>In-house?</b></td><td>merchant</td><td>all Broadcom</td><td>Cloud Scale + Silicon One</td><td><b>Q5/Express/Trio</b></td><td><b>FP5 (deep only)</b></td></tr>
+</table>
+<ul><li>Mnemonic: <b>Arista &quot;R&quot; = deep/Jericho</b> (7280R/7500R/7800R); no-R (7050/7060) = shallow. <b>In-house lives only where the money is — deep/routing/AI; the shallow leaf is a Broadcom commodity</b> (only Cisco bothers with in-house shallow = Cloud Scale).</li></ul>
+<p><b>O3 · Generational evolution — one law, three focuses:</b></p>
+<ul><li><b>Law:</b> each gen ~DOUBLES bandwidth, driven by SerDes doubling (25→50→100→200G) + more lanes. &quot;Which line card&quot; = which silicon gen + port config (e.g. Arista 7800<b>R3</b> vs <b>R4</b> = Jericho2 vs J2c+/J3 cards, same chassis).</li></ul>
+<ul><li><b>Tomahawk</b> (shallow, radix/bandwidth race): TH3 → TH4 25.6T → TH5 51.2T → TH6 102.4T.</li></ul>
+<ul><li><b>Jericho</b> (deep DNX, VOQ+HBM, +Ramon): Jericho2 → J2c+ → Jericho3-AI → Jericho4 ~51.2T. J3-AI = perfect-LB/congestion-free for GPU; J4 = scale ACROSS DCs.</li></ul>
+<ul><li><b>Trident</b> (feature leaf): Trident2 → 3 → 4 → 5; spends on programmability/VXLAN/telemetry, not raw Tbps.</li></ul>
+<p><b>O4 · QoS-latency vs architectural-latency (Faz&#x27;s own sharp Q 06-20 — keeper):</b> A QoS strict-priority queue fixes <b>queuing</b> latency (voice doesn&#x27;t wait behind bulk — SP edge routers do exactly this on deep boxes every day). It CANNOT fix the <b>architectural floor</b> every packet pays on a VOQ box: cell seg/reassembly + credit grant + off-chip HBM (+ credit-arbitration <b>jitter</b>). So deep+QoS = fine for ms-tolerant voice; <b>fails for ns/deterministic HFT/RoCE</b> → those need shallow cut-through (tens of ns) or L1 (~5ns). Plus deep-everywhere = cost/power waste. Room line: <em>&quot;QoS fixes queuing latency, not architectural latency — the VOQ credit-grant + off-chip trip are per-packet regardless of queue depth.&quot;</em></p>
+<p><b>O5 · His-experience anchors (use to make new material stick — Faz designed Clos fabrics at Liberty + Sky, stopped ~2022):</b> <b>vPC → ESI-LAG</b> (DF/aliasing/mass-withdraw); <b>EVPN-MPLS → EVPN-VXLAN</b> (SAME BGP control plane — route types/RD/RT unchanged — only the encap swaps to VXLAN/UDP); <b>OSPF-Clos underlay → eBGP underlay (RFC 7938)</b>. Frame every new thing as: &quot;you already designed this; we&#x27;re updating the wrapper + the silicon era.&quot; His interview narrative: <em>&quot;I designed Clos DC fabrics at Liberty and Sky — OSPF underlay, vPC, EVPN over MPLS. I&#x27;m updating that to the VXLAN / merchant-silicon / AI generation.&quot;</em></p>
+<p><b>O6 · Drill prompts (reps Sunday — map AFTER answer):</b></p>
+<ul><li>Deep-buffer DCI box for Arista? Cisco? Juniper? Nokia? + is each Broadcom or in-house? <em>(7800R/merch · NCS5500-5700/Jericho · QFX10000=Q5/in-house · 7750 SR=FP5/in-house)</em></li></ul>
+<ul><li>Which vendor makes in-house silicon for BOTH shallow + deep, and the shallow chip&#x27;s name? <em>(Cisco; Cloud Scale)</em></li></ul>
+<ul><li>Nanosecond L1 HFT cross-connect — vendor/box + how it switches differently? <em>(Arista 7130 Metamako; physical-layer cross-connect, no parse/lookup/buffer, ~5ns)</em></li></ul>
+<ul><li>Why not deep-buffer everywhere + QoS priority queue for low-latency? <em>(O4 — architectural floor + cost)</em></li></ul>
+<ul><li>Walk SerDes 25→200G and why each chip gen doubles. <em>(O3)</em></li></ul>
+<hr>
+<h2 id="s17">P · AWS networking (weak axis — ties to the hybrid lab DC→AWS leg)</h2>
+<p><em>Framing: AWS networking is the L2/L3 you already know, renamed as API objects. <b>&quot;Elastic&quot; is AWS branding for software-defined / detachable / scale-on-demand — not a protocol.</b> Anchor every object to the hybrid lab (border-leaf → VRF → Direct Connect → TGW → VPC).</em></p>
+<p class="q"><b>P0.</b> What does &quot;Elastic&quot; actually mean across the AWS names, and name the four you meet in networking?</p>
+<div class="a">
+<p>&quot;Elastic&quot; = branding for <em>software-defined, detach/reattach, scale on demand</em> — not a technology. The four: <b>EC2</b> (Elastic Compute Cloud = the VMs); <b>Elastic IP / EIP</b> = a static public IPv4 you allocate and own, remappable to any instance/ENI (vs the <em>ephemeral</em> public IP that changes on stop/start); <b>ENI</b> (Elastic Network Interface) = the virtual NIC — holds the private IP(s), MAC, security groups; detachable/movable between instances; <b>ELB</b> (Elastic Load Balancer = ALB L7 / NLB L4 / GWLB). Trap: <b>ElastiCache</b> = managed Redis/Memcached, NOT networking. Weak answer treats EC2 and Elastic-IP as one word — unrelated beyond branding.</p>
+</div>
+<p class="q"><b>P1.</b> Build the minimal routable VPC — the objects, and what makes a subnet &quot;public&quot; vs &quot;private&quot;?</p>
+<div class="a">
+<p><b>VPC</b> = your private network in a region, a CIDR (/16–/28). <b>Subnets are AZ-scoped</b> (one subnet = one Availability Zone → the resilience lever). Each subnet associates to <b>one route table</b>. <b>Public subnet</b> = its route table has 0.0.0.0/0 → an <b>Internet Gateway (IGW)</b>; private subnet has no IGW route. Instances carry only a <b>private IP</b>; the public IP/EIP is <b>1:1 NAT&#x27;d by the IGW</b> (the instance never sees it on its interface). Weak answer thinks &quot;public&quot; is a checkbox — it&#x27;s purely <em>the route table pointing at an IGW</em>.</p>
+</div>
+<p class="q"><b>P2.</b> IGW vs NAT Gateway — what each does and which way traffic flows.</p>
+<div class="a">
+<p><b>IGW</b> = bidirectional internet edge for <em>public</em> subnets; horizontally scaled, no cap, does the 1:1 public↔private NAT. <b>NAT Gateway</b> = <b>outbound-only</b> for <em>private</em> subnets (they reach out for patches etc., internet can&#x27;t initiate in); <b>AZ-scoped</b> (one per AZ for resilience), source-NATs to an EIP, billed per-hour + per-GB. Trap: a single NAT GW = cross-AZ data charges + one AZ failure kills all private egress. Weak answer misses <em>outbound-only</em> + <em>AZ-scoped</em>.</p>
+</div>
+<p class="q"><b>P3.</b> Security Group vs NACL — the senior distinction.</p>
+<div class="a">
+<p><b>Security Group</b> = <b>stateful</b>, on the <b>ENI</b> (instance level), <b>allow-only</b> (implicit deny), return traffic auto-allowed. <b>NACL</b> = <b>stateless</b>, at the <b>subnet</b> edge, <b>ordered allow + deny</b> by rule number, and you must <b>explicitly allow the return (ephemeral) ports</b> because it tracks no state. SGs = primary control; NACLs = coarse subnet backstop. Classic bug: NACL blocks ephemeral return ports → connection hangs even though the SG allows it. Weak answer can&#x27;t name <em>stateful vs stateless</em> — that&#x27;s the whole point.</p>
+</div>
+<p class="q"><b>P4.</b> Two VPCs must talk — peering vs Transit Gateway, when each, and the gotcha.</p>
+<div class="a">
+<p><b>VPC peering</b> = 1:1, <b>non-transitive</b> (A↔B + A↔C does NOT give B↔C), no overlapping CIDRs, routes on both sides — fine for a couple. <b>Transit Gateway (TGW)</b> = a <b>regional router/hub</b>: attach many VPCs + on-prem (DX/VPN), <b>transitive</b> via per-attachment route tables, scales to hundreds. Gotcha: peering is an n² mesh with no transitivity → TGW is the hub-and-spoke answer. This is the box your lab&#x27;s transit-VIF lands on.</p>
+</div>
+<p class="q"><b>P5.</b> Hybrid — connect your DC to a VPC. Direct Connect vs VPN, and what BGP is doing (this IS your lab).</p>
+<div class="a">
+<p><b>Direct Connect (DX)</b> = a <b>private physical link</b> into an AWS location (1/10/100G), no internet; you cut <b>VIFs</b>: <b>private VIF → VGW or TGW</b> (VPC private space), <b>public VIF</b> (AWS public services), <b>transit VIF → TGW</b>. <b>Site-to-Site VPN</b> = IPsec over internet = cheap <b>backup</b> path. Both run <b>eBGP</b>: you advertise on-prem prefixes, AWS advertises the <b>VPC CIDR</b>; AWS terminates on a <b>VGW (Virtual Private Gateway)</b> or TGW. Design = <b>DX primary + VPN backup</b>, BGP prefers DX (local-pref/AS-path), fails to VPN. = your lab&#x27;s <b>border-leaf → VRF → simulated DX (802.1Q VIFs, transit-VIF → TGW) → &quot;AWS&quot; node</b>. Weak answer knows &quot;DX = private line&quot; but not the VIF types or that it&#x27;s plain eBGP.</p>
+</div>
+<p class="q"><b>P6.</b> PrivateLink — what problem it solves that peering/TGW don&#x27;t.</p>
+<div class="a">
+<p><b>PrivateLink</b> exposes a <em>single service</em> into your VPC as an <b>interface endpoint = an ENI with a private IP</b> in your subnet; consumers reach it over private space with <b>no route exposure, no CIDR coordination, one-way</b> (consumer→service). vs peering/TGW which join <em>whole networks</em> (routing + overlapping-CIDR pain). Use it to consume a SaaS / another team&#x27;s service without merging networks. Weak answer conflates it with peering.</p>
+</div>
+<p><b>P · Drill prompts (self-test, map AFTER answer):</b></p>
+<ul><li>What does &quot;Elastic&quot; mean and which 4 objects? <em>(P0)</em></li></ul>
+<ul><li>What single thing makes a subnet public? <em>(route table → IGW, P1)</em></li></ul>
+<ul><li>NAT GW: which direction, and what scopes it? <em>(outbound-only, AZ-scoped, P2)</em></li></ul>
+<ul><li>SG vs NACL in two words each? <em>(stateful/ENI vs stateless/subnet, P3)</em></li></ul>
+<ul><li>Peering can&#x27;t do what TGW can? <em>(transitive routing at scale, P4)</em></li></ul>
+<ul><li>DX private VIF vs transit VIF terminate on what? <em>(VGW vs TGW, P5)</em></li></ul>
+<h2 id="s18">Q · Cloud/AI-DC build stack — how the cloud runs on the fabric (SE whole-stack frame, Monday)</h2>
+<p><em>Framing: a cloud/AI DC is four layers. Layers 1–2 (underlay/overlay) are your design authority — Liberty/Sky CLOS + the EVPN work. Layers 3–4 (k8s orchestration, IaC + observability) are a peer platform team&#x27;s domain you architect alongside and integrate with. SE win = command the whole-stack picture and name where Juniper (Apstra) fits — as the architect who owns the substrate the cloud runs on. No learner framing: you&#x27;re not catching up to this, you integrate with it as a peer.</em></p>
+<p class="q"><b>Q0.</b> The four layers, wire upward — one line each.</p>
+<div class="a">
+<p><b>1 Underlay</b> — eBGP-everywhere CLOS (RFC 7938), routed to the leaf, ECMP across spines; carries only loopbacks/VTEPs + raw bandwidth. <b>2 Overlay</b> — VXLAN/EVPN; each tenant a virtual network on the one physical fabric (= how many customers share the iron). <b>3 Compute orchestration</b> — <b>Kubernetes</b> schedules workloads; a <b>CNI</b> (Calico/Cilium) plugs each pod into the network. <b>4 Provision + observe as code</b> — <b>Terraform</b> declares the estate, <b>Prometheus/Grafana</b> + streaming telemetry watch it. Nothing hand-configured at scale.</p>
+</div>
+<p class="q"><b>Q1.</b> Where do Kubernetes / the CNI fit, and why does a network person care?</p>
+<div class="a">
+<p>K8s schedules containers across compute; the <b>CNI is the pod&#x27;s network plugin</b>. Calico/Cilium commonly run <b>BGP from the host</b> into the fabric (Cilium adds an <b>eBPF</b> dataplane). Why you care: the fabric must carry pod/service routes and absorb churn — it&#x27;s the <b>same eBGP you know, extended to the host</b>. (Cilium/eBPF ties to §L Linux.)</p>
+</div>
+<p class="q"><b>Q2.</b> Terraform / IaC and observability — what they actually do.</p>
+<div class="a">
+<p><b>Terraform</b> = declarative, <b>idempotent</b> provisioning: describe desired infra (VPCs, subnets, clusters, even switch config) in version-controlled code; it reconciles real state to desired → no snowflake boxes. <b>Grafana/Prometheus</b> = metrics + dashboards; the modern feed is <b>streaming telemetry (gNMI/gRPC)</b>, not SNMP-poll. Model = <em>declare desired state, validate continuously.</em></p>
+</div>
+<p class="q"><b>Q3.</b> The Juniper SE frame — where does Apstra plug in?</p>
+<div class="a">
+<p><b>Apstra = intent-based fabric automation</b>: you declare the EVPN-VXLAN fabric; it renders per-box config AND <b>continuously validates against live telemetry</b> (closed-loop / &quot;day-2&quot;). It&#x27;s <b>layers 1–2 as code</b> — the network declared and validated as code, not configured box-by-box; Terraform/k8s/Grafana sit above it. This is the modern operating model and it&#x27;s <em>your</em> authority area — fabric design + automation — not just protocols.</p>
+</div>
+<p class="q"><b>Q4.</b> If pushed on hands-on k8s/Terraform — the posture (architect, not learner).</p>
+<div class="a">
+<p>Don&#x27;t disclaim, don&#x27;t hedge, never &quot;I&#x27;m learning it&quot; — you&#x27;re not 25. Hold it as a <b>division of labour</b>: orchestration is the platform team&#x27;s layer; your remit is the fabric it runs on, and you make sure the network carries the pod/service traffic and scales with it. You own the substrate the whole cloud sits on and integrate with that team <b>as a peer, not catching up to it</b>. Conversant on the layer is enough; ops depth isn&#x27;t the seat.</p>
+</div>
+<p><b>Q · Drill prompts (self-test, map AFTER answer):</b></p>
+<ul><li>The four layers wire-up, one line each? <em>(Q0)</em></li></ul>
+<ul><li>Where does the CNI sit, and what protocol does it often speak to the fabric? <em>(BGP from host, Q1)</em></li></ul>
+<ul><li>Terraform in one sentence — what does &quot;declarative + idempotent&quot; buy you? <em>(Q2)</em></li></ul>
+<ul><li>Apstra = which layers as code, and what&#x27;s the closed-loop bit? <em>(Q3)</em></li></ul>
+<ul><li>Pushed on hands-on k8s — the posture you hold? <em>(division of labour, peer not learner, Q4)</em></li></ul>
+<h2 id="s19">R · DC FABRIC EVOLUTION — what each iteration SOLVED (Faz ask 2026-06-26)</h2>
+<p><em>The arc that shows 25yr lived depth: each step fixes the PREVIOUS step&#x27;s limit. Recite the <b>driver/what-it-solved</b>, not just the tech name. Anchor to lived experience (vPC, VPLS).</em></p>
+<table>
+<tr><th>#</th><th>Tech</th><th>What it gave</th><th>What it left broken → forced the next step</th></tr>
+<tr><td>1</td><td><b>vPC / MLAG</b></td><td>active/active dual-homing, no STP-blocked links</td><td><b>2-switch only</b> — doesn&#x27;t scale to a fabric; still one big L2 flooding domain / blast radius</td></tr>
+<tr><td>2</td><td><b>L3 Clos (&quot;L3 everything&quot;)</b> — routed leaf-spine, eBGP-to-leaf, ECMP</td><td>huge horizontal <b>scale</b>, no STP, deterministic, ECMP bandwidth</td><td>routing to the leaf <b>kills L2 stretch across the fabric</b> — but workloads still need it: <b>VM mobility/vMotion</b> (same subnet across racks), clustering/heartbeats, multi-tenancy</td></tr>
+<tr><td>3</td><td><b>VXLAN overlay</b> (MAC-in-UDP, leaf VTEPs, on the L3 Clos)</td><td><b>L2 stretch back</b> on the scalable L3 underlay; <b>16M VNIs vs 4K VLANs</b> = real multi-tenancy</td><td>1st gen = <b>flood-and-learn</b>: BUM flooded via VNI→multicast group or static ingress-replication; data-plane MAC learn; <b>no control plane</b></td></tr>
+<tr><td>4</td><td><b>EVPN-VXLAN</b> (MP-BGP control plane)</td><td>advertise <b>MAC/MAC+IP</b> instead of flooding → ARP suppression, MAC mobility, anycast GW/IRB, <b>fabric-wide all-active ESI-LAG</b></td><td>current — ESI-LAG = vPC&#x27;s job done <b>fabric-wide</b></td></tr>
+</table>
+<p><b>Through-line (one breath):</b> vPC = active/active but can&#x27;t scale → L3 Clos = scale but loses L2 stretch → VXLAN = L2 back as an overlay on the scalable L3 fabric → EVPN = a real control plane for that overlay.</p>
+<p><b>The trap to avoid:</b> L3-everything and VXLAN are NOT opposite moves — L3-Clos moved <em>away</em> from L2 (for scale); VXLAN got L2 <em>back</em> (as overlay) without losing the scale; EVPN made the overlay smart.</p>
+<p><b>Anchor (lived):</b> flood-and-learn VXLAN ≈ <b>VPLS</b> (flood BUM, data-plane MAC learning over PWs). EVPN gave VXLAN the <b>same BGP-control-plane upgrade</b> it gave VPLS (EVPN-MPLS) — different encap, same &quot;stop flooding, signal in BGP.&quot;</p>
+<p><b>Fat-tree — where it fits (Faz Q 2026-06-27):</b> &quot;fat-tree / Clos / spine-leaf&quot; = the same leaf-spine</p>
+<p>shape; <b>fat-tree = the non-blocking (full-bisection) variant.</b> It is the **topology of step 2 (the L3</p>
+<p>Clos shift), NOT a separate step<b> — and it lives at the </b>underlay**, so VXLAN/EVPN ride <em>on top of</em> it</p>
+<p>(so &quot;pre-VXLAN&quot; is right: the fat-tree is there with or without the overlay). AI **rail-optimized fabrics</p>
+<p>are fat-trees** tuned to GPU ranks. (Names: fat-tree = HPC/Leiserson 1985; Clos = telecom 1953.)</p>
+<p><b>R · Drill prompts (cover-the-answer, recite the SOLVED column):</b></p>
+<ul><li>vPC gave you what, and what could it NOT do? <em>(active/active dual-home; 2-switch only, no fabric scale, L2 blast radius)</em></li></ul>
+<ul><li>Why did &quot;L3 everything&quot; break something workloads needed? <em>(routes to leaf → no L2 stretch → breaks VM mobility / clustering / multi-tenancy)</em></li></ul>
+<ul><li>What did VXLAN restore, and at what 1st-gen cost? <em>(L2 stretch on the L3 underlay + 16M VNIs; flood-and-learn, multicast/replication, no control plane)</em></li></ul>
+<ul><li>What exactly did EVPN add over flood-and-learn VXLAN? <em>(BGP advertises MAC/MAC+IP → ARP suppression, mobility, IRB/anycast GW, ESI all-active)</em></li></ul>
+<ul><li>One-breath through-line of the whole arc? <em>(active/active → scale → L2-back-as-overlay → control plane)</em></li></ul>
+<h2 id="s20">S · AI FABRIC SIZING — quick calc cheat-sheet (Juniper &quot;Designing DCs for AI Clusters&quot;, verified from the PDF 2026-06-27)</h2>
+<p><em>The whole first half of that deck is one thing: how many GPUs/servers fit on a fabric. Memorise the shortcuts, not the deck. All figures lifted from the doc.</em></p>
+<p><b>Fixed anchors (8-GPU servers — A100 Hyperplane8 / DGX H100):</b></p>
+<ul><li>8 GPUs/server → 8 NICs → <b>8 rails → 8 leaves</b> (NIC1→leaf1 … NIC8→leaf8). Intra-server = NVLink/NVSwitch (off-fabric).</li></ul>
+<ul><li><b>GPU network-port speed:</b> A100 = <b>200G</b>, H100 = <b>400G</b>.</li></ul>
+<ul><li><b>Leaf = QFX5230-64CD:</b> 64×400G = 25.6T → split <b>32×400G down + 32×400G up</b> = <b>12.8T each way</b>.</li></ul>
+<p><b>THE shortcut that drives everything — &quot;12.8T per leaf ÷ GPU port speed&quot;:</b></p>
+<ul><li>A100 @200G: 12.8T ÷ 200G = <b>64 A100 per leaf</b>.</li></ul>
+<ul><li>H100 @400G: 12.8T ÷ 400G = <b>32 H100 per leaf</b>.</li></ul>
+<ul><li>× 8 leaves (8 rails) → <b>512 A100 OR 256 H100 per stripe</b> = <b>64 A100 servers OR 32 H100 servers per stripe.</b></li></ul>
+<p><b>1:1 oversubscription (NVIDIA&#x27;s requirement):</b> leaf-down = leaf-up. 12.8T down (64×200G or 32×400G) = 12.8T up (32×400G to spines) → oversub 1.</p>
+<p><b>Spine count = (32 uplinks × 8 leaves = 256 leaf-uplinks) ÷ spine ports:</b></p>
+<ul><li><b>QFX5230-64CD</b> spine (64×400G) → <b>4 spines</b> (Compute-Design 1).</li></ul>
+<ul><li><b>PTX10008</b> modular spine (8 slots × 36×400G = <b>288×400G</b>) → <b>2 spines</b>, ~160 ports free → grow by adding line cards, no re-cabling (Compute-Design 2).</li></ul>
+<p><b>Storage (Weka, AMD GPU→node matrix, ~36 GB/s/node):</b> 128 GPU → 8 nodes · 256 → 15 · 512 → 29.</p>
+<p><b>Front-end (QFX5220-32CD, 1:1):</b> 16×100G (A100) + 8×200G (H100) = 3200G load = 2×(2×400G) uplinks.</p>
+<p><b>S · Drill prompts (cover-the-answer):</b></p>
+<ul><li>8-GPU server → how many rails/leaves? <em>(8)</em></li></ul>
+<ul><li>Why 64 A100 but only 32 H100 per leaf? <em>(12.8T leaf cap ÷ port speed: 200G→64, 400G→32)</em></li></ul>
+<ul><li>GPUs (and servers) per stripe, A100 vs H100? <em>(512/64 vs 256/32, ×8 leaves)</em></li></ul>
+<ul><li>What holds oversub at 1? <em>(leaf-down 12.8T = leaf-up 32×400G = 12.8T)</em></li></ul>
+<ul><li>256 leaf-uplinks → spines for QFX5230 vs PTX10008? <em>(4 vs 2, PTX has headroom to grow)</em></li></ul>
+<hr>
+<h2 id="s21">T · Virtualization &amp; containers (network view)</h2>
+<p class="q"><b>T1.</b> VM vs container in one breath — and where does Kubernetes sit?</p>
+<div class="a">
+<p><b>VM</b> virtualizes the <b>hardware</b> — a full guest OS each, heavy. <b>Container</b> virtualizes the <b>OS</b> — shares the host kernel, isolated process (namespaces+cgroups), light/dense. <b>Kubernetes</b> orchestrates containers across a <b>cluster</b> (schedule / scale / self-heal / service-discovery). Runtime = <b>containerd</b> (k8s dropped the Docker shim at v1.24); Docker just builds the OCI image. Weak answer: &quot;k8s manages Docker&quot; — stale plumbing.</p>
+</div>
+<p class="q"><b>T2.</b> A network engineer&#x27;s view of Kubernetes networking — the moving parts?</p>
+<div class="a">
+<p>Flat model: <b>every pod gets its own IP</b>. <b>CNI plugin</b> = pod-to-pod reachability (Calico/Cilium, usually a Geneve/VXLAN overlay). <b>Services + kube-proxy</b> = a virtual IP load-balanced across pod replicas. <b>NetworkPolicy</b> = the distributed firewall (open until you write one). It&#x27;s an overlay riding your EVPN/VXLAN underlay — overlay on overlay.</p>
+</div>
+<p class="q"><b>T3.</b> VMware&#x27;s network-virt product + what service chaining means here?</p>
+<div class="a">
+<p><b>NSX</b> — Geneve (was VXLAN) overlay decoupling logical from physical, plus <b>micro-segmentation</b> (distributed firewall in the hypervisor). <b>Service chaining (SFC)</b> = stitching network functions into a path: <b>VNFs</b> in VMs, <b>CNFs</b> in containers. Same control-plane-overlay idea as EVPN, applied to the network functions.</p>
+</div>
+<p class="q"><b>T4.</b> The two interview hooks — Juniper&#x27;s container play, and AI/GPU on k8s?</p>
+<div class="a">
+<p><b>Juniper: Contrail / CN2</b> = a Kubernetes CNI + SDN controller, multivendor — Apstra automates the fabric, Contrail does the workload overlay/policy (one story fabric-to-pod). <b>AI/GPU:</b> clusters run on k8s via the <b>NVIDIA GPU Operator</b>; the RoCE NICs reach pods through <b>SR-IOV + Multus + GPUDirect RDMA</b>, so all-reduce traffic bypasses the host stack to the GPU. That&#x27;s where §5&#x27;s fabric meets containers.</p>
+</div>
+<hr>
+<h2 id="s22">U · AI-FABRIC ECONOMICS — the &quot;Andy (Google)&quot; brief (Nscale-facing, added 2026-07-14)</h2>
+<p><em>Source: Faz&#x27;s Google contact (Andy), relayed 2026-07-14 pre-Nscale. The through-line under ALL of it: <b>optics + power dominate fabric cost at 400/800G, so you collapse a tier of optics into electrical/copper wherever the failure domain allows.</b> The same move recurs three times — chassis backplane, NVLink copper rack, IP+Optical coherent pluggable. This is the commercial language an AI-GPU-cloud (Nscale) room lives in. Pitch = conversant + commercially fluent, bridging from his real Clos/EVPN depth — NOT deepest-HPC-engineer.</em></p>
+<p><em>⚠ TWO soft spots — verify before quoting as fact (Rule 0): (a) Meta 2024 GenAI cluster GPU count (~24k each, two clusters, one RoCE + one InfiniBand) — confident to the thousand, pin exact if he&#x27;ll quote it; (b) &quot;L1/L3 striping&quot; as a <b>named</b> Google technique — the general principle below is solid, the exact paper usage is unverified. Book Andy recommended: <b>likely</b> Dinesh Dutt, </em>Cloud Native Data Center Networking<em> (O&#x27;Reilly) — UNCONFIRMED it&#x27;s the one he meant.</em></p>
+<p><b>U0 · The organizing insight — &quot;collapse a tier of optics.&quot;</b> At 400/800G, pluggable transceivers dominate fabric capex AND power. Every design win below is the <em>same</em> move — replace an optical interconnect stage with electrical/copper on a backplane:</p>
+<div class="a">
+<p>- <b>Modular chassis</b> — the spine stage moves onto the chassis backplane (copper); no pluggables between line card and fabric card.</p>
+<p>- <b>NVLink copper rack (GB200 NVL72)</b> — the GPU scale-up &quot;spine&quot; is a copper backplane in the rack, not optics.</p>
+<p>- <b>IP+Optical coherent pluggable (400ZR/ZR+)</b> — the DWDM optics move <em>into</em> the router port, deleting the separate transponder shelf.</p>
+<p>Room line: <em>&quot;optics dominate cost and power at 800G, so you collapse a tier of optics into copper wherever the failure domain lets you.&quot;</em></p>
+</div>
+<p><b>U1 · A chassis IS a folded Clos.</b></p>
+<p>Q: <em>&quot;Someone tells you &#x27;leaf-spine is dead, everyone&#x27;s gone back to modular chassis.&#x27; Unpack what that actually means structurally, and why it&#x27;s cheaper.&quot;</em></p>
+<div class="a">
+<p>A modular chassis is a <b>folded 3-stage Clos in a box</b>: <b>line cards = leaf stage</b> (front-panel ports), <b>fabric cards = spine stage</b> (on the backplane), fully meshed over <b>copper</b> — no optics. So a &quot;2-tier&quot; fabric whose spine is a chassis is really a <b>5-stage Clos</b>, the middle 3 stages hidden on the backplane. Cheaper = you <b>buried a tier of optics inside the box</b>. &quot;Show the backplane as a layer&quot; = draw those internal stages as real Clos stages. It is NOT &quot;leaf-spine is dead&quot; — it&#x27;s <em>where the stages physically live</em> (cabled optics vs backplane copper), and it&#x27;s workload-specific (hyperscale front-end went the other way — disaggregated pizza boxes — for failure-domain + incremental scale; the swing-back is the AI back-end where optics/power flip the economics).</p>
+<p>```</p>
+<p>   FABRIC CARDS  (spine stage — on the backplane)</p>
+<p>      [F1]   [F2]   [F3]</p>
+<p>        \  /   |   \  /          every LC meets every fabric</p>
+<p>         \/    |    \/           card over COPPER BACKPLANE</p>
+<p>         /\    |    /\           (no optics)</p>
+<p>      [LC1]  [LC2]  [LC3]        LINE CARDS (leaf stage)</p>
+<p>        |      |      |</p>
+<p>     front-panel ports  → outside world</p>
+<p>  ToR ─optics─▶ [CHASSIS spine] ─optics─▶ ToR   (LC→fabric→LC inside)</p>
+<p>  = 5 Clos stages; middle 3 = backplane copper, not fibre</p>
+<p>```</p>
+</div>
+<p><b>U2 · Clos radix scaling — the formulas.</b></p>
+<p>Q: <em>&quot;Switch radix k, half the ports down / half up. How many hosts does a 2-tier fabric hold? A 3-tier? Why does radix matter so much?&quot;</em></p>
+<div class="a">
+<p><b>2-tier (3-stage):</b> spines = k/2, max leaves = k → <b>hosts = k²/2</b>. <b>3-tier (5-stage): hosts = k³/4.</b> Radix is <b>squared</b> (cubed at 3-tier) → one SerDes generation (k doubling) ~<b>4×</b>&#x27;s a 2-tier fabric. k=64→2,048; k=128→8,192; k=256→32,768. Keeper line: <b>&quot;stages are what you&#x27;re forced into when radix runs out; a chassis is radix in a box, so it postpones the 3→5 jump and keeps the fabric flat.&quot;</b></p>
+</div>
+<p><b>U3 · Scale-up vs scale-out — and which for a GPU fabric.</b></p>
+<p>Q: <em>&quot;3-stage fabric is full — every spine port used — and you must double the host count. Two ways to grow, the cost of each, and which you&#x27;d pick for a GPU training fabric, why.&quot;</em></p>
+<div class="a">
+<p><b>UP</b> = bigger-radix spine (chassis / collapsed spine, OR next-gen silicon) → stay 3-stage, stay flat, delete a tier of optics + power. <b>OUT</b> = add a tier → 5-stage (pods + super-spine); <b>F16-style many planes of cheap 100G boxes</b> is the disaggregated way to build that added tier. Precision nit: once <em>spine radix</em> is the binding cap, more planes buy <b>bandwidth / ECMP paths</b> — the thing that actually <b>doubles hosts is the added tier</b>. <b>For GPU: prefer up / stay flat</b> — every tier = +2 hops each way = more latency AND jitter, and AllReduce is <b>barrier-synced / tail-latency-bound</b> (the slowest path stalls every GPU). When forced out, <b>rail-optimise</b> so GPU-to-GPU stays inside the fewest hops/planes.</p>
+</div>
+<p><b>U4 · Meta F16 (the disaggregated exemplar).</b></p>
+<p>Q: <em>&quot;What is Meta&#x27;s F16, what problem did it solve, and what came after it?&quot;</em></p>
+<div class="a">
+<p>~2019 Meta DC fabric. <b>&quot;F16&quot; = 16 spine planes</b> (prior fabric had 4). Rather than wait for faster optics they went <b>wide</b> — 16 parallel <b>100G</b> merchant-silicon planes (Minipack switch, Broadcom Tomahawk) → ~4× capacity on mature optics; <b>HGRID</b> aggregates above (across buildings). Structurally a <b>3-tier / 5-stage folded Clos, all fixed-form-factor</b> (rack → fabric → spine-plane), fully disaggregated — kill one plane = lose <b>1/16</b>, not 1/4 (the failure-domain win). Evolution arc: <b>2014 4-post → 2019 F16 + HGRID → 400/800G → AI back-end</b> (rail-optimised Clos, lossless RoCEv2 PFC/ECN; Meta&#x27;s 2024 ~24k-GPU clusters, one RoCE one InfiniBand) → <b>NVLink domains (NVL72)</b> collapse the innermost GPU tier to copper.</p>
+<p>```</p>
+<p>              HGRID  (ties pods / buildings)</p>
+<p>  [Spine p1][Spine p2]...[Spine p16]   16 SPINE PLANES</p>
+<p>      |        |             |</p>
+<p>  [FSW1]   [FSW2]   ...   [FSW16]       16 FABRIC SW = a POD</p>
+<p>      \________ every rack uplinks to all 16 ________/</p>
+<p>           [RSW][RSW][RSW]...            rack switches (ToR)</p>
+<p>             |    |    |</p>
+<p>          servers ...     &quot;wide, not fast&quot; — 16×100G planes vs 4 faster</p>
+<p>```</p>
+</div>
+<p><b>U5 · IP + Optical.</b></p>
+<p>Q: <em>&quot;What is IP+Optical convergence, what does it delete, and what does the control side buy you?&quot;</em> (his lived anchor: <b>IPoDWDM</b>, DT/T-Mobile — on the CV)</p>
+<div class="a">
+<p>Traditionally L3 (routers) and L1 (DWDM transport) are two separately-managed layers: router → grey optics → <b>transponder shelf</b> → optical line system. Converge them: put the <b>coherent DWDM optics inside the router port — 400ZR / ZR+ pluggables</b> → the router lights the line system directly, <b>deleting the transponder shelf</b> (cost, power, rack space). Control side: <b>one controller that sees both layers</b> → multi-layer TE + restoration (heal at whichever layer is cheaper — don&#x27;t burn a full L3 reroute when an optical switch can fix it); Google&#x27;s <b>OCS</b> reconfigures the <em>physical</em> topology under the IP fabric. Same &quot;collapse a tier of optics&quot; move as the chassis backplane.</p>
+</div>
+<p><b>U6 · L1 / L3 striping.</b></p>
+<p>Q: <em>&quot;What does &#x27;striping&#x27; mean in a fabric, and what&#x27;s the difference between doing it at L3 vs L1?&quot;</em></p>
+<div class="a">
+<p><b>Striping = deliberately spreading capacity/traffic evenly across all parallel elements so nothing polarises onto one path.</b> <b>L3 striping</b> — routed layer: each leaf&#x27;s uplinks striped <b>one-per-spine-plane</b> and <b>ECMP</b> hashes flows across them; fights <b>ECMP polarisation</b> (elephant / AllReduce flows colliding on one path while others idle — the thing that murders AI-fabric throughput). <b>L1 striping</b> — optical layer: a &quot;link&quot; is really <b>N fibres/wavelengths</b>, capacity inverse-muxed across them; lose one → lose 1/N, and you <b>rebalance in the optical domain without the routers seeing it</b> (with OCS you re-stripe the physical topology on demand). Through IP+Optical (one controller, both layers) you choose <em>which</em> layer to stripe/heal at — keep the IP fabric flat, push spreading down to L1. <em>(Exact Google-paper definition of &quot;L1/L3 striping&quot; unverified — the principle is solid.)</em></p>
+</div>
+<p><b>U · Drill prompts (cover-the-answer; reveal map/ascii AFTER):</b></p>
+<ul><li>&quot;Leaf-spine is dead, back to chassis&quot; — unpack it structurally + why cheaper. <em>(U1: chassis = folded Clos, fabric cards = spine stage on backplane, buried a tier of optics; workload-specific, not literally dead)</em></li></ul>
+<ul><li>k-radix, half/half — hosts at 2-tier? 3-tier? <em>(k²/2, k³/4; radix squared/cubed)</em></li></ul>
+<ul><li>Fabric full, double the hosts — two ways + which for GPU + why. <em>(up = chassis/flat vs out = add tier / F16 planes; GPU → flat, barrier-sync/tail-latency)</em></li></ul>
+<ul><li>F16 — what / why / what came after. <em>(16 planes wide-not-fast, disaggregated 1/16 blast, HGRID; → RoCE AI → NVL72)</em></li></ul>
+<ul><li>IP+Optical — what does it delete + control-side win? <em>(transponder shelf via 400ZR coherent pluggable; multi-layer TE/restoration, OCS)</em></li></ul>
+<ul><li>L3 vs L1 striping — the difference + what each fights. <em>(ECMP one-per-plane vs wavelengths/OCS; polarisation)</em></li></ul>
+<ul><li>The one through-line under chassis + NVL72 + IP+Optical? <em>(collapse a tier of optics into copper — cost/power at 800G)</em></li></ul>
+<hr>
+<h2 id="s23">V · TCP/IP STATE + TRANSPORT INTERNALS (cold source, added 2026-07-22)</h2>
+<p><em>Cover the answer, say it out loud, then check. Every answer names the keeper mechanism plus what a weak answer drops.</em></p>
+<p class="q"><b>V1.</b> Walk the TCP connection setup and teardown as a state machine — both sides, every state, in order.</p>
+<div class="a">
+<p><b>Open:</b> client <code>CLOSED</code> → sends SYN → <b>SYN-SENT</b>; server <code>LISTEN</code> → receives SYN, sends SYN-ACK → <b>SYN-RECEIVED</b>; client receives SYN-ACK, sends ACK → <b>ESTABLISHED</b>; server receives ACK → <b>ESTABLISHED</b>.</p>
+<p><b>Close (the half that gets probed):</b> the <b>active closer</b> sends FIN → <b>FIN-WAIT-1</b>; receives ACK → <b>FIN-WAIT-2</b>; receives the peer&#x27;s FIN, sends ACK → <b>TIME-WAIT</b> → after 2×MSL → <code>CLOSED</code>. The <b>passive closer</b> receives FIN, ACKs → <b>CLOSE-WAIT</b>; when its app closes it sends FIN → <b>LAST-ACK</b> → receives ACK → <code>CLOSED</code>.</p>
+<p><b>Simultaneous close</b> → both go FIN-WAIT-1 → <b>CLOSING</b> → TIME-WAIT. Weak answer stops at &quot;SYN, SYN-ACK, ACK&quot; and can&#x27;t name CLOSE-WAIT or LAST-ACK.</p>
+</div>
+<p class="q"><b>V2.</b> A box has tens of thousands of sockets in <b>TIME-WAIT</b>. What is that, whose problem is it, and what is the fix?</p>
+<div class="a">
+<p>TIME-WAIT is held by the <b>end that closed first</b>. Duration = <b>2×MSL</b> (Linux MSL 30s, so ~60s, and it is <b>not</b> tunable via a sysctl — <code>tcp_fin_timeout</code> governs FIN-WAIT-2, not this). Two jobs: absorb a <b>lost final ACK</b> (the peer retransmits its FIN and needs someone to answer), and <b>drain stray old segments</b> so a new connection on the same four-tuple can&#x27;t be poisoned.</p>
+<p>It is <b>benign</b> — it&#x27;s connection churn, not an attack. <b>The design fix is to make the OTHER end close first</b>, plus connection reuse / keep-alive / pooling so you stop minting four-tuples. <code>tcp_tw_reuse</code> is a mitigation for outbound connections only; <code>tcp_tw_recycle</code> is gone from modern kernels and was NAT-hostile — never reach for it.</p>
+<p>Weak answer: &quot;it&#x27;s a DoS&quot; (that&#x27;s SYN-RECEIVED / half-open backlog exhaustion) or &quot;raise the timeout&quot;.</p>
+</div>
+<p class="q"><b>V3.</b> Same box, tens of thousands of sockets in <b>CLOSE-WAIT</b>. Different diagnosis — why?</p>
+<div class="a">
+<p>CLOSE-WAIT means the peer sent FIN and <b>your application has not called close()</b>. It is a <b>bug in your code</b>, not a kernel or network condition, and it never times out on its own — the socket sits there leaking a file descriptor until the process is restarted. TIME-WAIT = you closed and are waiting correctly; CLOSE-WAIT = you were told to close and haven&#x27;t.</p>
+</div>
+<p class="q"><b>V4.</b> A 100G link with 60 ms round-trip is only pulling a fraction of line rate. No loss. Why, and what do you size?</p>
+<div class="a">
+<p><b>Bandwidth-delay product</b>: 100 Gbit/s × 0.06 s = 6 Gbit = <b>750 MB</b> of data in flight to keep the pipe full. TCP can only have one window in flight per RTT, so <b>throughput = window ÷ RTT</b> — a small window <b>starves</b> the pipe. Fix = <b>window scaling (RFC 7323)</b> plus socket buffers sized to the BDP (<code>tcp_rmem</code>/<code>tcp_wmem</code>, autotuning ceilings).</p>
+<p><b>The seam to hold:</b> this is a <em>starvation</em> problem at the endpoints. The <b>router egress buffer</b> is the opposite — an <em>overflow</em> problem in the network, filled by a microburst, tail-dropping. Both are sized bandwidth × delay (50 ms × 100G ≈ 625 MB of deep buffer), which is exactly why they get confused.</p>
+</div>
+<p class="q"><b>V5.</b> Congestion control: what actually differs between the classic loss-based algorithms and BBR, and when does it matter?</p>
+<div class="a">
+<p>Loss-based (Reno, <b>CUBIC</b> — the Linux default) treat <b>loss as the congestion signal</b>, so they fill the bottleneck queue until it drops — high throughput, <b>high queueing delay</b> (bufferbloat). <b>BBR</b> models the bottleneck <b>bandwidth and minimum RTT</b> and paces to that, so it holds the queue near-empty — lower latency, and it doesn&#x27;t collapse on links with <b>non-congestive loss</b> (long fat / lossy paths). <b>ECN</b> changes the signal from a drop to a mark — the same mechanism the DC uses under DCQCN for lossless RoCE.</p>
+</div>
+<p class="q"><b>V6.</b> Why is market data UDP, and what does that decision hand you and cost you?</p>
+<div class="a">
+<p>Hands you: <b>one-to-many</b> (multicast has no TCP equivalent), no handshake, no head-of-line blocking, no retransmit timer sitting in the hot path. Costs you: <b>no ordering, no delivery guarantee, no flow control, no backpressure</b> — so the application layer rebuilds exactly the parts it needs: <b>sequence numbers</b> for gap detection, <b>A/B feeds</b> for redundancy, and a <b>retransmit/snapshot channel off the hot path</b>. Weak answer: &quot;UDP is faster&quot; without naming what the app has to re-implement.</p>
+</div>
+<p class="q"><b>V7.</b> Nagle and delayed-ACK — what&#x27;s the interaction, and where does it bite a trading stack?</p>
+<div class="a">
+<p>Nagle holds a small write until the previous small segment is ACKed (to avoid tinygrams); <b>delayed ACK</b> holds the ACK up to ~40 ms hoping to piggyback. Together they deadlock a request/response pattern into a <b>~40 ms stall</b> on small writes. Fix = <b>TCP_NODELAY</b> on any latency-sensitive socket (and write whole messages in one call rather than header-then-body). This is the classic &quot;our order path has a mysterious 40 ms&quot; answer.</p>
+</div>
+<p class="q"><b>V8.</b> Path-MTU black hole — the symptom, the mechanism, the fix.</p>
+<div class="a">
+<p>Symptom: small packets and pings fine, <b>large transfers hang</b> — sessions establish then stall. Mechanism: a downstream link has a smaller MTU, the sender sets <b>DF</b>, the router sends <b>ICMP fragmentation-needed</b>, and a firewall <b>filters the ICMP</b> — so the sender never learns and keeps retransmitting full-size segments. Detect with a <b>large ping with DF set</b>, walking the size down. Fix = let the ICMP through, or <b>MSS clamping</b> at the edge. Ties to the VXLAN case: ~50 bytes of encapsulation with a 1500-byte underlay produces exactly this.</p>
+</div>
+<hr>
+<h2 id="s24">W · ENCAPSULATION — WHAT&#x27;S ACTUALLY ON THE WIRE (cold source, added 2026-07-22)</h2>
+<p class="q"><b>W1.</b> Draw the MPLS label entry, field by field, with bit widths — and say what each field is for.</p>
+<div class="a">
+<p><b>32 bits total, 4 bytes:</b> <b>Label 20 bits</b> · <b>TC 3 bits</b> (traffic class, was EXP — QoS marking) · <b>S 1 bit</b> (bottom-of-stack: 1 on the last label) · <b>TTL 8 bits</b> (copied from IP at imposition in uniform mode; decremented per hop for loop protection and for traceroute to work).</p>
+<p>Reserved values worth knowing: <b>0</b> = IPv4 explicit-null, <b>2</b> = IPv6 explicit-null, <b>3</b> = implicit-null (the &quot;pop, don&#x27;t swap&quot; signal that produces <b>PHP</b>), <b>7</b> = entropy-label indicator.</p>
+<p>Weak answer knows &quot;20-bit label&quot; and drops the S-bit or thinks TTL isn&#x27;t there.</p>
+</div>
+<p class="q"><b>W2.</b> SR-MPLS three-segment path versus SRv6 for the same path — count the bytes and say what decides it.</p>
+<div class="a">
+<p><b>SR-MPLS: 3 × 4 = 12 bytes.</b> <b>SRv6 classic: 40-byte IPv6 outer + 8-byte SRH base + 16 bytes per SID = 96 bytes</b> (some stacks carry the active SID only in the destination address and omit it from the list — 80 bytes at N=3; quote the conservative figure). <b>SRv6 uSID</b> packs up to six 16-bit micro-SIDs into one 128-bit carrier, so short paths flatten to ~64 bytes, and the SRH can disappear entirely.</p>
+<p>What decides it is <b>not</b> the nanoseconds of serialisation — it&#x27;s <b>MTU determinism</b> on a 1500-byte WAN segment, and whether the silicon does the C-SID shift at line rate.</p>
+</div>
+<p class="q"><b>W3.</b> Walk the VXLAN header stack outward from the tenant frame, and say what gives the spines their hash entropy.</p>
+<div class="a">
+<p><b>[outer IP: source VTEP → destination VTEP] [UDP: destination 4789, source = hash of the inner flow] [VXLAN header: flags + 24-bit VNI] [original L2 frame]</b> — MAC-in-UDP, ~<b>50 bytes</b> of overhead, so the underlay runs <b>jumbo (9216)</b> or you get a silent large-frame black hole.</p>
+<p>The entropy is the <b>outer UDP source port</b>, computed from the inner five-tuple — without it every flow between the same VTEP pair would hash identically and polarise onto one spine. The spine routes the <b>outer IP only</b> and never sees a tenant MAC or the VNI.</p>
+</div>
+<p class="q"><b>W4.</b> VXLAN versus GENEVE versus GRE versus MPLS-over-UDP — what problem does each newer one solve?</p>
+<div class="a">
+<p><b>GRE</b>: generic, no port-level entropy by default, no tenant ID beyond the key — pre-DC-overlay. <b>VXLAN</b>: adds the <b>24-bit VNI</b> (16M segments versus 4K VLANs) and gets ECMP entropy free from the UDP source port. <b>GENEVE</b>: same shape, but <b>TLV-extensible options</b> — VXLAN&#x27;s header is fixed, so anything a NIC/controller wants to carry (metadata, policy) has nowhere to go; NSX and offload-heavy stacks use it. <b>MPLS-over-UDP / MPLS-over-GRE</b>: carries a <b>label stack</b> across an IP-only core when you can&#x27;t run MPLS end to end.</p>
+</div>
+<p class="q"><b>W5.</b> The full nesting for a tenant packet crossing an EVPN-VXLAN fabric where the underlay itself is SR-MPLS DCI — name every header outward.</p>
+<div class="a">
+<p>tenant payload → tenant L4 → tenant IP → tenant Ethernet → <b>VXLAN + VNI</b> → <b>UDP</b> → <b>outer IP (VTEP to VTEP)</b> → <b>SR label stack (transport SIDs, plus entropy label indicator and entropy label if inserted)</b> → outer Ethernet. The point of the question is whether you can keep <b>overlay identity (VNI)</b> separate from <b>transport path (SID stack)</b> — two different jobs, two different layers.</p>
+</div>
+<p class="q"><b>W6.</b> Where does the entropy label sit, why does it exist, and what does it cost?</p>
+<div class="a">
+<p><b>[transport label][ELI = 7][EL][service label][payload]</b>. It exists because a transit LSR has to guess where the inner IP header is under a deep stack — and can&#x27;t at all when the payload is <b>Ethernet (L2VPN/pseudowire)</b> or encrypted. The ingress computes a 20-bit value from the real flow; every transit hashes on <b>that</b>, no deep inspection. Cost = <b>2 labels of max-SID-depth budget</b>, which is why an MSD of 5 on old silicon can&#x27;t carry a deep SR-TE policy plus a service label plus ELI/EL.</p>
+</div>
+<p class="q"><b>W7.</b> IPv6 header versus IPv4 — the three differences that change how the network behaves.</p>
+<div class="a">
+<p><b>Fixed 40-byte header, no options</b> (options moved to <b>extension headers</b>) — so forwarding is simpler but middleboxes often drop unknown extension headers. <b>No router fragmentation</b> — routers never fragment in v6, so <b>PMTUD is mandatory</b> and filtering ICMPv6 breaks connectivity outright. <b>No header checksum</b> — L2 and L4 cover it, saving a per-hop recompute. Plus <b>no broadcast</b>: ARP is replaced by <b>NDP over multicast</b>, and address assignment can be <b>SLAAC</b> off router advertisements.</p>
+</div>
+<p class="q"><b>W8.</b> Ethernet frame: what&#x27;s actually on the wire before your first byte of IP, and what&#x27;s the 802.1Q tag made of?</p>
+<div class="a">
+<p>Preamble (7) + start-of-frame delimiter (1) → <b>destination MAC (6) + source MAC (6)</b> → optional <b>802.1Q tag (4 bytes: TPID 0x8100, then PCP 3 bits + DEI 1 bit + VLAN ID 12 bits)</b> → EtherType (2) → payload → <b>FCS (4)</b>, then a 12-byte interframe gap. <b>12 bits of VLAN ID is the 4094-usable-VLAN ceiling</b> that VXLAN&#x27;s 24-bit VNI exists to break. <b>QinQ</b> stacks a second tag (TPID 0x88a8) — service tag outside, customer tag inside.</p>
+</div>
+<p><b>W · drill prompts (cover the answer):</b></p>
+<ul><li>The four MPLS label fields with bit widths, and what label 3 means. <em>(W1)</em></li></ul>
+<ul><li>3-segment path: SR-MPLS bytes versus SRv6 classic versus uSID — and the real decider. <em>(W2)</em></li></ul>
+<ul><li>What gives spines ECMP entropy across a VXLAN fabric? <em>(W3)</em></li></ul>
+<ul><li>Why does GENEVE exist when VXLAN already works? <em>(W4)</em></li></ul>
+<ul><li>Where does the entropy label sit and what does it cost you? <em>(W6)</em></li></ul>
+<ul><li>Why is PMTUD mandatory in IPv6? <em>(W7)</em></li></ul>
+<ul><li>How many usable VLAN IDs, and which field caps it? <em>(W8)</em></li></ul>
+<hr>
+<h2 id="s25">X · SDN (own round, 27/28 Jul — cold source, added 2026-07-22)</h2>
+<p><em>Your position: you have no SDN-<b>product</b> experience (no ACI, no NSX, no Contrail). You have model-driven transformation experience at Sky via <b>OpenConfig</b>, and you made the architectural calls. That is a stronger answer than product-button knowledge — but only if you give it as an architecture story, not an apology. Never claim a product you haven&#x27;t run.</em></p>
+<p class="q"><b>X1.</b> &quot;Tell us about your SDN experience.&quot;</p>
+<div class="a">
+<p><b>The frame: I&#x27;ve done model-driven network transformation from the architecture side, not vendor-SDN products.</b> At Sky I ran the model-driven transformation on <b>OpenConfig</b> — that is my modelling experience.</p>
+<p>The beats, in order: (1) I made the <b>build-versus-buy call</b> — off-the-shelf controller versus ops-scripts versus in-house end-to-end orchestration. <b>In-house won</b>, and I own the reasoning. (2) I <b>decided what got automated</b> — scope is an architecture decision, not a developer one. (3) I took the <b>architectures and designs and sat with the developers to extract them into the data model</b> — that translation, network intent into schema, is the actual hard part. (4) The <b>developers coded it</b>. (5) I <b>designed the transition</b>, oversaw the migrations, and <b>troubleshot them when they went wrong</b>.</p>
+<p><b>Do not</b> claim controller-product operations. If asked about ACI/NSX/Contrail: &quot;I haven&#x27;t run those — my modelling work was OpenConfig-based and my role was the architecture and the data model, not the product.&quot; Then pivot to the design reasoning, which is what they&#x27;re actually testing.</p>
+</div>
+<p class="q"><b>X2.</b> What does &quot;model-driven&quot; actually buy you over scripting the CLI?</p>
+<div class="a">
+<p>CLI scripting encodes <b>syntax</b>; a model encodes <b>intent with a schema</b>. With YANG you get a <b>typed, validated, vendor-neutral contract</b>: config is machine-validated <em>before</em> it hits a box, the same intent renders to multiple vendors, and — the part people miss — <b>you can diff intent against operational state</b>, because the model covers both config and state. Screen-scraping gives you none of that: no validation, no types, breaks on a cosmetic output change, and no clean way to ask &quot;does the network match what I asked for?&quot;</p>
+<p><b>OpenConfig</b> specifically = vendor-neutral models written by <b>operators</b> (Google, and the hyperscale/carrier group) rather than vendors, precisely so you&#x27;re not locked into one vendor&#x27;s native tree.</p>
+</div>
+<p class="q"><b>X3.</b> NETCONF, RESTCONF, gNMI — what&#x27;s the difference and when do you reach for each?</p>
+<div class="a">
+<p><b>NETCONF</b>: XML over SSH, RPC-based, the original. Key feature is <b>candidate config + commit + confirmed-commit with rollback</b> — transactional change. <b>RESTCONF</b>: the same YANG models over HTTP/REST + JSON — simpler, web-friendly, but weaker transactional semantics. <b>gNMI</b>: gRPC over HTTP/2 with protobuf — binary, efficient, and the one that does <b>streaming telemetry (Subscribe)</b> as well as Get/Set. <b>gNOI</b> is the sibling for <b>operations</b> rather than config (reboot, cert install, file ops, ping).</p>
+<p>Reach: gNMI where you want telemetry and scale; NETCONF where you want the transactional commit model; RESTCONF where a simple integration is enough.</p>
+</div>
+<p class="q"><b>X4.</b> Streaming telemetry versus SNMP polling — why does a research/trading network care?</p>
+<div class="a">
+<p>SNMP <b>polls</b> — you ask, typically every 30–60s, over UDP, per-OID, and the box burns CPU building the answer. You <b>cannot see a microburst</b> in a 30-second average; the counter is already smoothed. Streaming telemetry <b>pushes</b> on subscription — sub-second, structured, over a persistent gRPC channel, <b>on-change or sample-interval</b>, and it&#x27;s the same YANG paths as your config so intent and state share a vocabulary.</p>
+<p>The trading-network point: <b>congestion that matters happens in microseconds</b>. Anything averaged over a polling interval hides exactly the event you&#x27;re hunting. This is the honest link to your buffer/microburst material.</p>
+</div>
+<p class="q"><b>X5.</b> The controller dies. What happens to the network?</p>
+<div class="a">
+<p>The right architecture answer is <b>fail-static</b>: the <b>data plane keeps forwarding</b> on the state it already has, and the controller&#x27;s absence costs you <em>change</em> and <em>visibility</em>, not <em>traffic</em>. Anything where a controller outage drops packets is a design failure.</p>
+<p>So you separate them: keep the <b>distributed control plane authoritative for forwarding</b> (BGP/OSPF/EVPN converge on their own), and let the controller/automation own <b>intent, provisioning and telemetry</b>. That gives a blast radius of &quot;I can&#x27;t push changes for an hour,&quot; which is survivable, instead of &quot;the fabric is down.&quot;</p>
+<p>Weak answer: describing a centralised controller as the forwarding brain without naming what happens when it&#x27;s gone.</p>
+</div>
+<p class="q"><b>X6.</b> Source of truth, drift, reconciliation — how do you keep intent and reality the same thing?</p>
+<div class="a">
+<p>A single <b>source of truth</b> (the intent repo / IPAM+ DB) is authoritative; the network is a <b>rendering</b> of it, never the master. Then you need a <b>reconciliation loop</b>: continuously read operational state, diff against intent, and either alert or auto-remediate. <b>Drift</b> is what happens the first time someone fixes something at 3am on the CLI — and if you never diff, your model quietly becomes fiction.</p>
+<p>The discipline that makes it real: <b>no out-of-band changes</b>, break-glass is logged and reconciled after, and the pipeline is the only write path.</p>
+</div>
+<p class="q"><b>X7.</b> Centralised path computation — PCE/PCEP, BGP-LS, SR policy. How does the controller actually steer traffic?</p>
+<div class="a">
+<p><b>BGP-LS</b> exports the IGP link-state topology (plus SR SIDs, TE metrics, SRLGs) northbound so the controller has a <b>full, current topology</b> without running the IGP. The <b>PCE</b> computes a constrained path across it. <b>PCEP</b> is the session that delegates/installs that path on the headend — <b>stateful PCE</b> keeps ownership so it can re-optimise. The alternative south-bound is <b>BGP SR Policy</b> (SAFI 73), which just distributes the policy as a route — and matters to you because <b>Arista EOS has no PCEP</b>, so on an EOS network the answer is BGP SR Policy or controller-driven config, not PCEP.</p>
+<p><b>Why SR makes this work at all:</b> the path is a <b>stack of SIDs imposed at the head end</b> — there&#x27;s no per-hop signalling and <b>no state in the core</b>, so the controller can change a path without touching every router. That&#x27;s the thing RSVP-TE couldn&#x27;t do at scale.</p>
+</div>
+<p class="q"><b>X8.</b> If EVPN/BGP already distributes state, why would you add a controller?</p>
+<div class="a">
+<p>Because they solve different problems. <b>EVPN is a distributed control plane</b> — it converges without a brain, survives partition, and scales by protocol design; that&#x27;s why the DC settled on it over controller-per-fabric models. A controller earns its place at the layer <em>above</em>: <b>intent, provisioning, cross-domain policy, path computation with global constraints, and telemetry aggregation</b> — things no single router can see.</p>
+<p>The design line to hold: <b>distributed for forwarding, centralised for intent.</b> Centralising forwarding decisions re-creates a single point of failure that the routing protocols spent thirty years eliminating.</p>
+</div>
+<p class="q"><b>X9.</b> A new switch is racked and cabled. How does it get its config, safely?</p>
+<div class="a">
+<p><b>ZTP</b>: box boots with no config, DHCP hands it an option pointing at a script/image server, it pulls image + initial config, then registers with the automation. The security question — and the one worth raising unprompted — is <b>trust bootstrap</b>: how does the box prove it&#x27;s yours and the server prove it&#x27;s not an impostor? Answer: <b>secure device identity</b> (an vendor-installed cert / TPM-backed IDevID, i.e. 802.1AR) and signed images, with <b>secure ZTP/BRSKI</b>-style voucher exchange, rather than &quot;trust whatever answers DHCP.&quot;</p>
+<p>Raising trust-bootstrap unprompted is what separates an architect answer from an ops answer.</p>
+</div>
+<p class="q"><b>X10.</b> Build versus buy — how did you decide, and how would you decide again?</p>
+<div class="a">
+<p>The axes you actually weigh: <b>fit to the operational model</b> (does the product&#x27;s opinion match how we run?), <b>lock-in and the exit cost</b>, <b>multi-vendor reality</b> (an off-the-shelf controller that only speaks one vendor is a strategy, not a tool), <b>the feature-request latency</b> — how long from &quot;we need X&quot; to having X — versus <b>the cost of owning code</b>: staffing, on-call, and the fact that you now maintain it forever.</p>
+<p>At Sky, <b>in-house end-to-end orchestration won</b> — the estate and operating model didn&#x27;t fit a product&#x27;s opinion, and the integration surface was the whole point. The honest counterweight to state out loud: build means <b>you own it forever</b>, and that&#x27;s a staffing commitment, not a project.</p>
+</div>
+<p class="q"><b>X11.</b> How do you migrate a live network onto an automated pipeline without an outage?</p>
+<div class="a">
+<p><b>Read before write.</b> Phase 1 the pipeline only <b>reads</b> and diffs — you build confidence that the model matches reality with zero risk. Phase 2 it writes <b>one low-risk element</b> (banners, SNMP, NTP) across the estate to prove the mechanics. Phase 3 it owns a <b>full device class</b>, starting at the edge, <b>not</b> the core. Throughout: <b>canary → staged rings → full</b>, with automated <b>pre- and post-checks</b> on every change and a <b>rollback that&#x27;s been tested</b>, not theorised.</p>
+<p>The bit interviewers listen for: <b>you designed the transition and you were there when it went wrong.</b> Name a concrete failure and what the fix taught you — that&#x27;s the credibility, not the happy path.</p>
+</div>
+<p class="q"><b>X12.</b> Automation lets you break 5,000 devices in one second. How do you bound that?</p>
+<div class="a">
+<p><b>Blast radius is a design parameter.</b> Concretely: <b>dry-run/diff before apply</b>; <b>change budgets</b> (no more than N devices or one failure domain per window); <b>canary then rings</b>; <b>automated health gates between rings</b> so the pipeline stops itself; <b>confirmed-commit / commit-with-rollback timers</b> (NETCONF gives you this natively) so a box that loses management reverts on its own; and <b>guardrails in the model</b> — policy that refuses a change that would, say, drain both spines.</p>
+<p>The one-liner: <em>&quot;The scary thing about automation isn&#x27;t that it makes mistakes — it&#x27;s that it makes them uniformly, everywhere, instantly. So the pipeline has to be more conservative than a human would be.&quot;</em></p>
+</div>
+<hr>
+<h2 id="s26">Y · PCAP READING (in scope, 27/28 Jul — cold source, added 2026-07-22)</h2>
+<p><em>They may put a capture in front of you. The differentiator is not Wireshark button knowledge — it&#x27;s knowing <b>where you captured, what the capture is lying about, and what the evidence rules out</b>.</em></p>
+<p class="q"><b>Y1.</b> Before you read a single packet: where did you capture, and what did that cost you?</p>
+<div class="a">
+<p><b>Optical/passive tap</b> — sees everything including errors, doesn&#x27;t drop under load, no device CPU involved. <b>SPAN/mirror</b> — convenient, but it <b>drops silently when the mirror oversubscribes the destination port</b>, is deprioritised against real traffic, and <b>strips or hides L1/L2 errors</b> (CRC, runts). So &quot;the capture shows loss&quot; on a SPAN may mean the SPAN dropped it, not the network. <b>Host capture</b> — sees the traffic <em>after</em> NIC offload and <em>before</em> the app, so it proves what the kernel received, not what was on the wire.</p>
+<p>Always say <b>&quot;and I&#x27;d confirm the capture point isn&#x27;t the source of the symptom&quot;</b> — that single sentence is what a senior answer sounds like.</p>
+</div>
+<p class="q"><b>Y2.</b> The capture shows 64KB TCP segments on a 1500-MTU link. Is the network broken?</p>
+<div class="a">
+<p>No — that&#x27;s <b>offload lying to you</b>. <b>TSO/GSO</b> (transmit) and <b>LRO/GRO</b> (receive) mean the host hands the NIC one giant buffer and the NIC segments it, so a host-side capture shows a super-sized pseudo-packet that never existed on the wire. Same family: <b>checksum offload</b> makes outbound checksums look &quot;bad&quot; in a local capture because they haven&#x27;t been computed yet.</p>
+<p>The fix when it matters: capture on a <b>tap</b>, or disable offloads (<code>ethtool -K</code>) for the test. Knowing this stops you chasing a phantom MTU problem.</p>
+</div>
+<p class="q"><b>Y3.</b> Produce these tcpdump filters cold.</p>
+<div class="a">
+<p>Write to disk, don&#x27;t print: <code>tcpdump -i eth0 -w cap.pcap -s0</code> (<code>-s0</code> = full packet; a short snaplen silently truncates). Don&#x27;t resolve names in the hot path: <code>-nn</code>. Ring buffer for a long hunt: <code>-W 10 -C 100</code> .</p>
+<p>Host/port: <code>host 10.1.1.1 and port 179</code>. Subnet: <code>net 10.1.0.0/16</code>. Multicast group: <code>host 239.1.1.1</code>. Only SYNs: <code>&#x27;tcp[tcpflags] &amp; tcp-syn != 0&#x27;</code>. RSTs: <code>&#x27;tcp[tcpflags] &amp; tcp-rst != 0&#x27;</code>. VLAN-tagged: <code>vlan and host x</code>. VXLAN: <code>udp port 4789</code>. RoCEv2: <code>udp port 4791</code>.</p>
+</div>
+<p class="q"><b>Y4.</b> In the capture: retransmission, out-of-order, or duplicate? How do you tell them apart, and what does each imply?</p>
+<div class="a">
+<p>Look at <b>sequence number versus arrival time and IP ID</b>. <b>Retransmission</b> — same sequence, arriving <em>later than the gap</em>, typically after an RTO or after 3 dup-ACKs. <b>Out-of-order</b> — a lower sequence arriving <em>between</em> higher ones, with a <b>tiny</b> time delta (it took a different path / got reordered in the fabric), and no loss actually occurred. <b>Duplicate</b> — the same segment twice with no gap to fill (often a mirroring artefact — you captured the same packet on two ports).</p>
+<p>Implication matters: retransmissions = real loss (or a lost ACK); out-of-order = <b>load-balancing / ECMP polarisation or a parallel-path asymmetry</b>, which is a <em>design</em> finding, not a loss finding; duplicates = suspect your capture setup first.</p>
+</div>
+<p class="q"><b>Y5.</b> &quot;TCP Window Full&quot; and &quot;TCP ZeroWindow&quot; — who&#x27;s at fault?</p>
+<div class="a">
+<p><b>Zero window = the receiver&#x27;s problem.</b> Its application isn&#x27;t draining the socket buffer, so it advertises zero and tells the sender to stop; the sender then window-probes. This is a <b>slow consumer</b> — a stalled app, a blocked thread, an undersized <code>SO_RCVBUF</code> — <b>not</b> a network fault. <b>Window Full</b> is the sender having filled the receiver&#x27;s advertised window and being unable to send more until an ACK frees space.</p>
+<p>The line: <em>&quot;zero-window means the network delivered fine and the application couldn&#x27;t keep up.&quot;</em> Contrast with <b>RcvbufErrors</b> on the UDP side, which is the same disease with no backpressure — the kernel just drops.</p>
+</div>
+<p class="q"><b>Y6.</b> Duplicate ACKs — what&#x27;s happening and what does the count tell you?</p>
+<div class="a">
+<p>A receiver that gets an out-of-order segment re-ACKs the <b>last in-order byte</b> — that&#x27;s a dup-ACK. <b>Three</b> dup-ACKs trigger <b>fast retransmit</b> (the sender resends without waiting for the RTO) and fast recovery. <b>SACK</b> blocks in the options tell you <em>exactly</em> which ranges arrived, so the sender resends only the hole rather than everything from the gap.</p>
+<p>Reading it: lots of dup-ACKs + fast retransmits = <b>moderate loss, recovering well</b>. Loss with <b>RTO timeouts instead</b> (a long gap, then a retransmit, then the window collapses) = far worse — that&#x27;s where throughput falls off a cliff.</p>
+</div>
+<p class="q"><b>Y7.</b> You see a RST. Give the causes.</p>
+<div class="a">
+<p>(1) <b>Nothing listening</b> on the port — a connection refused. (2) The application <b>closed abortively</b> (SO_LINGER 0) instead of a graceful FIN — common in trading stacks that want the socket gone now. (3) A <b>firewall or middlebox injecting</b> a RST to tear the session down — the tell is a TTL or IP-ID that doesn&#x27;t match the real peer&#x27;s other packets. (4) Traffic arriving for a connection the peer has <b>no state for</b> — after a reboot, a failover, or a NAT/state-table timeout, which is the classic &quot;idle session dies after N minutes&quot; case.</p>
+<p>The middlebox-injection tell (mismatched TTL) is the one that impresses.</p>
+</div>
+<p class="q"><b>Y8.</b> Request/response with a repeating ~40 ms stall. Diagnose from the capture.</p>
+<div class="a">
+<p><b>Nagle interacting with delayed ACK.</b> The sender has a small write outstanding and Nagle won&#x27;t release the next one until the previous is ACKed; the receiver&#x27;s <b>delayed-ACK timer</b> sits on the ACK for up to ~40 ms hoping to piggyback it on data. Neither side is broken; together they deadlock into a quantised ~40 ms.</p>
+<p>In the capture it&#x27;s unmistakable: the delay is <b>suspiciously constant</b>, it only hits <b>small</b> writes, and it disappears on large ones. Fix: <b>TCP_NODELAY</b>, and write the whole message in a single call rather than header-then-body.</p>
+</div>
+<p class="q"><b>Y9.</b> Session establishes, then large transfers hang. What do you look for?</p>
+<div class="a">
+<p><b>PMTU black hole.</b> In the capture: the handshake and small packets are fine, then full-size segments with <b>DF set</b> are sent repeatedly and never ACKed, and <b>no ICMP fragmentation-needed</b> comes back — because a firewall ate it. Confirm with a <b>large ping with DF</b>, walking the size down to find the real MTU.</p>
+<p>Fix: permit ICMP type 3 code 4, or <b>MSS-clamp</b> at the edge. The DC version of this is a <b>VXLAN/VPN overlay</b> adding ~50 bytes on a 1500-byte underlay — same signature, and it&#x27;s why overlays want a 9000-byte underlay.</p>
+</div>
+<p class="q"><b>Y10.</b> A multicast receiver says it&#x27;s getting nothing. Prove where the tree is broken, from captures.</p>
+<div class="a">
+<p>Work the path in order and say which capture answers which question: (1) At the <b>receiver</b>: is there an <b>IGMP membership report</b> leaving it, and for IGMPv3 is it an <b>INCLUDE (S,G)</b> or a v2-style (*,G)? A receiver that never joined is an app/socket problem, not a network one. (2) On the <b>access switch</b>: is <b>IGMP snooping</b> programming the port, and is there a <b>querier</b> on the VLAN? No querier means snooping tables age out and traffic dies after a couple of minutes — the classic intermittent multicast fault. (3) At the <b>first-hop router</b>: PIM messages — with <b>ASM</b> you should see the **(*,G) join toward the RP<b> and then the </b>(S,G) switchover to the SPT<b>; with </b>SSM<b> there&#x27;s </b>no RP and no shared tree<b>, you go straight to (S,G). (4) Anywhere on the path: </b>RPF** — the source must be reachable out the interface the traffic arrived on, or it&#x27;s dropped silently. Asymmetric routing kills multicast for this reason alone.</p>
+<p>The market-data framing: <b>SSM removes the RP, the shared tree, and the switchover entirely</b> — no RP failure mode, deterministic SPT from the first packet. That&#x27;s why finance and IPTV both land on it.</p>
+</div>
+<p class="q"><b>Y11.</b> A trading desk reports missing market data. Was it the network or the application?</p>
+<div class="a">
+<p>The feed&#x27;s own <b>sequence numbers</b> are the evidence — the app reports a gap at sequence N. Then you prove where it went: if the <b>capture at the host NIC contains sequence N</b>, the network delivered it and the <b>host or app dropped it</b> — check <b><code>netstat -su</code> / <code>nstat</code> RcvbufErrors</b> and socket buffer sizing, which is the same story as Y5 without backpressure. If the capture <b>doesn&#x27;t</b> contain it, walk upstream to the next tap.</p>
+<p>Also: <b>A/B feeds</b> are two independent paths carrying the same sequence space — if the gap is on <b>A only</b>, it&#x27;s a path problem and arbitration should have covered it; if it&#x27;s on <b>A and B at the same sequence</b>, it&#x27;s at the source or a shared segment. That A-versus-B comparison <em>is</em> the diagnosis, and it&#x27;s the answer that shows you&#x27;ve actually worked a market-data net.</p>
+</div>
+<p class="q"><b>Y12.</b> Interface utilisation reads 40% but you&#x27;re dropping. Explain, and prove it from a capture.</p>
+<div class="a">
+<p><b>Microburst.</b> Utilisation counters are <b>averages over the polling interval</b> — 40% over 30 seconds hides a burst that hit line rate for 200 µs and overflowed the egress buffer. Ports are drop-free at the average and lossy at the instant.</p>
+<p>Prove it: <b>Wireshark IO graph at 1 ms (or finer) resolution</b> on a capture with <b>hardware timestamps</b>, and you&#x27;ll see the burst; or read the box&#x27;s <b>queue-depth/drop counters</b> rather than utilisation. Cause is usually <b>incast</b> — many senders synchronising onto one receiver — or a speed mismatch (100G into 10G). Fix is buffer, pacing, or ECN/DCQCN, not &quot;add bandwidth.&quot;</p>
+<p>This is the single most common &quot;the network is fine, look at the graph&quot; argument you&#x27;ll be asked to demolish.</p>
+</div>
+<p class="q"><b>Y13.</b> How much do you trust the timestamps?</p>
+<div class="a">
+<p>Software timestamps are applied when the <b>kernel</b> sees the packet — subject to interrupt coalescing, scheduling and NAPI batching, which is tens of microseconds of noise and <em>not</em> good enough for latency work. <b>Hardware timestamping on the NIC/tap</b> is what you use when the number matters. For comparing captures at <b>two points</b>, both must share a clock discipline — <b>PTP</b> (with hardware timestamping, ideally boundary clocks), not NTP.</p>
+<p>Say this unprompted when asked to measure latency from captures: <em>&quot;first I&#x27;d establish whether the timestamps are hardware and whether the two capture points are PTP-disciplined, or the delta is meaningless.&quot;</em></p>
+</div>
+<p class="q"><b>Y14.</b> An overlay/RoCE capture — what are you decoding and what do you look for?</p>
+<div class="a">
+<p><b>VXLAN</b>: outer MAC/IP/UDP with <b>dest port 4789</b>, then the 8-byte VXLAN header (<b>VNI</b>), then the original L2 frame. Two things to check: the <b>outer source port</b>, which is a <b>hash of the inner flow</b> and is the <em>only</em> entropy ECMP has — if it&#x27;s constant, all your overlay traffic is pinned to one path; and <b>MTU</b>, per Y9.</p>
+<p><b>RoCEv2</b>: <b>UDP port 4791</b>, InfiniBand transport headers over UDP. What you look for is the <b>lossless machinery</b>: <b>PFC pause frames</b> (802.1Qbb) and <b>ECN marks with CNPs</b> (congestion notification packets) coming back under DCQCN. Lots of CNPs = congestion being managed; <b>lots of PFC pause</b> = you&#x27;ve pushed it to the blunt instrument, with head-of-line blocking and possible <b>PFC storm / deadlock</b> risk. The design point: <b>ECN/DCQCN should be doing the work; PFC is the last resort.</b></p>
+</div>
+<hr>
+<h2 id="s27">Z · BGP — QUIZ-ROUND DEPTH (cold source, added 2026-07-22)</h2>
+<p><em>Section B covers the DC underlay only. This is the general BGP a hedge-fund panel probes: path selection, policy, scale, convergence, and the failure modes.</em></p>
+<p class="q"><b>Z1.</b> Give the best-path selection order, in order, and say where the ties actually get broken in practice.</p>
+<div class="a">
+<p><b>1</b> Highest <b>weight</b> (Cisco-local, never leaves the box). <b>2</b> Highest <b>LOCAL_PREF</b> (iBGP-wide — how <em>you</em> choose an exit). <b>3</b> <b>Locally originated</b> (network/aggregate/redistributed beats learned). <b>4</b> Shortest <b>AS_PATH</b>. <b>5</b> Lowest <b>origin</b> (IGP &lt; EGP &lt; Incomplete). <b>6</b> Lowest <b>MED</b> (only compared between paths from the <em>same</em> neighbouring AS, unless <code>always-compare-med</code>). <b>7</b> <b>eBGP over iBGP</b>. <b>8</b> Lowest <b>IGP metric to the next-hop</b> (&quot;hot-potato&quot; — dump it out the nearest door). <b>9</b> Oldest <b>eBGP</b> path (stability tie-break). <b>10</b> Lowest <b>router-ID</b>. <b>11</b> Shortest <b>cluster-list</b>. <b>12</b> Lowest <b>neighbour address</b>.</p>
+<p><b>In practice</b> almost everything is decided by steps 2, 4 and 8 — LOCAL_PREF for policy, AS_PATH when you have no policy, IGP metric for hot-potato. Quoting the list is table stakes; the senior move is naming <b>which knob you&#x27;d actually turn and why</b>: LOCAL_PREF is inbound-traffic-into-your-AS control, and it&#x27;s the blunt one because it beats AS_PATH.</p>
+</div>
+<p class="q"><b>Z2.</b> LOCAL_PREF, MED, AS-path prepend — which direction does each steer, and which is reliable?</p>
+<div class="a">
+<p><b>LOCAL_PREF</b> — iBGP-only (never crosses an eBGP boundary), sets which exit <b>your</b> AS uses for <b>outbound</b> traffic. Fully under your control, therefore reliable. <b>MED</b> — sent <b>to</b> a neighbour AS to hint which of <em>your</em> entry points <b>they</b> should use for <b>inbound</b> traffic. Only compared between paths from the same AS, and <b>your neighbour can and usually does ignore it</b>. <b>AS-path prepend</b> — makes a path look longer to influence <b>inbound</b> traffic, but it&#x27;s beaten by anyone else&#x27;s LOCAL_PREF upstream, so it&#x27;s a <em>suggestion</em>, not control.</p>
+<p>The line to hold: <b>you control your outbound traffic; you can only influence your inbound.</b> Everything else — prepending, MED, selective advertisement, communities to your upstream — is negotiation with someone else&#x27;s policy.</p>
+</div>
+<p class="q"><b>Z3.</b> Standard, extended, and large communities — what&#x27;s the difference and how do you actually use them?</p>
+<div class="a">
+<p><b>Standard</b> = 32 bits, conventionally <code>ASN:value</code> — breaks for <b>4-byte ASNs</b>, since the ASN no longer fits in 16 bits. <b>Large</b> (RFC 8092) = 96 bits, three 32-bit fields (<code>ASN:function:parameter</code>) — the modern answer, built precisely for 4-byte ASNs. <b>Extended</b> = 64 bits, typed — this is what carries <b>Route Targets</b> in L3VPN/EVPN, not general policy tagging.</p>
+<p>The operational pattern: <b>tag richly at ingress, act at egress.</b> The edge stamps a community describing <em>what a route is and where it came from</em> (customer/peer/transit, region, site); every downstream policy then matches on the community rather than on prefixes. That&#x27;s what makes policy auditable and lets you change behaviour estate-wide without touching prefix lists.</p>
+</div>
+<p class="q"><b>Z4.</b> iBGP requires a full mesh. Why, and what are the two ways out — with the cost of each?</p>
+<div class="a">
+<p><b>Why:</b> iBGP has <b>no loop-prevention attribute</b> — the AS_PATH isn&#x27;t prepended within an AS — so the rule is <em>a route learned from an iBGP peer is never re-advertised to another iBGP peer</em>. That forces n(n−1)/2 sessions.</p>
+<p><b>Route reflectors</b> — the RR is allowed to re-advertise, with loop prevention moved to <b>ORIGINATOR_ID</b> (drop it if it&#x27;s mine) and <b>CLUSTER_LIST</b> (drop it if my cluster-id is already in it). Cost: the RR reflects <b>only its own best path</b>, so clients lose <b>path diversity</b> — which is why you need <b>ADD-PATH</b> to restore multipath and fast reroute, and why RR placement must reflect the physical topology or you get suboptimal hot-potato routing.</p>
+<p><b>Confederations</b> — split the AS into sub-ASes that run eBGP between them. Cost: complexity, and it&#x27;s mostly historical; RRs won.</p>
+</div>
+<p class="q"><b>Z5.</b> Multipath — why doesn&#x27;t it just work, and what do you need to turn on?</p>
+<div class="a">
+<p>BGP installs <b>one</b> best path by default. For eBGP multipath the candidate paths must be <b>equal through the whole decision process up to the tie-break</b>, and critically the <b>AS_PATH must be identical</b> — same length <em>and</em> same content. In a CLOS that&#x27;s why <b>spines share an ASN</b>; if every spine had a unique ASN the AS_PATHs would differ and you&#x27;d get one path, not N.</p>
+<p>Knobs: <code>maximum-paths N</code>, plus <b><code>bestpath as-path multipath-relax</code></b> to accept equal-length-but-different AS_PATHs. <b>iBGP multipath</b> additionally wants an equal IGP metric to the next-hops. Weak answer: &quot;enable ECMP&quot; without naming the AS_PATH condition.</p>
+</div>
+<p class="q"><b>Z6.</b> You need <b>unequal</b>-cost load sharing across WAN links of different capacity. How, without MPLS-TE?</p>
+<div class="a">
+<p><b>BGP DMZ Link Bandwidth</b> (an extended community carrying the link&#x27;s bandwidth). Paths are installed with <b>weights proportional to bandwidth</b>, so a 100G and a 10G path share traffic 10:1 instead of 1:1. Requires multipath enabled, and the community must be <b>propagated</b> where it needs to act.</p>
+<p><b>Why this matters as an argument:</b> UCMP is often given as a reason to deploy SR. It isn&#x27;t — plain IP/BGP already does unequal-cost sharing this way. The honest case for SR is <b>explicit path control, TI-LFA, and inter-domain source routing</b>, not load balancing. Being the person who <em>volunteers</em> the counter-example is worth more than reciting SR benefits.</p>
+</div>
+<p class="q"><b>Z7.</b> BGP convergence is slow. Why, and what makes it fast?</p>
+<div class="a">
+<p>Why: it&#x27;s <b>TCP-based and timer-driven</b> (default keepalive 60 / hold 180), it <b>batches</b> updates (MRAI / advertisement-interval), and after a failure the router must <b>re-run best-path across potentially millions of prefixes</b> and reprogram the FIB — that&#x27;s the real delay at scale, not the protocol chatter.</p>
+<p>Fast: <b>BFD</b> to detect the failure in milliseconds instead of waiting on hold time; <b>fast-external-fallover</b> so a link-down kills the session immediately; <b>next-hop tracking</b> so an IGP change invalidates paths without waiting for BGP; and <b>PIC (Prefix Independent Convergence)</b> — pre-install a <b>backup next-hop</b> in the FIB so failover is a single pointer swap <b>independent of prefix count</b>. PIC is the answer that shows you understand the real bottleneck is FIB reprogramming.</p>
+</div>
+<p class="q"><b>Z8.</b> Route flap damping — do you use it?</p>
+<div class="a">
+<p><b>No — and know why.</b> Classic damping (RFC 2439) suppresses a flapping prefix with an exponentially-decaying penalty, but <b>RIPE-378</b> showed it <b>badly over-penalises</b>: because a single flap at the edge produces multiple updates as it propagates through path exploration, damping suppresses stable prefixes for far longer than intended, making outages <em>worse</em>. The industry stopped using it, or moved to <b>RFC 7196 &quot;damping-lite&quot;</b> with much higher thresholds.</p>
+<p>The senior answer: <em>&quot;Damping is largely deprecated — the fix for instability is BFD plus fixing the flapping link, not punishing the prefix.&quot;</em></p>
+</div>
+<p class="q"><b>Z9.</b> Graceful Restart, NSR, and BGP add-path — what problem does each solve?</p>
+<div class="a">
+<p><b>GR</b> — the control plane restarts but the <b>forwarding plane keeps forwarding</b>; the peer acts as a <b>helper</b>, holding routes as stale for a grace period instead of withdrawing them. Requires the peer&#x27;s cooperation, and it&#x27;s a lie if the box really did lose forwarding state. <b>NSR/NSF with SSO</b> — the box keeps BGP state on a <b>standby RE/supervisor</b>, so the peer never even notices; no helper needed, costs you hardware. <b>ADD-PATH</b> (RFC 7911) — lets a peer advertise <b>multiple paths for the same prefix</b> instead of only its best; this is what restores diversity behind a <b>route reflector</b>, enabling multipath and PIC backup paths at the edge.</p>
+</div>
+<p class="q"><b>Z10.</b> How do you secure a BGP session, and what actually gets used?</p>
+<div class="a">
+<p><b>GTSM / TTL security</b> (RFC 5082) — send with TTL 255 and require ≥254 on receipt, so a spoofer more than one hop away can&#x27;t reach the session at all. Cheap and effective. <b>TCP-MD5</b> (legacy) or <b>TCP-AO</b> (RFC 5925, the modern replacement) for authentication. <b>Max-prefix</b> limits with a warning threshold so a misconfigured peer can&#x27;t blow up your RIB — this is the one that saves you in practice. <b>Prefix filters and AS-path filters in both directions</b>, with the default being <b>deny</b>.</p>
+<p>For the internet edge: <b>RPKI origin validation</b> (is this AS entitled to originate this prefix?) — the deployed piece of BGP security; <b>BGPsec</b> (path validation) is essentially not deployed.</p>
+</div>
+<p class="q"><b>Z11.</b> RD versus RT — people mix these up. Be precise.</p>
+<div class="a">
+<p><b>Route Distinguisher</b> makes a prefix <b>unique</b> — it&#x27;s prepended to the IPv4 prefix to build a VPNv4 NLRI so two customers&#x27; overlapping 10.0.0.0/8s are distinguishable in one BGP table. It carries <b>no policy meaning whatsoever</b>. <b>Route Target</b> is an <b>extended community</b> that controls <b>membership</b> — which VRFs import and export the route. RD = uniqueness, RT = policy. Hub-and-spoke, extranet and route leaking are all built by asymmetric <b>RT import/export</b>, never by the RD.</p>
+</div>
+<p class="q"><b>Z12.</b> BGP-LS — what is it and why would you run it?</p>
+<div class="a">
+<p>It carries the <b>IGP link-state database northbound over BGP</b> — nodes, links, prefixes, TE attributes, SRLGs, and SR SIDs — so a <b>controller/PCE gets a complete, live topology without participating in the IGP</b>. It&#x27;s a <em>reporting</em> protocol: you don&#x27;t route on it. Pairs with <b>BGP SR Policy</b> or PCEP to push computed paths back down. This is the join between your BGP and your SDN answers.</p>
+</div>
+<p class="q"><b>Z13.</b> MED oscillation / route oscillation with route reflectors — what&#x27;s the failure?</p>
+<div class="a">
+<p>With RRs, a reflector only knows its <b>own best path</b>, so different RRs can make different decisions on partial information, and with <b>MED comparison</b> (which is non-transitive — only comparable within the same neighbour AS) the decision process can be <b>non-deterministic and oscillate persistently</b> (RFC 3345). Symptoms: routes flapping with no link flapping.</p>
+<p>Mitigations: <code>always-compare-med</code> <b>or</b> <code>deterministic-med</code> applied consistently estate-wide, <b>ADD-PATH</b> so reflectors see diversity, and sane RR placement/cluster design. The root cause worth naming: <b>partial visibility plus a non-transitive comparison rule.</b></p>
+</div>
+<p class="q"><b>Z14.</b> Design it: a fund with research DCs, trading colos, and exchange connections. How do you lay out BGP?</p>
+<div class="a">
+<p>Keep the <b>failure domains explicit</b>. Typically: each site is its own AS (or an AS per function), <b>eBGP between sites</b> so policy is enforced at every boundary and blast radius is bounded, <b>iBGP with RRs inside</b> each site. Exchange/venue connections terminate on <b>dedicated edge routers</b> with <b>strict inbound filtering and max-prefix</b> — you accept exactly what you expect and nothing else, because a venue leaking a full table into your fabric is an outage.</p>
+<p>Say the separation out loud: <b>market-data and order paths are latency-critical and deliberately simple; the research/inter-DC WAN is where you can afford richer policy and engineering.</b> Design decisions that increase convergence complexity go on the research side, never the trade path.</p>
+</div>
+<p class="q"><b>Z15.</b> Where does BGP actually <em>not</em> belong in a trading network?</p>
+<div class="a">
+<p>On the <b>µs-critical exchange-to-colo path</b>. Those are short, fixed, often layer-2 or single-hop, and what you want is <b>determinism and the absolute minimum of state and reconvergence</b>, not policy richness. Adding a protocol that converges in seconds to a path measured in microseconds buys you nothing and adds a failure mode.</p>
+<p>Same reasoning as keeping <b>market-data multicast on its own PIM-SSM plane</b>. The general principle a panel is listening for: <b>complexity belongs where the value is (the research/WAN side), and is designed out of the fast path.</b></p>
+</div>
+<p class="q"><b>Z16.</b> A prefix isn&#x27;t being advertised. Walk your troubleshooting.</p>
+<div class="a">
+<p>In order, and state what each step rules out: (1) Is it <b>in the local RIB/BGP table</b> at all — is it being originated (<code>network</code> statement, redistribution, aggregate) or learned? (2) Is it the <b>best path</b>? BGP only advertises its best path — if it lost selection you&#x27;ll never see it leave. (3) Is the <b>next-hop reachable and resolvable</b>? An unresolvable next-hop makes a path invalid and unadvertised — the classic <b>missing <code>next-hop-self</code></b> on an RR/iBGP edge. (4) <b>Outbound policy</b> — route-map/prefix-list/community filter dropping it. (5) The <b>iBGP re-advertisement rule</b> — learned from an iBGP peer and you&#x27;re not a reflector, so it&#x27;s not passed on. (6) Peer-side <b>inbound</b> policy or a <b>max-prefix</b> that has shut the session or is discarding.</p>
+<p>Naming step 3 and step 5 early is the tell of someone who has actually done this at 3am.</p>
+</div>
+<hr>
+<h2 id="s28">AA · OSPF — QUIZ-ROUND DEPTH (cold source, added 2026-07-22)</h2>
+<p class="q"><b>AA1.</b> LSA types — list them and say what each one is for.</p>
+<div class="a">
+<p><b>1 Router</b> — every router, per area: its links and costs. <b>2 Network</b> — generated by the <b>DR</b> on a multi-access segment, lists who&#x27;s attached. <b>3 Summary (inter-area)</b> — from the <b>ABR</b>, describes a prefix in another area. <b>4 ASBR-summary</b> — from the ABR, tells the area how to <em>reach the ASBR</em>. <b>5 External</b> — from the <b>ASBR</b>, redistributed routes, <b>flooded AS-wide</b>. <b>7 NSSA-external</b> — an external injected into an NSSA, which cannot carry type 5; the <b>ABR translates 7→5</b> on the way out. <b>9/10/11 Opaque</b> — link-local / <b>area</b> / AS scope; <b>type 10 is the one that matters to you</b>, it carries <b>TE attributes and Segment Routing</b> (prefix-SIDs, adjacency-SIDs, SRGB).</p>
+<p>Weak answer stops at 1/2/3/5 and can&#x27;t say what a type 4 is for.</p>
+</div>
+<p class="q"><b>AA2.</b> Area types — what does each block, and why would you use it?</p>
+<div class="a">
+<p><b>Backbone (area 0)</b> — everything must touch it. <b>Standard</b> — all LSA types. <b>Stub</b> — blocks type 5 (no externals); ABR injects a <b>default</b>. <b>Totally stubby</b> (Cisco) — blocks <b>3 and 5</b>, default only: the smallest possible table, and the right answer for a leaf site that has one way out. <b>NSSA</b> — a stub that <em>does</em> have its own ASBR, so it allows <b>type 7</b> locally and translates to 5 at the ABR. <b>Totally NSSA</b> — NSSA plus blocking type 3.</p>
+<p>The design point: <b>area type is a blast-radius and table-size decision.</b> A site with a single exit gains nothing from carrying the full topology and loses reconvergence time carrying it.</p>
+</div>
+<p class="q"><b>AA3.</b> Walk the neighbour state machine and say what each transition proves.</p>
+<div class="a">
+<p><b>Down</b> → <b>Init</b> (I&#x27;ve heard <em>their</em> hello but I&#x27;m not in it — one-way) → <b>2-Way</b> (I see myself in their hello — bidirectional confirmed; <b>DR/BDR election happens here</b>) → <b>ExStart</b> (master/slave negotiation and initial DBD sequence) → <b>Exchange</b> (DBD headers describing each database) → <b>Loading</b> (LSRs for what I&#x27;m missing, LSUs in reply) → <b>Full</b> (databases synchronised).</p>
+<p>Also <b>Attempt</b> — NBMA only, where hellos are unicast to a configured neighbour.</p>
+<p><b>Two DROTHERs on a broadcast segment deliberately stay at 2-Way</b> and that is <b>not a fault</b> — they only go Full with the DR and BDR. Being able to say that unprompted is the differentiator.</p>
+</div>
+<p class="q"><b>AA4.</b> Stuck in <b>ExStart/Exchange</b>. What is it, almost always?</p>
+<div class="a">
+<p><b>MTU mismatch.</b> DBD exchange carries the interface MTU and the receiver rejects a DBD advertising an MTU larger than its own, so the two bounce between ExStart and Exchange forever. Fix the MTU (or <code>ip ospf mtu-ignore</code>, which is papering over it).</p>
+<p>The other candidates, in order: <b>unicast/duplex or ACL problems</b> blocking the higher-numbered packet types while hellos still get through, and a <b>duplicate router-ID</b>. Naming MTU first is the expected answer.</p>
+</div>
+<p class="q"><b>AA5.</b> Stuck in <b>Init</b> or never forming — checklist.</p>
+<div class="a">
+<p>Hellos are being sent but adjacency won&#x27;t build: <b>mismatched hello/dead interval</b>, <b>mismatched area ID</b>, <b>mismatched area type flag</b> (stub/NSSA bit — a stub and a non-stub will not become neighbours), <b>authentication mismatch</b>, <b>mismatched subnet/mask</b> on the segment, <b>mismatched network type</b> (p2p one side, broadcast the other), or <b>passive-interface</b> configured. If you&#x27;re stuck at <b>Init specifically</b>, it&#x27;s <b>one-way</b> — they&#x27;re not hearing you, so suspect a unidirectional link or an inbound filter/ACL on their side.</p>
+</div>
+<p class="q"><b>AA6.</b> DR/BDR — why does it exist, how is it elected, and what&#x27;s the gotcha?</p>
+<div class="a">
+<p>On a multi-access segment, full-mesh adjacency is n(n−1)/2 and the flooding is quadratic. DR/BDR reduces it to a <b>star</b>: everyone goes Full with DR and BDR only, flooding to <b>224.0.0.6</b> (DR/BDR) and the DR flooding back to <b>224.0.0.5</b>.</p>
+<p>Elected by highest <b>priority</b>, tie-break highest <b>router-ID</b>. <b>Gotchas:</b> the election is <b>non-preemptive</b> — a better router arriving later does <em>not</em> take over, so the DR is often whoever booted first, and forcing it means clearing the process. <b>Priority 0</b> means never eligible. And in a modern fabric the correct answer is usually to <b>avoid the whole mechanism</b> by making point-to-point links <code>ip ospf network point-to-point</code>, which also skips type-2 LSAs and speeds convergence.</p>
+</div>
+<p class="q"><b>AA7.</b> Route preference within OSPF, and how does an external route get its cost?</p>
+<div class="a">
+<p><b>Intra-area (O) &gt; Inter-area (O IA) &gt; E1 &gt; E2</b> (and N1/N2 for NSSA). <b>E2 is the default</b>: the cost is the <b>external metric only</b>, ignoring the internal path cost — so all routers see the same cost regardless of distance to the ASBR (tie-break on forwarding cost). <b>E1</b> adds the internal cost to the ASBR, so it reflects real topology. Use <b>E1 when you have multiple ASBRs and want the nearest one chosen</b>; E2 is fine when there&#x27;s one exit.</p>
+</div>
+<p class="q"><b>AA8.</b> Summarisation — where can you do it and where can&#x27;t you?</p>
+<div class="a">
+<p><b>Only at the ABR</b> (<code>area range</code> — summarising type 3s between areas) and <b>at the ASBR</b> (<code>summary-address</code> — summarising externals as they&#x27;re injected). You <b>cannot summarise within an area</b>, because every router in an area must build an identical SPF tree from an identical LSDB — summarising inside would mean lying to the SPF calculation.</p>
+<p>That constraint <em>is</em> the argument for multi-area design: <b>areas are the only place OSPF lets you hide topology</b>, and hiding topology is how you bound both LSDB size and the number of routers that must re-run SPF for a remote flap.</p>
+</div>
+<p class="q"><b>AA9.</b> How big should an area be, and what actually limits it?</p>
+<div class="a">
+<p>Don&#x27;t quote a number as doctrine — name the <b>four real limits</b>: (1) <b>LSDB size and flooding volume</b> in the area; (2) <b>SPF run time</b>, which scales with nodes and links; (3) <b>how many routers must re-run SPF</b> for any one link flap — that&#x27;s the blast radius; (4) <b>router CPU/memory</b>, the weakest box in the area sets the ceiling.</p>
+<p>The engineering answer: keep <b>flapping edges out of area 0</b>, put stable high-capacity core in the backbone, and use <b>stub/totally-stubby</b> at the leaves so a leaf flap doesn&#x27;t ripple. If asked for a figure, give it as &quot;a few hundred routers with modern CPUs, but the topology&#x27;s stability matters far more than the count.&quot;</p>
+</div>
+<p class="q"><b>AA10.</b> Virtual links — what are they and what&#x27;s your position?</p>
+<div class="a">
+<p>A <b>tunnel through a transit area</b> to connect an area that has no physical adjacency to area 0 (or to repair a partitioned backbone). Your position should be: <b>they&#x27;re a migration or emergency tool, not a design.</b> They add a dependency on the transit area&#x27;s stability, they&#x27;re easy to forget, and they usually mean the area design is wrong. The correct fix is normally to <b>re-home the area onto the backbone</b> or to use a proper tunnel/GRE if you genuinely can&#x27;t.</p>
+</div>
+<p class="q"><b>AA11.</b> OSPF versus IS-IS — why do carriers and large fabrics often pick IS-IS?</p>
+<div class="a">
+<p><b>IS-IS runs directly on layer 2 (CLNS), not on IP</b> — so the routing protocol isn&#x27;t reachable via the data plane it&#x27;s building, which is a genuine security and robustness property. It&#x27;s <b>TLV-based</b>, so extending it (IPv6, multi-topology, SR) is adding a TLV rather than defining new LSA types — which is why <b>SR landed cleanly in IS-IS first</b>. It has <b>two levels</b> rather than OSPF&#x27;s area-type zoo, and its area boundary is on the <b>link</b>, not on the router, which makes multi-area design simpler. Scaling behaviour with large LSPs is generally kinder.</p>
+<p><b>OSPF&#x27;s counter-case:</b> far more widely understood, better multi-vendor enterprise support, and OSPFv3/opaque LSAs cover the same SR ground now. For <b>HRT&#x27;s plain-IP OSPF network the honest answer is &quot;OSPF is already there and works; changing IGP is not a benefit on its own.&quot;</b></p>
+</div>
+<p class="q"><b>AA12.</b> OSPF fast convergence — what do you actually tune?</p>
+<div class="a">
+<p><b>Detection:</b> <b>BFD</b> (milliseconds) instead of fast-hellos — cheaper on CPU and vendor-consistent. <b>Reaction:</b> <b>SPF throttling</b> (<code>spf-timers</code> — initial delay, hold, max) and <b>LSA throttling/arrival timers</b>, tuned down from the conservative defaults but with exponential backoff so a flapping link can&#x27;t melt the CPU. <b>Repair:</b> <b>LFA / remote-LFA</b>, and with SR, <b>TI-LFA</b> which gives a <b>guaranteed</b> post-convergence backup for any topology using a SID stack — that&#x27;s the one worth naming because classic LFA has coverage gaps in rings. <b>Prefix prioritisation</b> so loopbacks (and therefore BGP next-hops) get installed first.</p>
+<p>The ordering matters: detect fast, react in a damped way, and pre-compute the repair. Turning timers down without backoff is how you cause the outage.</p>
+</div>
+<p class="q"><b>AA13.</b> How does Segment Routing get into OSPF?</p>
+<div class="a">
+<p>Via <b>opaque LSAs (type 10, area scope)</b>: the <b>Extended Prefix LSA</b> carries <b>Prefix-SIDs</b> (typically an index against the <b>SRGB</b>, so it&#x27;s globally meaningful with a locally-allocated label range) and the <b>Extended Link LSA</b> carries <b>Adjacency-SIDs</b> (locally significant, per-link). The <b>SR Capabilities/SRGB</b> are advertised in the Router Information LSA. Being <b>index-based</b> rather than absolute-label-based is the key design point — it&#x27;s why SRGB ranges don&#x27;t have to be identical estate-wide, though keeping them identical is what everyone actually does for sanity.</p>
+<p>The turn-on story: <b>SR is additive to a running OSPF</b> — advertise SRGB, assign prefix-SIDs to loopbacks, and the labels appear; no new protocol, no LDP.</p>
+</div>
+<p class="q"><b>AA14.</b> Design: OSPF for a research/inter-DC network spanning several sites. Lay it out.</p>
+<div class="a">
+<p><b>Backbone across the WAN core</b>, <b>an area per site</b>, ABRs at the site edge, <b>summarise at the ABR</b> so an intra-site flap doesn&#x27;t propagate, and <b>stub/NSSA at leaf sites</b> with a single exit. Keep the <b>loopback addressing summarisable per site</b> — the addressing plan is what makes the area design possible, and doing this backwards is the most common real-world failure.</p>
+<p>Then say what it buys: <b>bounded SPF blast radius per site, a small LSDB at the edge, and a stable backbone</b> — and, if SR is coming, the SRGB and prefix-SID plan follows the same per-site block structure.</p>
+</div>
+<p class="q"><b>AA15.</b> A link flaps in a remote area. Who recalculates what?</p>
+<div class="a">
+<p>Inside that area: full <b>SPF</b> on every router (type 1/2 change). At the <b>ABR</b>: it regenerates affected <b>type 3s</b> only if the <em>reachability or cost</em> changes — the topology detail never leaves the area. In <b>other areas</b>: routers run a <b>partial SPF</b> (a type 3 is a distance-vector-like leaf update, not a topology change), and in a <b>totally stubby</b> area they see <b>nothing at all</b> because they only hold a default.</p>
+<p>That single walk-through <em>is</em> the argument for areas, and it&#x27;s a much better answer than &quot;areas reduce the routing table.&quot;</p>
+</div>
+<hr>
+<h2 id="s29">AB · MPLS + SR — QUIZ-ROUND DEPTH (cold source, added 2026-07-22)</h2>
+<p><em>Your strong ground. The risk here isn&#x27;t knowing it — it&#x27;s giving a 2010 answer. Every question should land on &quot;and this is why SR replaced it.&quot;</em></p>
+<p class="q"><b>AB1.</b> Label operations and the router roles — be precise about who does what.</p>
+<div class="a">
+<p><b>Ingress PE</b> (headend) does <b>push</b> (imposition) after an IP lookup. <b>P routers</b> do <b>swap</b> — a single label lookup, no IP lookup, which was the original point. <b>Egress</b> does <b>pop</b> (disposition) and then the IP/VPN lookup. <b>PHP (penultimate-hop popping)</b>: the egress signals <b>implicit-null (label 3)</b> so the second-to-last router pops the transport label, sparing the egress a <b>double lookup</b> (pop then IP). Use <b>explicit-null (0/2)</b> instead when you need to preserve the <b>TC/QoS bits</b> to the last hop.</p>
+</div>
+<p class="q"><b>AB2.</b> How do labels get distributed? Name every mechanism and what it&#x27;s for.</p>
+<div class="a">
+<p><b>LDP</b> — hop-by-hop, follows the IGP, zero traffic engineering; simple and ubiquitous. <b>RSVP-TE</b> — signalled, constraint-based, reserves bandwidth, does FRR. <b>BGP-LU (RFC 8277/3107)</b> — labels carried in BGP, used to stitch <b>inter-AS and seamless-MPLS</b> domains. <b>Segment Routing</b> — <b>no label-distribution protocol at all</b>: the IGP floods SIDs as an attribute, and the path is a <b>stack imposed at the head end</b>.</p>
+<p>The thesis sentence: <b>SR removed an entire protocol from the network.</b> LDP and RSVP-TE both exist only to build per-LSP state; SR encodes the path in the packet instead.</p>
+</div>
+<p class="q"><b>AB3.</b> LDP-IGP synchronisation — what&#x27;s the failure it prevents?</p>
+<div class="a">
+<p>A link comes back. The <b>IGP converges in milliseconds</b> and starts putting traffic on it, but <b>LDP hasn&#x27;t finished exchanging bindings</b>, so there&#x27;s no label — the LSP is broken and traffic is <b>black-holed</b> until LDP catches up. <b>LDP-IGP sync</b> makes the IGP advertise the link at <b>max metric</b> until LDP signals it&#x27;s ready.</p>
+<p>This is the canonical &quot;why LDP is fragile&quot; story, and it&#x27;s a good one to volunteer: <b>SR has no equivalent failure, because there is no second protocol to be out of step with the IGP.</b></p>
+</div>
+<p class="q"><b>AB4.</b> MPLS L3VPN — walk the full path of a packet with the label stack.</p>
+<div class="a">
+<p>CE sends IP to <b>PE</b>. PE looks up in the <b>VRF</b> (selected by incoming interface), finds a <b>VPNv4 route</b> learned by MP-BGP from the remote PE, and pushes <b>two labels</b>: the <b>VPN/service label</b> (inner, allocated by the remote PE, identifies the VRF/prefix) and the <b>transport label</b> (outer, gets it across the core to that PE). <b>P routers only ever look at the outer label</b> — they have no VPN knowledge at all, which is the whole scaling argument. At the penultimate hop the transport label is <b>popped (PHP)</b>; the egress PE sees the <b>VPN label</b>, maps it to the VRF, and does the IP lookup there.</p>
+<p><b>RD</b> makes the prefix unique in BGP; <b>RT</b> controls which VRFs import it. The core carries <b>zero customer state</b> — that separation is the product.</p>
+</div>
+<p class="q"><b>AB5.</b> RSVP-TE — how it works and why it didn&#x27;t survive.</p>
+<div class="a">
+<p>Headend computes a path (CSPF over the TE database), signals it downstream with <b>PATH</b>, the tail returns <b>RESV</b> with the label, and <b>every router along the way holds state</b> for that LSP and refreshes it. Gives you real <b>bandwidth admission control</b> and <b>FRR</b>.</p>
+<p>Why it lost: <b>state is O(LSPs) at every midpoint</b>, in a full mesh that&#x27;s <b>O(n²)</b> tunnels; soft-state refresh burns CPU; adding a node means touching the mesh; and it&#x27;s <b>ECMP-hostile</b> (an LSP is one path, so you fight the fabric&#x27;s natural load spreading). <b>SR gives the same explicit-path control with state only in the packet and in the head end</b>, and it&#x27;s ECMP-native.</p>
+</div>
+<p class="q"><b>AB6.</b> MPLS FRR versus TI-LFA — what changed?</p>
+<div class="a">
+<p><b>RSVP FRR</b> pre-signals a <b>bypass</b> (link/node protection, one tunnel protecting many LSPs) or <b>detour</b> (per-LSP) so the PLR switches in ~50 ms — but you must <b>pre-build and maintain those protection tunnels</b>.</p>
+<p><b>TI-LFA</b> computes the <b>post-convergence path</b> — the path traffic will take <em>anyway</em> after the IGP reconverges — and encodes it as a <b>SID stack</b>, so there&#x27;s no tunnel to pre-signal and no transient microloop. Coverage is <b>100% for any topology</b>, where classic LFA has gaps (rings especially) and remote-LFA needs a targeted LDP session to a PQ node. The one-liner: <b>TI-LFA repairs to where the network is going, not to a tunnel you built in advance.</b></p>
+</div>
+<p class="q"><b>AB7.</b> Segment Routing — the SID types and what each one is.</p>
+<div class="a">
+<p><b>Prefix-SID</b> — global, advertised as an <b>index into the SRGB</b>, identifies a node/prefix; forwarded <b>ECMP-aware along the IGP shortest path</b>. <b>Node-SID</b> — a prefix-SID on a loopback (the common case). <b>Adjacency-SID</b> — <b>local</b> to a router, identifies one specific link; this is what lets you pin a path away from the shortest path. <b>Binding-SID</b> — a single SID that <b>expands to a whole stack or policy</b> at the router that owns it: it compresses the stack (MSD relief) and is the mechanism for <b>inter-domain stitching</b> without either domain knowing the other&#x27;s SIDs. <b>Anycast-SID</b> — the same prefix-SID on multiple nodes, for plane/set selection.</p>
+<p>The design consequence: <b>shortest path costs one SID; explicit path costs one SID per deviation.</b> You only pay for the constraint you actually need.</p>
+</div>
+<p class="q"><b>AB8.</b> SRGB — what is it and what happens if it&#x27;s inconsistent?</p>
+<div class="a">
+<p>The <b>Segment Routing Global Block</b> is the local label range reserved for global SIDs (commonly 16000–23999). Prefix-SIDs are advertised as an <b>index</b>, and each router computes the local label as <b>SRGB base + index</b> — which is precisely why the SRGB <em>can</em> differ per node and still work.</p>
+<p>But in practice <b>everyone keeps it identical estate-wide</b>, because a uniform SRGB means the same prefix has the <b>same label everywhere</b>, which makes troubleshooting, traceroute output and packet captures readable. Inconsistent SRGBs aren&#x27;t broken; they&#x27;re an operational tax you pay every time you debug.</p>
+</div>
+<p class="q"><b>AB9.</b> MSD — why does it constrain your design?</p>
+<div class="a">
+<p><b>Maximum SID Depth</b> is how many labels the <b>hardware</b> can impose. Older merchant silicon manages 3–5; that&#x27;s a <b>hard ceiling on how explicit a path you can express</b>, because each deviation from shortest-path costs a SID.</p>
+<p>Two ways out: <b>binding-SIDs</b> to compress a long stack into one, and <b>anycast/loose paths</b> — express the path as a few waypoints rather than hop-by-hop. This is a real constraint to raise unprompted in a design round, because it&#x27;s where SR-TE theory meets the ASIC. It also cuts the other way for <b>SRv6</b>, where the SRH is the equivalent cost in bytes rather than label slots.</p>
+</div>
+<p class="q"><b>AB10.</b> SR-MPLS versus SRv6 — make the actual argument.</p>
+<div class="a">
+<p><b>SR-MPLS</b>: reuses the MPLS data plane, <b>4 bytes per SID</b>, works on anything already doing MPLS, mature silicon. <b>SRv6</b>: SIDs are <b>128-bit IPv6 addresses</b>, so it&#x27;s routable IPv6 end-to-end with <b>no MPLS data plane at all</b> — attractive on a greenfield IP network — and supports <b>network programming</b> (the SID encodes a function, not just a location). Cost: <b>40-byte IPv6 outer + 8-byte SRH + 16 bytes per SID</b>, so an explicit path is far heavier. <b>uSID/C-SID</b> compresses several 16-bit micro-SIDs into one 128-bit carrier and brings that down substantially.</p>
+<p>The decision isn&#x27;t nanoseconds of serialisation — it&#x27;s <b>MTU determinism on the WAN</b>, whether the <b>silicon does the transform at line rate</b>, and <b>operational familiarity</b>. On a network that has never run MPLS, SRv6&#x27;s &quot;no MPLS data plane&quot; argument is genuinely strong; on one already MPLS-capable it rarely justifies itself.</p>
+</div>
+<p class="q"><b>AB11.</b> Inter-AS MPLS options A, B, C — and what SR does instead.</p>
+<div class="a">
+<p><b>Option A (back-to-back VRF)</b> — a sub-interface per VRF at the border, plain IP between ASes. Simple, auditable, <b>scales terribly</b>. <b>Option B</b> — ASBRs exchange <b>VPNv4 with labels</b>, no VRFs at the border; scales better but the ASBR holds all the VPN state. <b>Option C</b> — <b>BGP-LU</b> for the loopbacks plus multi-hop MP-eBGP for VPNv4 between route reflectors; ASBRs carry no VPN state. Scales best, weakest boundary control.</p>
+<p><b>The SR answer:</b> a <b>binding-SID at the domain boundary</b>. Each domain keeps its own SRGB and IGP; the headend pushes the remote domain&#x27;s binding-SID, and the border expands it into that domain&#x27;s path. <b>Neither domain needs the other&#x27;s SID space or topology</b> — you get Option-C-like scaling with an explicit, auditable handoff. This is directly the migration deck&#x27;s Option B.</p>
+</div>
+<p class="q"><b>AB12.</b> MTU and MPLS — what breaks?</p>
+<div class="a">
+<p>Every label is <b>4 bytes</b>, so a 3-deep stack is 12 bytes off your payload; a VPN packet is transport + service label at minimum. Add a VXLAN or IPsec overlay on top and you&#x27;re 50–100 bytes down.</p>
+<p>The failure it causes is the <b>PMTU black hole</b>: the CE sets DF, something downstream can&#x27;t fit it, the ICMP is filtered, and large transfers hang while pings succeed. The real fix is a <b>core MTU of 9000+</b> so encapsulation is never the constraint, with <b>MSS clamping</b> at the edge as the mitigation. Ties directly to the pcap section.</p>
+</div>
+<p class="q"><b>AB13.</b> TTL handling — uniform, pipe, short-pipe. Why does anyone care?</p>
+<div class="a">
+<p><b>Uniform</b> — IP TTL is copied into the label at imposition and back out at disposition, so the MPLS hops are <b>visible to traceroute</b> and each decrements. <b>Pipe/short-pipe</b> — the label gets its own TTL (255) and the IP TTL isn&#x27;t decremented across the core, so the <b>whole MPLS cloud looks like one hop</b> — the topology is hidden from the customer.</p>
+<p>Why it matters: it&#x27;s a deliberate <b>visibility versus opacity</b> choice. Service providers hide the core; an internal network usually wants uniform so <b>traceroute actually works when you&#x27;re debugging at 3am</b>. This is also why MPLS traceroute is odd — ICMP generated mid-LSP is forwarded to the <em>tail</em> and comes back the long way.</p>
+</div>
+<p class="q"><b>AB14.</b> ECMP through an MPLS core — how does hashing work and what&#x27;s the trap?</p>
+<div class="a">
+<p>A P router sees <b>labels, not the IP payload</b>, so classic hashing had to <b>guess</b>: peek past the bottom of stack and test the first nibble — <b>0x4/0x6</b> implies IPv4/IPv6, so hash on that. That heuristic <b>misfires on pseudowires</b> where the payload is Ethernet that happens to start with 4 or 6, which silently <b>reorders traffic within a flow</b>.</p>
+<p>Fixes: <b>Entropy Label (RFC 6790)</b> — the ingress computes a hash of the real flow and inserts it as a label (with <b>ELI, label 7</b>) so P routers hash on a field that&#x27;s genuinely flow-unique; or a <b>Flow-Aware Transport / control word</b> on pseudowires to suppress the guessing. Cost: the entropy label is another label, so it eats <b>MSD</b> budget.</p>
+</div>
+<p class="q"><b>AB15.</b> How do you troubleshoot a broken LSP?</p>
+<div class="a">
+<p>Layer by layer, saying what each rules out: (1) <b>IGP</b> — is the FEC/loopback reachable at all? MPLS follows the IGP, so an IGP problem is not an MPLS problem. (2) <b>Label binding</b> — does the local box have a label for the FEC, and did the downstream advertise one (<code>show mpls ldp bindings</code> / the SR label from the IGP)? (3) <b>Forwarding table</b> — is the label actually in the LFIB with the right outgoing label and interface? (4) <b>LSP ping/traceroute (RFC 4379/8029)</b> — this is the tool people forget: it validates the <b>label path specifically</b>, and unlike ICMP it detects a <b>broken LSP that IP still reaches</b> via a fallback path. (5) <b>MTU</b> along the path. (6) For SR: <b>SRGB consistency</b> and whether the prefix-SID index resolves to the label you expect.</p>
+<p>The distinguishing insight: <b>IP reachability succeeding tells you nothing about the LSP</b> — that&#x27;s exactly the failure mode LSP-ping exists for.</p>
+</div>
+<p class="q"><b>AB16.</b> You&#x27;re asked: &quot;we run plain IP with OSPF and BGP — why would we introduce SR at all?&quot; Give the honest answer.</p>
+<div class="a">
+<p><b>Start with what it isn&#x27;t:</b> it isn&#x27;t load balancing (BGP DMZ link-bandwidth already does UCMP on plain IP), and it isn&#x27;t raw speed. Saying that first buys you credibility for the rest.</p>
+<p><b>The real case:</b> (1) <b>TI-LFA</b> — guaranteed sub-50ms, 100%-coverage, microloop-free repair for <em>any</em> topology, which plain IGP reconvergence cannot give you. (2) <b>Explicit path control</b> — steer a flow off shortest-path without per-hop state or a new protocol, which is impossible in plain IP and expensive in RSVP-TE. (3) <b>A programmable, controller-friendly substrate</b> — BGP-LS north, SR Policy south, with the path expressed in the packet. (4) <b>Inter-domain stitching via binding-SIDs</b> without merging IGPs or leaking topology.</p>
+<p><b>And the honest cost:</b> a new SID/SRGB plan, MSD limits in silicon, a more complex troubleshooting story, and a team that must learn it. <b>If the network&#x27;s problem is none of those four things, the answer is don&#x27;t do it</b> — and being willing to say that is what makes the recommendation credible when you do make it.</p>
+</div>
+<hr>
+<h2 id="s30">AC · MULTICAST — QUIZ-ROUND DEPTH (cold source, added 2026-07-22)</h2>
+<p><em>Section K covers the market-data framing. This is the protocol mechanics. Your carrier IPTV SSM background is the asset here — it&#x27;s the same zero-loss bar as market data.</em></p>
+<p class="q"><b>AC1.</b> Multicast addressing — the ranges and the layer-2 gotcha.</p>
+<div class="a">
+<p><b>224.0.0.0/4</b> overall. <b>224.0.0.0/24</b> link-local control (never forwarded — 224.0.0.5/6 OSPF, .13 PIM, .1/.2 all-hosts/all-routers). <b>232.0.0.0/8 = SSM</b>. <b>239.0.0.0/8</b> = administratively scoped/private (the multicast RFC 1918). <b>233/8</b> GLOP.</p>
+<p><b>The gotcha:</b> an IP group maps to MAC <code>01:00:5e</code> + the <b>low 23 bits</b> of the group. The group has <b>28</b> significant bits, so <b>32 different groups collide onto one MAC</b> — e.g. 239.1.1.1 and 239.129.1.1. A host joining one receives the other&#x27;s traffic at L2 and discards it in software — wasted CPU and a genuinely confusing capture. It&#x27;s why you don&#x27;t allocate group addresses that differ only above the low 23 bits.</p>
+</div>
+<p class="q"><b>AC2.</b> IGMP v1/v2/v3 — what does each add, and why does v3 matter to you?</p>
+<div class="a">
+<p><b>v1</b> — joins only, no leave; membership aged out by timeout. <b>v2</b> — adds <b>leave-group</b> and a group-specific query, so departure is fast; adds querier election (<b>lowest IP wins</b>). <b>v3</b> — adds <b>source filtering</b>: <b>INCLUDE(S,G)</b> and EXCLUDE lists.</p>
+<p><b>v3 is what makes SSM possible</b> — the receiver names the source, so the network can build an (S,G) tree straight away with no RP and no shared tree. For market data that&#x27;s the whole game: <b>the source is known and fixed, so there is nothing to discover.</b></p>
+</div>
+<p class="q"><b>AC3.</b> IGMP snooping and the querier — the most common multicast fault in a DC.</p>
+<div class="a">
+<p>Snooping lets a <b>switch</b> listen to IGMP and forward a group only to ports that joined, instead of flooding it to the whole VLAN. But snooping entries <b>age out</b>, and they&#x27;re refreshed by <b>queries</b> — which come from a router. On a <b>pure L2 VLAN with no router</b>, there&#x27;s no querier, so entries expire and multicast <b>stops after a couple of minutes</b>, or floods everywhere, depending on the platform.</p>
+<p>Signature: works, then dies; or works on some switches and not others. Fix: configure an <b>IGMP snooping querier</b> on the VLAN. Confirm it by disabling snooping — if it starts flooding and works, that&#x27;s snooping, not routing.</p>
+</div>
+<p class="q"><b>AC4.</b> PIM modes — name them and say which are actually deployed.</p>
+<div class="a">
+<p><b>Dense mode</b> — flood-and-prune, periodic reflood. <b>Dead</b>; never design with it. <b>Sparse mode (ASM)</b> — explicit joins toward an <b>RP</b>, shared tree then switchover. The general-purpose answer. <b>SSM</b> — (S,G) only, no RP, no shared tree; <b>the answer for market data and IPTV</b>. <b>Bidir</b> — shared tree in both directions, no source registration, for many-to-many (trading floors with lots of talkers); scales by removing (S,G) state entirely at the cost of never using the optimal path.</p>
+<p>Note PIM is <b>protocol-independent</b> — it doesn&#x27;t build its own topology, it relies on the unicast RIB for RPF. That dependency is the source of most multicast faults.</p>
+</div>
+<p class="q"><b>AC5.</b> Walk ASM end to end: receiver joins, source starts. Every step.</p>
+<div class="a">
+<p>(1) Receiver sends <b>IGMP join</b> for G. (2) Its <b>last-hop router</b> creates **(\*,G)<b> and sends a </b>PIM join toward the RP<b> — hop by hop, building the </b>shared tree (RPT)<b>. (3) The </b>source<b> starts sending; its </b>first-hop router<b> encapsulates the data in </b>PIM Register<b> messages </b>unicast to the RP<b>. (4) The RP decapsulates, forwards down the shared tree, and sends a </b>PIM join toward the source<b> to build </b>(S,G)<b>. (5) Once native traffic arrives, the RP sends </b>Register-Stop<b> and the tunnelling ceases. (6) The </b>last-hop router<b> now sees the source&#x27;s address, and when traffic crosses the </b>SPT threshold<b> (default: the first packet, on most platforms) it joins </b>(S,G) directly toward the source<b> — the </b>SPT switchover<b> — then </b>prunes** itself off the shared tree.</p>
+<p>Being able to name <b>Register / Register-Stop</b> and the <b>switchover with the prune</b> is the difference between having read it and having run it.</p>
+</div>
+<p class="q"><b>AC6.</b> RPF — what is it and what breaks it?</p>
+<div class="a">
+<p><b>Reverse Path Forwarding</b>: a multicast packet is accepted <b>only if it arrived on the interface the unicast routing table would use to reach the source</b>. Otherwise it&#x27;s dropped silently. It&#x27;s the loop-prevention mechanism for a tree with no TTL-based safety.</p>
+<p>What breaks it: <b>asymmetric routing</b> — the traffic arrives one way but the route to the source points another; <b>a routing change</b> that moves the source&#x27;s best path; <b>redistribution</b> or a policy that makes the source reachable via a different interface than the physical path. The fix is either fixing the unicast path or a <b>static mroute/RPF override</b> — and if you&#x27;re reaching for the override, the design is usually wrong.</p>
+<p>Say the diagnostic out loud: <em>&quot;multicast forwarding follows the unicast route to the source, so I&#x27;d check the unicast path before touching PIM.&quot;</em></p>
+</div>
+<p class="q"><b>AC7.</b> RP placement and redundancy — how do you not have a single point of failure?</p>
+<div class="a">
+<p>Discovery mechanisms: <b>static</b> (simple, deterministic, and honestly fine when you control both ends), <b>Auto-RP</b> (Cisco, uses 224.0.1.39/.40), <b>BSR</b> (standards-based). <b>Redundancy: Anycast-RP</b> — the same RP address on multiple routers, with <b>MSDP</b> between them to exchange <b>Source-Active</b> messages so each knows the other&#x27;s sources; receivers reach the nearest by unicast routing, and if one dies, routing simply converges to the other. (<b>PIM Anycast-RP</b>, RFC 4610, does the same without MSDP.)</p>
+<p><b>The senior answer to &quot;how do you protect the RP&quot;: use SSM and delete the RP from the design.</b> For known, fixed sources — which is every market-data feed — the RP is a failure mode you chose to have.</p>
+</div>
+<p class="q"><b>AC8.</b> SSM versus ASM — make the case in a finance context.</p>
+<div class="a">
+<p><b>SSM has no RP, no shared tree, no register process, and no switchover.</b> The receiver signals <b>IGMPv3 INCLUDE (S,G)</b>, and the last-hop router builds the source tree <b>immediately</b>. That deletes an entire class of failure: RP unreachable, RP failover, MSDP problems, register tunnelling, the RPT→SPT transition glitch, and the (\*,G) state in the core.</p>
+<p>Why finance and IPTV converge on it: <b>the source is known and static</b>, so the discovery ASM exists to provide has no value. You get the <b>shortest path from the first packet</b>, deterministically, and <b>A/B feeds are trivially two (S,G)s on disjoint paths</b>. The zero-loss bar is the same one broadcast video lives by — a pixelated frame and a missed fill are the same category of unacceptable.</p>
+</div>
+<p class="q"><b>AC9.</b> PIM DR and the Assert — what are they for?</p>
+<div class="a">
+<p>On a LAN with two routers, the <b>DR</b> (highest priority, tie-break highest IP) is the one that sends joins toward the RP/source for local receivers and registers local sources — it prevents duplicate signalling. The <b>Assert</b> solves a different problem: if <b>both</b> routers end up forwarding the same (S,G) onto the same segment, receivers get duplicates. They exchange <b>Assert</b> messages and the winner (best metric to the source, tie-break highest IP) becomes the sole <b>forwarder</b>.</p>
+<p>Worth knowing they&#x27;re <b>separate elections with different criteria</b> — DR is about signalling, Assert is about forwarding, and confusing them is a common slip.</p>
+</div>
+<p class="q"><b>AC10.</b> Multicast over an EVPN/VXLAN fabric — what are the options?</p>
+<div class="a">
+<p><b>Ingress replication (head-end replication)</b> — the ingress VTEP makes a unicast copy per remote VTEP. Simple, no multicast in the underlay, but <b>bandwidth scales with VTEP count</b> — fine for BUM, bad for a real high-rate feed. <b>Underlay multicast</b> — the VNI maps to an underlay group and the fabric builds a real tree; efficient, but now you&#x27;re running PIM in the underlay too. <b>OISM / EVPN Route Type 6 (SMET)</b> carries IGMP state in BGP so replication is selective.</p>
+<p><b>Your position stays what&#x27;s in section K:</b> for market data, keep it on a <b>dedicated PIM-SSM plane off the fabric</b>. Don&#x27;t tunnel a deterministic A/B feed through a fabric whose replication behaviour is a design compromise.</p>
+</div>
+<p class="q"><b>AC11.</b> &quot;The receiver gets nothing.&quot; Troubleshoot it in order.</p>
+<div class="a">
+<p>(1) <b>Is the source actually sending?</b> Capture at the source. Astonishingly often the answer. (2) <b>TTL</b> — applications must set the multicast TTL explicitly; the <b>default is 1</b>, so it never leaves the host. Classic and worth naming early. (3) <b>Did the receiver join?</b> IGMP report in a capture at the host; and did it join the right <b>(S,G)</b> for SSM, and bind to the right <b>interface</b> (a multi-homed host joining on the wrong NIC). (4) <b>Snooping/querier</b> at L2 (AC3). (5) <b>RPF</b> at each router (AC6). (6) <b>mroute state</b> — walk it hop by hop from the receiver toward the source: does each router have the (S,G)/(\*,G) with the right incoming interface and a non-empty outgoing list? The hop where the OIL goes empty is your fault point. (7) For ASM: <b>is the RP reachable</b>, and did registration complete? (8) <b>Boundaries/scoping</b> — an administratively-scoped boundary or a TTL threshold on an interface deliberately dropping it.</p>
+<p>The structure — source → host stack → L2 → RPF → hop-by-hop state — is the answer; the individual commands are vendor trivia.</p>
+</div>
+<p class="q"><b>AC12.</b> mVPN in one answer — how does multicast cross an MPLS/SR core?</p>
+<div class="a">
+<p>The core must carry a <b>tree</b>, not just unicast tunnels. <b>Draft-Rosen (profile 0)</b> built a <b>GRE-based default MDT</b> — every PE joined it, so all PEs got all traffic regardless of interest, plus a <b>data MDT</b> for high-rate streams. <b>NG-MVPN</b> replaced it: <b>BGP auto-discovery</b> (address family mvpn) to find PEs and signal C-multicast joins, with the provider tunnel being <b>P2MP RSVP-TE, mLDP, or ingress replication</b>.</p>
+<p><b>In SR terms:</b> the modern equivalents are <b>Tree-SID (SR P2MP)</b> — the controller computes the replication tree and installs it as SIDs, keeping SR&#x27;s &quot;no protocol in the core&quot; property — or <b>BIER</b>, which is genuinely stateless: the packet header carries a <b>bitstring of destination BFRs</b> and routers replicate on it, with <b>no per-tree state anywhere</b>. If asked &quot;what&#x27;s next for multicast&quot;, BIER is the answer that shows you&#x27;re current.</p>
+</div>
+<hr>
+<h2 id="s31">AD · GENERAL NETWORKING — THE CATCH-ALL (cold source, added 2026-07-22)</h2>
+<p><em>Weighted to what a trading firm actually probes: where latency comes from, layer 2, buffers, and the physical layer.</em></p>
+<p class="q"><b>AD1.</b> Build a latency budget for a link. What are the components, and which dominate?</p>
+<div class="a">
+<p><b>Propagation</b> — light in glass is ~<b>200,000 km/s</b>, so <b>≈5 µs per km</b>, and that number is immovable: it&#x27;s why colocation exists and why route mileage is the first thing you argue about. <b>Serialisation</b> — time to clock the bits out: a 1500-byte frame is 12,000 bits, so <b>1.2 µs at 10G, 120 ns at 100G</b>. <b>Switching</b> — <b>~350 ns–1 µs</b> per hop cut-through; more store-and-forward. <b>Queueing</b> — <b>unbounded and the only variable one</b>, which is why it&#x27;s the enemy. <b>Host stack</b> — typically the largest single contributor, and the reason for kernel bypass.</p>
+<p>The framing that lands: <b>propagation is physics, serialisation and switching are engineering, queueing is the only one that&#x27;s a choice</b> — so low-latency design is mostly about never queueing.</p>
+</div>
+<p class="q"><b>AD2.</b> Cut-through versus store-and-forward.</p>
+<div class="a">
+<p><b>Store-and-forward</b> buffers the whole frame, validates the <b>FCS</b>, then forwards — so latency scales with frame size and <b>corrupt frames are dropped at that hop</b>. <b>Cut-through</b> forwards as soon as it has read the destination MAC (~64 bytes), so latency is <b>frame-size-independent</b> and much lower — but it will <b>propagate a corrupt frame</b>, since the FCS hasn&#x27;t been read yet (a &quot;runt&quot;/error frame forwarded onward).</p>
+<p>Nuance worth having: cut-through <b>cannot</b> apply across a <b>speed mismatch</b> (10G→100G forces buffering) or when the egress port is busy, so a &quot;cut-through switch&quot; is store-and-forward whenever there&#x27;s contention. Trading fabrics take the corrupt-frame risk for the latency.</p>
+</div>
+<p class="q"><b>AD3.</b> FEC — why does a trading desk care?</p>
+<div class="a">
+<p><b>Forward Error Correction</b> (RS-FEC, mandatory on 25G/100G over most media) corrects bit errors but adds <b>latency</b> — roughly <b>100–250 ns</b> per hop for RS-FEC (RS-528/544), which on a multi-hop path is real money at HFT scale. Some 25G modes allow <b>FEC off or the lighter BASE-R/Firecode FEC</b> over short, clean links.</p>
+<p>The trade-off to state: <b>FEC off = lower latency but you must have the link budget and error rate to support it</b>; turn it off on a marginal link and you get CRC errors, which cut-through will happily forward onward. It&#x27;s also a common <b>interop trap</b> — FEC mode must match on both ends or the link won&#x27;t come up, and the autonegotiated default differs by vendor and cable type.</p>
+</div>
+<p class="q"><b>AD4.</b> Why is spanning tree unwelcome in a modern fabric, and what replaced it?</p>
+<div class="a">
+<p>STP&#x27;s job is loop prevention <b>by blocking links</b> — so you pay for capacity you can&#x27;t use, convergence is slow (RSTP is seconds, classic STP 30–50), and it&#x27;s fragile: a single misbehaving device can cause an estate-wide topology change. <b>TCNs flush MAC tables</b>, causing floods.</p>
+<p>Replaced by <b>L3 to the leaf with ECMP</b> (no L2 loops to prevent — the routing protocol handles multipath), and where L2 must extend, <b>EVPN/VXLAN</b> with L3 underlay, or <b>MLAG/ESI-LAG</b> so a dual-homed host uses both links actively. Keep STP configured as a <b>backstop</b> with <b>BPDU guard on edge ports</b> — you want it to catch someone plugging a switch into an access port, not to be your topology mechanism.</p>
+</div>
+<p class="q"><b>AD5.</b> MLAG/ESI-LAG — what problem, and what&#x27;s the risk?</p>
+<div class="a">
+<p>A host wants <b>two active uplinks to two different switches</b>. LACP expects one peer, so the two switches must <b>present a single system ID</b>. <b>MLAG</b> (vendor-proprietary, with a peer-link and keepalive) or <b>EVPN ESI-LAG</b> (standards-based, using <b>Ethernet Segment routes</b>, no peer-link needed).</p>
+<p>The risk is <b>split-brain</b>: peer-link fails but both switches are alive, both think they own the LAG, and you get duplicate/looped traffic. Mitigations: a <b>separate keepalive path</b> out-of-band from the peer-link, and <b>orphan-port/suspend behaviour</b> on the secondary. Ask about split-brain unprompted — it&#x27;s the thing that actually bites.</p>
+</div>
+<p class="q"><b>AD6.</b> Shaping versus policing, and where does each belong?</p>
+<div class="a">
+<p><b>Policing</b> drops (or re-marks) anything over rate <b>immediately</b> — no buffering, no added delay, but it&#x27;s brutal to TCP because it drops mid-window and triggers retransmits. <b>Shaping</b> <b>buffers</b> excess and releases it at rate — smoother, TCP-friendlier, but it <b>adds delay and needs memory</b>.</p>
+<p>Placement: <b>police on ingress</b> (you can&#x27;t shape what you haven&#x27;t received; policing is how you enforce a contract), <b>shape on egress</b> (typically to a downstream link&#x27;s rate to avoid handing the next box a burst it will drop). For a <b>latency-sensitive class you do neither</b> — you give it strict priority with a policer only as a safety valve, because shaping a market-data feed means adding queueing delay to it, which is the one thing you&#x27;re trying to avoid.</p>
+</div>
+<p class="q"><b>AD7.</b> Buffers — is deep good?</p>
+<div class="a">
+<p><b>No — deep buffers are a trade, not a virtue.</b> Deep buffers absorb <b>incast and speed mismatches</b> without loss (good for storage, big-data, WAN edges) but they permit <b>bufferbloat</b>: packets sit in queue rather than being dropped, so latency and jitter rise and TCP takes longer to learn. <b>Shallow-buffer, low-latency silicon</b> drops earlier and keeps delay predictable — which a trading fabric prefers, because <b>a dropped market-data packet is recovered from the B feed, but a delayed one poisons every downstream decision</b>.</p>
+<p>The right answer is <b>match buffer to workload</b>, and use <b>ECN</b> to signal congestion <b>before</b> the queue is full rather than relying on drop or depth.</p>
+</div>
+<p class="q"><b>AD8.</b> Explain incast.</p>
+<div class="a">
+<p><b>Many senders, one receiver, simultaneously</b> — the classic pattern is a distributed query or a storage read fanning out to N nodes that all reply at once. The aggregate instantaneously exceeds the receiver&#x27;s port rate, the <b>egress buffer overflows in microseconds</b>, and you get loss even though average utilisation is low.</p>
+<p>Why it&#x27;s nasty: it&#x27;s <b>synchronised</b>, so it defeats statistical multiplexing, and it&#x27;s invisible to utilisation graphs (see the microburst question, Y12). Mitigations: deeper buffers <b>or</b> ECN/DCTCP so senders back off before the drop, application-level <b>jitter/staggering</b> of the responses, and higher-rate uplinks. It&#x27;s also the reason RoCE needs a lossless fabric — RDMA reacts far worse to loss than TCP does.</p>
+</div>
+<p class="q"><b>AD9.</b> ARP, gratuitous ARP, proxy ARP — and where each causes trouble.</p>
+<div class="a">
+<p><b>ARP</b> resolves IP→MAC on a segment. <b>Gratuitous ARP</b> is an unsolicited announcement — used legitimately for <b>failover</b> (a VIP moving to a new box tells everyone to update their table) and for duplicate-address detection; also the mechanism behind ARP spoofing. <b>Proxy ARP</b> is a router answering on behalf of a remote host — occasionally a migration crutch, but it hides real topology, bloats ARP tables, and creates black holes when the router&#x27;s own path changes. Default position: <b>proxy ARP off</b>.</p>
+<p>The operational trap: <b>ARP cache timeout versus MAC-table ageing mismatch</b> — if the ARP entry outlives the MAC entry, the switch has to <b>flood</b> every frame to a silent host until it speaks again. Classic in fabrics with long-idle hosts.</p>
+</div>
+<p class="q"><b>AD10.</b> Anycast — how does it work and what breaks?</p>
+<div class="a">
+<p>The <b>same address advertised from multiple locations</b>; routing delivers each client to the topologically nearest instance. Perfect for <b>stateless</b> services — DNS is the canonical case — and it gives you failover for free: withdraw the route and traffic re-homes.</p>
+<p>What breaks: <b>anything stateful.</b> A routing change mid-session moves a client to a different instance that has no state, so TCP sessions reset. Also <b>traffic distribution is decided by routing, not by load</b>, so you can&#x27;t balance it, and debugging is confusing because two users hitting &quot;the same server&quot; hit different machines. In networking terms the same idea appears as <b>anycast-SID</b> and <b>anycast-RP</b>, both for exactly this reason: nearest-instance selection with automatic failover.</p>
+</div>
+<p class="q"><b>AD11.</b> IPv6 — the differences that actually matter operationally.</p>
+<div class="a">
+<p>No <b>broadcast</b> (multicast instead); <b>NDP replaces ARP</b> and runs over ICMPv6, so <b>filtering ICMPv6 breaks the network</b> — unlike IPv4 where blocking ICMP is merely rude. <b>No fragmentation by routers</b> — only the source fragments, so <b>PMTUD is mandatory</b>, which makes the ICMP black-hole failure far more damaging. <b>SLAAC</b> via router advertisements as an alternative to DHCPv6. A <b>fixed 40-byte header</b> with extension headers rather than options, which is friendlier to hardware parsing.</p>
+<p>The one to name for SR: <b>SRv6 uses the routing extension header (SRH)</b> — so SRv6 is only possible because IPv6 has that extensibility, and the 128-bit address is what lets a SID encode both location and function.</p>
+</div>
+<p class="q"><b>AD12.</b> How do you actually load-balance across parallel paths, and how does it go wrong?</p>
+<div class="a">
+<p>A hash over the <b>5-tuple</b> (plus often ingress port / MPLS labels / VXLAN outer source port) picks a member. It&#x27;s <b>per-flow, not per-packet</b>, deliberately — per-packet would reorder and TCP would collapse.</p>
+<p>Failure modes: <b>polarisation</b> — every layer of the fabric uses the same hash and the same fields, so flows that collide at one layer collide at every layer, leaving links idle while others congest (fix: per-layer hash seeds). <b>Elephant flows</b> — a single large flow can&#x27;t be split at all, so one link saturates while the average looks fine. <b>Poor entropy</b> — a tunnelled or encapsulated workload where all traffic shares an outer 5-tuple, so everything hashes to one path; that&#x27;s exactly what the <b>entropy label</b> (MPLS) and the <b>VXLAN outer source port</b> exist to fix. <b>Uneven member counts</b> after a failure change the modulo, rehashing flows onto new paths (<b>resilient hashing</b> limits the disruption to the flows that must move).</p>
+</div>
+<p class="q"><b>AD13.</b> Where does jitter come from, and why does it matter more than latency to a trading system?</p>
+<div class="a">
+<p>Sources: <b>queueing</b> (the dominant one — variable by definition), <b>interrupt coalescing and scheduling</b> on the host, <b>retransmission and recovery</b>, <b>path changes</b> between packets, and <b>variable serialisation</b> with mixed frame sizes.</p>
+<p>Why it matters more: <b>a consistent latency can be modelled and compensated for; a variable one cannot.</b> A system with 100 µs ±1 µs is more usable than one with 60 µs ±40 µs, because the tail sets your risk, not the mean. This is also why you report <b>p99/p99.9, never averages</b> — and why &quot;we added bandwidth&quot; doesn&#x27;t fix a jitter complaint.</p>
+</div>
+<p class="q"><b>AD14.</b> A user reports &quot;the network is slow.&quot; Structure your diagnosis.</p>
+<div class="a">
+<p><b>Locate before solving.</b> (1) <b>Scope</b> — one host, one segment, one application, or everyone? That single question eliminates most of the search space. (2) <b>Slow how</b> — throughput, latency, or intermittent loss? They have completely different causes and people say &quot;slow&quot; for all three. (3) <b>When did it start, and what changed</b> — the honest first suspect is always a change. (4) <b>Layer by layer, bottom up</b>: physical (errors, CRC, optic levels, flaps), L2 (duplex, MTU, MAC/ARP), L3 (path, asymmetry, MTU/PMTU), transport (window, retransmits, zero-window), application/host (CPU, socket buffers, disk). (5) <b>Get evidence, not opinion</b> — interface counters, a capture at two points, and the p99 rather than the average.</p>
+<p>State the discipline explicitly: <b>&quot;I&#x27;d establish where the problem is before I touch anything, because a fix applied to the wrong layer creates a second fault.&quot;</b></p>
+</div>
+<hr>
+<h2 id="s32">AE · DESIGN + FAILURE SCENARIOS (cold source, added 2026-07-22)</h2>
+<p><em>Scenarios, not method — the method deck is <code>design-round-method.html</code>. For each: the questions you ask before designing, the shape of the answer, and the trap.</em></p>
+<p class="q"><b>AE1.</b> &quot;Design the network for a new research cluster — a few thousand GPUs.&quot;</p>
+<div class="a">
+<p><b>Ask first:</b> how many GPUs and what interconnect (RoCEv2 or InfiniBand)? Rail-optimised or standard leaf-spine? Is storage on the same fabric? What&#x27;s the oversubscription tolerance — training is bandwidth-hungry and <b>loss-intolerant</b>, not latency-critical in the trading sense. Growth horizon?</p>
+<p><b>Shape:</b> <b>non-blocking (1:1) leaf-spine</b>, or <b>rail-optimised</b> so each GPU&#x27;s NIC rail has its own leaf — that keeps all-reduce traffic on one hop where possible. <b>L3 to the leaf, eBGP underlay, ECMP</b>. <b>RoCEv2 needs a lossless class</b>: <b>PFC</b> on the RoCE priority plus <b>ECN/DCQCN</b> doing the real work, with PFC as the last resort. <b>9000 MTU</b>. Separate <b>storage</b> and <b>management</b> paths. Uplink bandwidth sized on the collective pattern, not on average utilisation.</p>
+<p><b>Trap:</b> designing it like an enterprise DC. The traffic is <b>synchronised all-to-all bursts</b>, not random client-server, so statistical multiplexing assumptions and average-utilisation sizing are both wrong. Name that.</p>
+</div>
+<p class="q"><b>AE2.</b> &quot;Design the WAN connecting three research DCs and two trading colos.&quot;</p>
+<div class="a">
+<p><b>Ask first:</b> what actually crosses it — bulk research data, or anything on the trade path? What&#x27;s the latency requirement per leg, and is any of it latency-<em>critical</em> or just latency-<em>sensitive</em>? Diverse fibre available? Who owns the capacity — dark fibre, waves, or carrier IP?</p>
+<p><b>Shape:</b> treat <b>research/inter-DC</b> and <b>trading</b> as different networks with different rules. Research WAN: <b>high bandwidth, engineered paths, richer policy</b> — this is where SR earns its place (TI-LFA, explicit paths, binding-SID stitching). Trading colos: <b>short, simple, deterministic, minimum state</b>, dual diverse paths, no clever engineering. <b>eBGP between sites</b> for hard boundaries, IGP inside. <b>Diversity is a physical-layer property</b> — two circuits from two carriers sharing one duct is one circuit.</p>
+<p><b>Trap:</b> applying one design to both. The whole point is that they have opposite requirements, and saying so is the answer.</p>
+</div>
+<p class="q"><b>AE3.</b> &quot;Design market-data distribution from the venue to the consumers.&quot;</p>
+<div class="a">
+<p><b>Ask first:</b> how many venues and feeds, what rates and burst profile, how many consumers, A/B feeds available, is arbitration in the app or the network, and what&#x27;s the recovery mechanism (snapshot/retransmit)?</p>
+<p><b>Shape:</b> <b>PIM-SSM</b> on a <b>dedicated plane</b> — no RP, IGMPv3 (S,G), deterministic SPT from the first packet. <b>A and B feeds on physically disjoint paths</b> with <b>no shared fate</b> (different switches, different fibre, ideally different rooms), arbitration <b>at the host</b>. <b>Shallow-buffer low-latency switching</b>, cut-through, and <b>no shaping or policing on the feed</b>. Line-rate capable everywhere — you size for <b>burst</b>, not average, because opens and news events are 10–100× normal. Monitoring on <b>sequence-gap detection and p99 latency</b>, not utilisation.</p>
+<p><b>Trap:</b> carrying it over the general fabric &quot;because we have capacity.&quot; Capacity isn&#x27;t the requirement — <b>determinism and independence of the two feeds</b> are.</p>
+</div>
+<p class="q"><b>AE4.</b> &quot;A spine fails in a 4-spine fabric. Walk through what happens.&quot;</p>
+<div class="a">
+<p>Immediately: <b>BFD</b> detects it in milliseconds, eBGP sessions to that spine drop, each leaf <b>withdraws that next-hop and keeps the other three</b> in the FIB — with ECMP installed, <b>no reconvergence is needed for the surviving paths</b>, just a member removed from the group. Traffic continues at <b>75% of fabric capacity</b>.</p>
+<p>The real questions to raise: (1) <b>Was it sized for N−1?</b> If four spines at 80% utilisation lose one, three now carry 107% and you&#x27;re dropping — capacity planning is the actual answer, not convergence. (2) <b>Resilient hashing</b> so removing a member doesn&#x27;t rehash every flow. (3) During the <b>maintenance</b> version of this, drain gracefully (raise metric / AS-path prepend / graceful shutdown) rather than yanking the link.</p>
+<p><b>Trap:</b> answering only &quot;ECMP handles it.&quot; The interesting content is the <b>N−1 capacity</b> question.</p>
+</div>
+<p class="q"><b>AE5.</b> &quot;Your RP fails and market data stops. Post-mortem it.&quot;</p>
+<div class="a">
+<p>Immediate: with <b>ASM</b>, receivers on the shared tree lose the path to the RP; existing <b>(S,G)</b> flows that already switched to the SPT may survive, which is why the failure often looks partial and confusing. Anycast-RP/MSDP would have made it a non-event.</p>
+<p>The post-mortem answer they want: <b>the fix isn&#x27;t a better RP, it&#x27;s not having one.</b> Move to <b>SSM</b> — the sources are known and static, so ASM&#x27;s discovery mechanism was providing nothing while adding a failure domain. Then: <b>why was a single RP in the path of a revenue-critical feed</b>, and what else in that path has the same property?</p>
+<p><b>Trap:</b> answering with RP redundancy only. Redundancy for a component you didn&#x27;t need is the weaker answer.</p>
+</div>
+<p class="q"><b>AE6.</b> &quot;Intermittent packet loss, nobody can find it. How do you hunt it?&quot;</p>
+<div class="a">
+<p><b>Bound it first:</b> which flows, which direction, what rate, and is it correlated with load or time? <b>Loss that correlates with load is congestion; loss that doesn&#x27;t is physical or a control-plane/policing problem.</b></p>
+<p>Then: <b>interface error counters</b> at every hop (CRC/FCS = physical — optic, cable, dirty connector; input discards = buffer; output drops = congestion). <b>Microburst hunting</b> — poll queue depth/drops rather than utilisation, or capture with hardware timestamps and graph at millisecond resolution. <b>Asymmetric path</b> — capture at two points and confirm the return path. <b>Control-plane policing</b> dropping legitimate traffic. <b>Host-side</b> — RcvbufErrors, ring-buffer overruns (<code>ethtool -S</code>), so it never was the network.</p>
+<p><b>Trap:</b> starting with a packet capture. Start with <b>counters</b> — they&#x27;re already there, cover every hop, and tell you which hop to capture at.</p>
+</div>
+<p class="q"><b>AE7.</b> &quot;Half the traffic works, half doesn&#x27;t, after a change.&quot;</p>
+<div class="a">
+<p>This shape almost always means <b>something is per-path or per-flow</b>: an <b>ECMP member</b> that&#x27;s broken (one bad link/optic in the bundle — flows hashing there die, others are fine), an <b>asymmetric route</b> where the return path differs and a stateful device drops it, an <b>MTU mismatch on one path only</b>, or one device in a pair with divergent config (an MLAG peer, one spine, one firewall in an HA pair).</p>
+<p>Diagnostic that separates them: <b>vary the flow tuple</b> — if changing source port fixes it, it&#x27;s per-flow hashing onto a broken member. If it&#x27;s per-destination, it&#x27;s routing. If it&#x27;s only large packets, it&#x27;s MTU.</p>
+<p><b>Trap:</b> treating it as intermittent. It isn&#x27;t — it&#x27;s <b>deterministic per flow</b>, and recognising that is most of the diagnosis.</p>
+</div>
+<p class="q"><b>AE8.</b> &quot;You must migrate the core with no downtime. How?&quot;</p>
+<div class="a">
+<p><b>Shape:</b> build the new alongside the old (<b>ships-in-the-night</b>: new IGP/protocol running in parallel, no traffic). <b>Move traffic with routing metrics</b>, not with cables — cost-out one path, verify, cost-in. <b>One failure domain at a time</b>, starting where blast radius is smallest, never the core first. Every step needs a <b>pre-check, a post-check, and a tested rollback</b> — and a <b>defined abort trigger</b> agreed <em>before</em> the window, so the decision to roll back isn&#x27;t taken by tired people at 4am. <b>Soak</b> between phases; the failures that matter often appear hours later under real load, not at cutover.</p>
+<p>Then name the honest risks: <b>transient asymmetry</b> during the shift, MTU/label-stack changes, and the fact that <b>rollback gets harder the further you go</b> — so sequence the irreversible steps last.</p>
+<p><b>Trap:</b> presenting a plan with no rollback and no abort criteria. That&#x27;s the single thing they&#x27;re listening for.</p>
+</div>
+<p class="q"><b>AE9.</b> &quot;How do you know the network is healthy — what do you monitor?&quot;</p>
+<div class="a">
+<p><b>Not utilisation graphs.</b> For a trading network: <b>p99/p99.9 latency</b> (not mean), <b>jitter</b>, <b>sequence-gap counts</b> on market-data feeds, <b>queue depth and drop counters</b> rather than average utilisation, <b>interface error/CRC counts</b> with trending (a slowly-degrading optic shows up here first), <b>BGP/OSPF adjacency and route-count changes</b>, and <b>config drift versus intent</b>.</p>
+<p>The architectural point: <b>streaming telemetry at sub-second, not SNMP polling at 30s</b> — because the events that hurt you are microseconds long and a poll interval averages them away. Plus <b>synthetic probes</b> on the paths that matter, because an interface counter can&#x27;t tell you the path is 40 µs slower than yesterday.</p>
+<p><b>Trap:</b> listing tools. They&#x27;re asking what <b>signals</b> matter and why.</p>
+</div>
+<p class="q"><b>AE10.</b> &quot;Justify the SR migration to a sceptical engineer who likes the current plain-IP network.&quot;</p>
+<div class="a">
+<p>Take the scepticism seriously — the current network <b>works</b>, and &quot;it works&quot; is a real argument. Concede first: SR is <b>not</b> faster, and it&#x27;s <b>not</b> needed for load balancing (<b>DMZ link-bandwidth already gives UCMP</b>). Conceding what SR doesn&#x27;t buy is what makes the rest credible.</p>
+<p>Then the four real benefits: <b>TI-LFA</b> (guaranteed, 100%-coverage, microloop-free sub-50ms repair — unavailable in plain IP), <b>explicit path control without per-hop state or a new protocol</b>, a <b>controller-friendly substrate</b> (BGP-LS north, SR Policy south), and <b>inter-domain stitching by binding-SID</b> without merging IGPs. Then the costs: <b>SID/SRGB planning, MSD limits in silicon, a harder troubleshooting story, and a team that has to learn it.</b></p>
+<p>Close by scoping it: <b>the research/inter-DC WAN, greenfield, leaving the trading path untouched</b> — and say plainly that <b>if none of those four benefits is a live problem, don&#x27;t do it.</b> Willingness to argue against your own proposal is what makes a recommendation trustworthy.</p>
+<p><b>Trap:</b> selling. A design round is testing judgement, not enthusiasm.</p>
+</div>
+<a class="top" href="#">top</a>
+</body></html>

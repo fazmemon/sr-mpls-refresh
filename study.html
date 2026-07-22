@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Study master — HRT</title>
+<style>
+  :root{--bg:#0e1726;--panel:#152136;--ink:#eaf0fb;--muted:#9db0d0;--accent:#4da3ff;--accent2:#54e0c7;--warn:#ffcf6b;--line:#2b3a56;--ex:#0f2030;--red:#ff7b8a}
+  @media(prefers-color-scheme:light){:root{--bg:#fbfbf8;--panel:#fff;--ink:#1a1a1a;--muted:#555;--accent:#0b5cad;--accent2:#0a7a63;--warn:#8a5a00;--line:#ddd;--ex:#f2f7f5;--red:#b3261e}}
+  *{box-sizing:border-box}
+  body{margin:0 auto;max-width:900px;background:var(--bg);color:var(--ink);font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;padding:24px 18px 80px;-webkit-text-size-adjust:100%}
+  h1{font-size:29px;margin:.2em 0 .1em;color:var(--accent2);letter-spacing:-.5px}
+  .sub{color:var(--muted);margin:0 0 16px;font-size:15px}
+  h2{font-size:18px;color:var(--accent);margin:30px 0 8px;border-bottom:1px solid var(--line);padding-bottom:6px;text-transform:uppercase;letter-spacing:1.4px}
+  ul{list-style:none;margin:6px 0;padding:0}
+  li{margin:7px 0;padding:11px 15px;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+  a{color:var(--accent2);text-decoration:none;font-weight:600}
+  a:hover{text-decoration:underline}
+  .d{color:var(--muted);font-size:14px;display:block;margin-top:4px}
+  .tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:1px;padding:2px 8px;border-radius:999px;margin-left:8px;vertical-align:middle}
+  .live{background:#241f10;color:var(--warn);border:1px solid var(--warn)}
+  .dup{background:#1c1c2c;color:var(--muted);border:1px solid var(--line)}
+  .todo{background:#2a1620;color:#ff9aa6;border:1px solid var(--red)}
+  @media(prefers-color-scheme:light){.live{background:#fff6e0}.dup{background:#f0f0f0}.todo{background:#fdeaea;color:#b3261e}}
+  .note{background:var(--ex);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:10px 14px;margin:12px 0;font-size:14px;color:var(--muted)}
+  .dates{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 4px}
+  .date{background:var(--panel);border:1px solid var(--warn);border-radius:10px;padding:8px 14px;font-size:14px}
+  .date b{color:var(--warn)}
+  .hero{background:var(--ex);border:2px solid var(--accent2);border-radius:12px;padding:15px 20px;margin:18px 0 6px}
+  .hero h3{margin:0 0 8px;color:var(--accent2);font-size:16px;letter-spacing:1px;text-transform:uppercase}
+  .hero ol{margin:0;padding-left:20px}
+  .hero li{background:none;border:none;padding:3px 0;margin:0}
+  table{border-collapse:collapse;width:100%;margin:8px 0;font-size:14px;display:block;overflow-x:auto}
+  td,th{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}
+  th{color:var(--accent);background:var(--panel)}
+  td.n{text-align:right;color:var(--accent2);font-weight:700;width:56px}
+</style>
+</head>
+<body>
+  <h1>Study master</h1>
+  <p class="sub">Everything, on any device — phone, MacBook, iPad, Kindle. If it isn't on this page it wasn't built.</p>
+
+  <div class="dates">
+    <div class="date"><b>HRT day 1</b> — Mon 27 Jul, video, 13:00–14:00</div>
+    <div class="date"><b>HRT day 2</b> — Tue 28 Jul, in person, London, 100 Liverpool St, 13:15–18:00</div>
+  </div>
+
+  <div class="hero">
+    <h3>The whole thing, in four lines</h3>
+    <ol>
+      <li><b>Read five decks</b> — everything else is folded into them.</li>
+      <li><b>Drill from one page</b> — 177 questions, answers underneath.</li>
+      <li><b>Do the labs</b> — Arista SR + EVPN + SDN, the Linux box, multicast.</li>
+      <li><b>Mock it</b> — whiteboards, technical rounds, STARs, two full loops.</li>
+    </ol>
+  </div>
+
+  <h2>1 · Read these five</h2>
+  <ul>
+    <li><a href="sdn-teach.html">SDN — three ideas, one name</a><span class="tag live">16 slides</span>
+      <span class="d"><b>Its own round, your thinnest ground — read first.</b> The three things called SDN · why OpenFlow lost · the modern stack · YANG/OpenConfig · NETCONF vs RESTCONF vs gNMI vs gNOI · telemetry vs polling · source of truth &amp; drift · "the controller dies" → fail-static · distribute forwarding / centralise intent · BGP-LS → PCE → SR-Policy (EOS has no PCEP) · blast radius · ZTP trust bootstrap · build-vs-buy · your Sky OpenConfig answer and the do-not-claim list.</span></li>
+    <li><a href="whiteboard-scenarios.html">Whiteboard scenarios — things fail, then fail again</a><span class="tag live">10 scenarios</span>
+      <span class="d"><b>The design/failure rounds in the format they run.</b> Inter-DC WAN degrading then cutting · market data dark on one desk · the feed gapping while the network looks clean · a spine dying mid-training · "half the flows work" · failure mid-SR-migration · the venue link flapping then leaking a full table · automation hitting forty switches · the overlay that broke large transfers · greenfield from nothing. <b>No model answers, deliberately</b> — think about the ladders, we run them live.</span></li>
+    <li><a href="pcap-teach.html">Reading pcaps — shapes, not packets</a><span class="tag live">16 slides</span>
+      <span class="d">Where you captured and what SPAN hides · what the capture lies about (TSO/LRO, checksum offload, timestamps) · tcpdump cold · then nine shapes: retrans vs out-of-order vs duplicate · fast-retransmit vs the RTO cliff · zero-window and its UDP twin · the constant 40 ms · PMTU black hole · RST and the middlebox TTL tell · where a multicast tree broke · <b>market-data gap attribution, network or host, A vs B</b> · microburst vs the utilisation graph · PTP · VXLAN and RoCEv2 decode.</span></li>
+    <li><a href="./">SR-MPLS refresh deck</a><span class="tag live">the big one</span>
+      <span class="d"><b>Everything conceptual lives here.</b> The SR machine · TI-LFA generations · BGP-LS/PCE · seamless MPLS · inter-AS &amp; EPE · UCMP · CLOS &amp; AI fabric · EVPN-VXLAN · the trading domain · SD-WAN · SRv6.
+      <br><b>+ five appendices:</b> DC cheatsheet (silicon, VOQ packet flow, EVPN, AI-GPU sizing, chassis/optics, virtualisation, AI-DC front/back) · Linux receive path &amp; kernel bypass · AWS networking · multicast the machine · the design-round method.</span></li>
+    <li><a href="migration.html">IP → SR migration deck</a><span class="tag live">the design round</span>
+      <span class="d"><b>Your design-round answer.</b> HRT's real network (plain IP, OSPF + BGP, no MPLS) · SR onto the greenfield research/inter-DC WAN, trading floor untouched · the A×B decision · UCMP as the honest counter-example · options A–D · OSPF area maths · the recommendation.
+      <br><b>+ inter-DC backbone appendix:</b> requirements drive design · elephant flows vs ECMP · <b>"we're an IPv4 shop — can we run SRv6?"</b> · physical diversity &amp; repair-time sizing. The role is <b>connecting the HPC datacentres</b>, so this is the shape of the job.</span></li>
+  </ul>
+
+  <h2>2 · Drill from this</h2>
+  <ul>
+    <li><a href="drills.html">Drill bank — 177 cold questions</a><span class="tag live">now readable on any device</span>
+      <span class="d">Every question has its answer underneath. Jump-links at the top for each section. Written 22 Jul: BGP 16 · MPLS+SR 16 · OSPF 15 · pcap 14 · general networking 14 · SDN 12 · multicast 12 · design scenarios 10 · TCP/IP 8 · encapsulation 8. Earlier sections: CLOS, VXLAN, EVPN, IRB, ESI-LAG, silicon, Linux host, AWS, virtualisation.</span></li>
+  </ul>
+
+  <h2>3 · Folded in — don't read separately</h2>
+  <ul>
+    <li><a href="aws-networking-teach.html">AWS networking</a><span class="tag dup">IN REFRESH DECK</span></li>
+    <li><a href="linux-kernel-bypass-teach.html">Linux receive path &amp; kernel bypass</a><span class="tag dup">IN REFRESH DECK</span></li>
+    <li><a href="multicast-teach.html">Multicast — the machine</a><span class="tag dup">IN REFRESH DECK</span></li>
+    <li><a href="design-round-method.html">Design round — the attack</a><span class="tag dup">IN REFRESH DECK</span></li>
+    <li><a href="https://fazmemon.github.io/dc-cheatsheet/">DC cheatsheet</a><span class="tag dup">IN REFRESH DECK</span>
+      <span class="d">its Juniper pre-sales and Apstra sections were deliberately not folded — written for an SE role, not this one</span></li>
+    <li><a href="inter-as-epe-build.html">Inter-AS Option C + EPE build</a><span class="tag dup">DEEP DIVE</span>
+      <span class="d">longer-form than the deck's treatment — only if you want that depth</span></li>
+  </ul>
+
+  <h2>4 · The labs — the hands-on half</h2>
+  <ul>
+    <li><a href="lab-spec.html">Lab build spec — Arista SR + EVPN + SDN</a><span class="tag todo">NOT STARTED</span>
+      <span class="d"><b>Stage 0</b> topology (3 leaf / 2 spine) · <b>1</b> underlay + SR-MPLS: SRGB, prefix-SIDs, the label stack hop by hop · <b>2</b> EVPN/VXLAN overlay, then break it · <b>3 the SDN layer</b>: gNMI/OpenConfig with <code>gnmic</code>, streaming telemetry with traffic running, NetBox + Ansible with drift surfacing as a diff, optional SONiC · <b>4</b> pcap on your own fabric.</span></li>
+    <li><b>Linux box</b><span class="tag todo">PART DONE</span>
+      <span class="d">Receive-path ladder and drop counters · socket-buffer / gapping drill (done once) · nstat/ss/RcvbufErrors · sysctl tuning and why each knob exists · TIME-WAIT seen live 22 Jul. <b>Still owed: the gapping walk cold, tuning checklist end to end.</b></span></li>
+    <li><b>Multicast lab — stages 2 and 3</b><span class="tag todo">NEVER REACHED</span>
+      <span class="d">Built to the underlay, <b>PIM cleared for a fresh rep</b>. Configure PIM by hand → <b>break the RP</b> → <b>move to SSM</b>. That's the payoff you've not got to.</span></li>
+    <li><a href="pcap-drill-01.html">pcap drill 01 — cold</a><span class="tag todo">NOT DONE</span>
+      <span class="d">A planted market-data gapping fault. Network or host, which stage, the fix — without help.</span></li>
+  </ul>
+
+  <h2>5 · Mocks — live</h2>
+  <ul>
+    <li><b>Whiteboard scenarios, run properly</b><span class="tag todo">NOT STARTED</span>
+      <span class="d">The ten above — you reason out loud, I escalate and break the next thing.</span></li>
+    <li><b>Mock technical rounds</b><span class="tag todo">NOT STARTED</span>
+      <span class="d">One round at a time, cold: SDN · MPLS to death · BGP/OSPF/TCP-IP in depth · multicast · Linux · pcaps.</span></li>
+    <li><b>Mock STAR rounds</b><span class="tag todo">NOT STARTED</span>
+      <span class="d">Interviewed, not read. <b>Known holes: the Sky Ireland subsea outcome line, and a concrete "nightmare project" example.</b></span></li>
+    <li><b>Two full loop rehearsals</b><span class="tag todo">NOT STARTED</span>
+      <span class="d">End to end, in order, no stopping — the way the day runs.</span></li>
+    <li><b>The design round, led cold</b><span class="tag todo">NOT STARTED</span>
+      <span class="d">You lead the migration deck without notes.</span></li>
+  </ul>
+
+  <h2>6 · After the interviews</h2>
+  <ul>
+    <li>Multi-vendor lab · AWS certification (your ruling: the cert IS the credibility) · Nokia SR certs · security appliances (Palo Alto · FortiGate · F5) · Terraform · Packet Coders automation curriculum</li>
+  </ul>
+
+  <p class="note">Bookmark this page — it's the anchor and it works on every device. Working files that stay on the Mac: the HRT plan, STAR kit, spaced-rep cards, decisions log.</p>
+</body>
+</html>
