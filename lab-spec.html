@@ -30,7 +30,7 @@ ul{padding-left:20px}li{margin:.3em 0}
 .top{position:fixed;right:14px;bottom:14px;background:var(--panel);border:1px solid var(--line);
      border-radius:999px;padding:9px 15px;color:var(--accent2);text-decoration:none;font-size:14px;font-weight:700}
 </style></head><body>
-<h1>Lab build spec — Arista SR + EVPN + SDN</h1><p class="sub">The hands-on half. Stages 0-4, and what each one covers in the loop.</p>
+<h1>Lab build spec — Arista SR + EVPN + SDN</h1><p class="sub">The hands-on half. Stages 0-4, and what each covers in the loop.</p>
 <div class="toc"><b>Jump to</b><a href="#s1">Stage 0 — decide the topology (do this first, on paper)</a><a href="#s2">Stage 1 — the underlay + SR-MPLS</a><a href="#s3">Stage 2 — EVPN/VXLAN overlay</a><a href="#s4">Stage 3 — the SDN layer (your chosen items 1–3, plus 4 if time)</a><a href="#s5">Stage 4 — pcap on your own fabric</a><a href="#s6">What this stage-by-stage gives you, per round</a><a href="#s7">Sequencing note</a></div>
 <p><b>Purpose:</b> hands-on fluency before Mon 27 / Tue 28. Not a portfolio piece, not something to cite in the</p>
 <p>room — the point is that when they ask, the answer comes from having done it rather than read it.</p>
@@ -111,15 +111,40 @@ ul{padding-left:20px}li{margin:.3em 0}
 <p>it&#x27;s a genuinely different way to hold configuration, and almost nobody interviewing has touched it.</p>
 <hr>
 <h2 id="s5">Stage 4 — pcap on your own fabric</h2>
-<p><b>This closes the thinnest gap after SDN</b>, and it costs almost nothing once the lab is up.</p>
-<p>1. <code>tcpdump</code> on a leaf uplink while host1 pings host3 — <b>decode the VXLAN encapsulation</b>: outer MAC/IP,</p>
-<p>   UDP <b>4789</b>, VNI, then the original frame.</p>
-<p>2. Check the <b>outer UDP source port</b> across several flows — it&#x27;s a hash of the inner flow and it is the</p>
-<p>   only entropy ECMP has. If it&#x27;s constant, everything pins to one path.</p>
-<p>3. Capture the <b>EVPN BGP updates</b> during a link failure — watch the withdrawal in the control plane.</p>
-<p>4. If SR came up in Stage 1, capture the <b>label stack</b> and read it against the format in drill-bank W1.</p>
-<p>5. Then do <b><code>captures/pcap-drill-01.html</code></b> cold — the planted market-data gapping fault. It&#x27;s built and</p>
-<p>   waiting; diagnose it network-vs-host without help.</p>
+<p><b>This closes the thinnest gap after SDN</b>, and it costs almost nothing once the lab is up. The point is</p>
+<p>not to learn tcpdump syntax — it&#x27;s that you&#x27;ve <em>seen</em> these things with your own eyes, so the shapes in</p>
+<p>the pcap deck are memories rather than facts you read.</p>
+<p>Every capture below starts from the same command; only the filter changes:</p>
+<p>```</p>
+<p>tcpdump -i &lt;intf&gt; -nn -s0 -w cap.pcap &lt;filter&gt;</p>
+<p>```</p>
+<p><b>4a · See the overlay</b></p>
+<p>1. <code>tcpdump -i et1 -nn -v udp port 4789</code> on a leaf uplink while host1 pings host3.</p>
+<p>   Read it: outer MAC/IP/UDP → VNI → the original frame. <b>That&#x27;s the encapsulation, on your own wire.</b></p>
+<p>2. Now the one that matters for design — run several different flows and watch the **outer UDP source</p>
+<p>   port<b>. It&#x27;s a hash of the inner flow and it is the </b>only entropy ECMP has**. Prove it changes per</p>
+<p>   flow. Then ask what happens if it doesn&#x27;t.</p>
+<p><b>4b · See the control plane react</b></p>
+<p>3. <code>tcpdump -i et1 -nn &#x27;tcp port 179&#x27;</code>, then shut a link and watch the <b>EVPN withdrawal</b> go past.</p>
+<p>   You&#x27;ve read about convergence; this is watching it happen in about 40 milliseconds.</p>
+<p><b>4c · See the label stack</b> (only if SR came up in Stage 1)</p>
+<p>4. Capture on a spine-facing link and read the <b>MPLS label</b> against the format in drill-bank W1 —</p>
+<p>   20-bit label, 3-bit TC, S-bit, TTL. Confirm the label matches <code>SRGB base + index</code>.</p>
+<p><b>4d · Make the shapes happen deliberately</b></p>
+<p>5. <b>Retransmissions:</b> add loss with <code>tc qdisc add dev &lt;intf&gt; root netem loss 2%</code>, run a transfer, then</p>
+<p>   <code>tshark -r cap.pcap -Y tcp.analysis.retransmission</code>. Remove it afterwards (<code>tc qdisc del</code>).</p>
+<p>6. <b>Reordering, not loss:</b> <code>netem delay 10ms reorder 25% 50%</code> — then look at the capture and practise</p>
+<p>   telling reordering apart from loss by arrival time. This is the distinction most people get wrong.</p>
+<p>7. <b>Zero window:</b> run a receiver that doesn&#x27;t read its socket, watch the window close to zero.</p>
+<p>8. <b>Microburst hunting:</b> take any capture and run <code>tshark -r cap.pcap -q -z io,stat,0.001</code>. See what a</p>
+<p>   millisecond-resolution view shows that an interface counter never would.</p>
+<p><b>4e · Then the drill, cold</b></p>
+<p>9. <b><code>captures/pcap-drill-01.html</code></b> — the planted market-data gapping fault. Built and waiting;</p>
+<p>   diagnose it network-vs-host without help.</p>
+<div class="a">
+<p>Deliberately inducing the fault and <em>then</em> reading it is worth more than reading a hundred clean</p>
+<p>captures — you know what you injected, so you find out whether your reading of the shape was right.</p>
+</div>
 <hr>
 <h2 id="s6">What this stage-by-stage gives you, per round</h2>
 <table>
