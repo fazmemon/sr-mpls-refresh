@@ -40,7 +40,15 @@
       .reveal pre { font-size: 0.5em; }
       .reveal table { font-size: 0.55em; }
     }
-  </style>
+  
+  /* --- folded-in DC cheatsheet utility classes --- */
+  .reveal .tbl{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:8px -4px}
+  .reveal .k{color:#9cdcfe;font-weight:700}
+  .reveal .r{color:#f48771;font-weight:700}
+  .reveal .g{color:#4ec9b0;font-weight:700}
+  .reveal .room{background:#1e2d1e;border-left:3px solid #4ec9b0;padding:8px 10px;border-radius:0 6px 6px 0;margin:8px 0;font-size:.8em}
+  .reveal .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+</style>
 </head>
 <body>
 <div class="reveal">
@@ -4834,6 +4842,484 @@ The design axes when multicast comes up (it will — it's the market-data transp
   </p>
 </section>
 
+<section><section class="center">
+
+<h1>Appendix — DC / EVPN / Silicon</h1>
+
+<h3>the DC cheatsheet, folded in</h3>
+
+<p style="font-size:.7em;color:#888">Silicon and buffer architecture, packet flow, EVPN/VXLAN, AI-GPU fabric, chassis and optics, virtualisation, and the AI-DC front-end / back-end split.</p>
+
+</section></section>
+
+<section>
+<section>
+<h2>1 &middot; Silicon / chassis / line-card</h2>
+<div class="tbl">
+  <table>
+    <tr><th>Role / buffer</th><th>Broadcom</th><th>Arista</th><th>Cisco</th><th>Juniper</th><th>Nokia</th></tr>
+    <tr><td><b>Deep</b><br>VOQ+HBM<br>DCI / AI scale</td><td>Jericho 2/3/4</td><td><span class="k">7280R / 7500R / 7800R</span></td><td>NCS 5500/5700 (Jericho); 8000 + AI Nexus 9800 = Silicon One Q200</td><td><span class="k">QFX10000 = Q5</span>; PTX = Express; MX = Trio</td><td>7250 IXR (Jericho); 7750 SR = FP5</td></tr>
+    <tr><td><b>Shallow</b><br>on-chip<br>leaf / spine</td><td>Trident / Tomahawk</td><td>7050X / 7060X (+7300 chassis)</td><td>Nexus 9300/9500 = Cloud Scale (classic)</td><td>QFX5xxx</td><td>7220 IXR</td></tr>
+    <tr><td><b>L1</b><br>ultra-low-latency</td><td>&mdash;</td><td>7130 (Metamako)</td><td>Nexus 3550 (Exablaze)</td><td>&mdash;</td><td>&mdash;</td></tr>
+    <tr><td><b>In-house?</b></td><td><i>merchant</i></td><td><span class="r">none &mdash; all Broadcom</span></td><td>Cloud Scale + Silicon One (+ buys Jericho)</td><td><span class="g">Q5 / Express / Trio</span></td><td>FP5 (deep only)</td></tr>
+  </table>
+  </div>
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">1 &middot; Silicon / chassis / line-card</h4>
+<h3>Broadcom families</h3>
+<ul>
+    <li><b>Trident</b> = feature leaf (VXLAN, telemetry), shallow</li>
+    <li><b>Tomahawk</b> = spine / low-latency / AI leaf, shallow, high-radix (TH6 = 102.4T)</li>
+    <li><b>Jericho</b> = deep buffer, DCI, AI scale-out (VOQ + cells + <b>Ramon</b> fabric chip)</li>
+  </ul>
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">1 &middot; Silicon / chassis / line-card</h4>
+<h3>Mnemonics</h3>
+<div class="hook">
+    <b>Arista "R" = deep/Jericho</b> &rarr; 7280R / 7500R / 7800R (28-50-80). No "R" = shallow.<br>
+    <b>Juniper by where it lives:</b> <span class="k">QFX = DC</span> &middot; <span class="k">PTX = core</span> &middot; <span class="k">MX = edge</span>. Deep DC = QFX10000 = Q5.<br>
+    <b>In-house lives only where the money is</b> (deep/routing/AI). Shallow leaf = Broadcom commodity. Only Cisco bothers with in-house shallow (Cloud Scale).<br>
+    <b>Cisco runs 3 silicons:</b> Cloud Scale (shallow, own) + Silicon One (deep, own) + Broadcom Jericho (NCS).<br><b>Trap:</b> classic Nexus 9300/9500 = Cloud Scale, but the <b>AI Nexus 9800 = Silicon One Q200</b> (deep, VOQ + fabric modules) &mdash; don't assume "Nexus = Cloud Scale".
+  </div>
+  <p class="small">Deep in a low-latency leaf &rarr; cell+credit+HBM tax kills latency. Shallow in DCI/incast &rarr; can't absorb burst: 50ms&times;100G &asymp; 625MB needed vs ~165MB on-chip &rarr; tail-drop.</p>
+  <div class="hook"><b>Nokia &mdash; and Nscale runs it EVERYWHERE</b> (their interviewer, round 1: <i>"oh you worked at Nokia, we have it everywhere"</i>). So this is direct-fit, not trivia. Nokia's DC line = <b>SR Linux</b> (open, model-driven, container-native NOS &mdash; the exact one you're labbing) on Broadcom silicon: <b>7220 IXR = Tomahawk</b> (shallow, leaf/spine), <b>7250 IXR = Jericho</b> (deep, DCI); <b>7750 SR = FP5</b> (SP edge, in-house). AI fabric = <b>shallow Tomahawk + lossless RoCE</b>, same merchant play as Juniper/Arista &mdash; no special AI chip. Differentiator = <b>SR Linux + fabric automation</b>, not silicon. <b>UEC-aligned, open Ethernet + RoCEv2</b> vs InfiniBand. <b>Your fit:</b> Nokia on the CV + hands-on SR Linux in the lab = exactly their stack.</div>
+</section>
+</section>
+
+<section>
+<section>
+<h2>2 &middot; Card / silicon evolution</h2>
+<div class="hook"><b>The law:</b> each generation <b>~doubles bandwidth</b> via a MIX of <b>faster lanes</b> AND <b>more lanes</b>. "Which line card" = which silicon gen + port config.</div>
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">2 &middot; Card / silicon evolution</h4>
+<h3>The 4 levers (start at the lane, end at the chip)</h3>
+<p>A <b>lane</b> = one SerDes; its speed = <b>bits/symbol &times; baud</b>. A <b>port</b> = several lanes bonded. The <b>chip</b> = all lanes across all ports.</p>
+  <ul>
+    <li><b>1. bits/symbol</b> &mdash; NRZ (1 bit) &rarr; <b>PAM4 (2 bits)</b>.</li>
+    <li><b>2. baud rate</b> climbs each gen.<br><span class="small">1+2 = per-lane ladder <b>25 &rarr; 50 &rarr; 100 &rarr; 200G per lane</b>.</span></li>
+    <li><b>3. lanes per port</b> (bonded) &mdash; e.g. 800G port = 8&times;100G or 4&times;200G.</li>
+    <li><b>4. more total lanes / higher radix</b> on the die.</li>
+  </ul>
+  <p class="small">Faster lanes (1+2) + more lanes (3+4) together = the doubling. The lane-<b>count</b> half (3+4) is the one people forget.</p>
+  <div class="hook"><b>Simpler memory hook &mdash; 3 knobs:</b> <code>Bandwidth = bits &times; baud &times; lanes</code>. <b>bits</b> (PAM4) &middot; <b>baud</b> (faster symbols) &middot; <b>lanes</b> (how many &mdash; bond more per port + more on the die). You always remember bits + baud; the one you drop is <b>LANES</b>.</div>
+  <div class="grid2">
+    <div>
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">2 &middot; Card / silicon evolution</h4>
+<h3>Tomahawk (shallow)</h3>
+TH3 &rarr; TH4 25.6T &rarr; TH5 51.2T &rarr; <b>TH6 102.4T</b><br><span class="small">radix / bandwidth race</span></div>
+    <div>
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">2 &middot; Card / silicon evolution</h4>
+<h3>Jericho (deep)</h3>
+J2 &rarr; J2c+ &rarr; J3-AI &rarr; <b>J4 ~51.2T</b><br><span class="small">J3-AI = perfect-LB/congestion-free for GPU; J4 = scale across DCs</span></div>
+  </div>
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">2 &middot; Card / silicon evolution</h4>
+<h3>Trident (feature leaf)</h3>
+<p>Trident2 &rarr; 3 &rarr; 4 &rarr; 5 &mdash; spends on programmability / VXLAN / telemetry, not raw Tbps.</p>
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">2 &middot; Card / silicon evolution</h4>
+<h3>Glossary</h3>
+<ul>
+    <li><b>SerDes</b> = serializer/deserializer; turns parallel bits into a serial stream on a lane. Port = several lanes.</li>
+    <li><b>radix</b> = ports one chip fans out. High-radix &rarr; fewer Clos tiers.</li>
+    <li><b>HBM</b> = stacked DRAM beside the chip = where the deep buffer lives (off-die).</li>
+    <li><b>VOQ</b> = per-egress queues held at <b>ingress</b> &rarr; kills head-of-line blocking.</li>
+    <li><b>cells</b> = deep chip chops packet into fixed cells, sprays across fabric, reassembles at egress.</li>
+    <li><b>Ramon</b> = Broadcom fabric chip; Jericho = ports, Ramon = switch between them = scalable chassis.</li>
+  </ul>
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">2 &middot; Card / silicon evolution</h4>
+<h3>Radix &rarr; fabric size</h3>
+<div class="hook"><b>Radix = k = ports on the switch.</b> Split half down / half up: a 2-tier fabric holds <b>k&sup2;/2 hosts</b> (3-tier = k&sup3;/4). It's the <b>square</b> &mdash; <b>double the radix &rarr; 4&times; the fabric</b>. That's why radix is the scaling lever (and why a high-radix chassis stays flat/3-stage longer). k=64 &rarr; 2,048 &middot; k=128 &rarr; 8,192. <span class="small">(#spines = k/2 = a leaf's uplinks; #leaves = k = a spine's ports &mdash; bookkeeping, not needed in the room.)</span></div>
+</section>
+</section>
+
+<section>
+<section>
+<h2>3 &middot; Packet flow &mdash; two flows, not three</h2>
+<p><b>Forwarding logic is identical</b> (parse &rarr; lookup &rarr; forward). <b>Buffering differs.</b></p>
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">3 &middot; Packet flow &mdash; two flows, not three</h4>
+<h3>Shallow (Tomahawk / Trident) = output-queued shared-memory</h3>
+<p>wire &rarr; ingress &rarr; parse+lookup (ACLs here) &rarr; <b>store ONCE in on-chip shared buffer</b> &rarr; enqueue pointer to <b>EGRESS</b> queue &rarr; scheduler &rarr; wire.<br>
+  <span class="r">No cells. No VOQ. No fabric.</span> Single die, lowest latency, cut-through, microburst-limited. Buffer at <b>egress</b>.</p>
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">3 &middot; Packet flow &mdash; two flows, not three</h4>
+<h3>Deep (Jericho / Q5) = ingress-VOQ + cell fabric</h3>
+<p>wire &rarr; ingress &rarr; parse+lookup &rarr; <b>segment into cells</b> &rarr; <b>INGRESS VOQ</b> (deep HBM) &rarr; egress scheduler <b>credit/grant</b> &rarr; <b>spray cells across fabric</b> &rarr; <b>egress reassembles</b> &rarr; wire.<br>
+  No HOL, deep, scales across a modular chassis. ~&micro;s latency. Buffer at <b>ingress</b>.</p>
+  <div class="hook"><b>Why fabric exists:</b> a deep box is a <b>modular chassis</b> = many line cards/chips; the fabric (+cells) connects them. A shallow box is a <b>single die</b> &mdash; nothing to cross, so no fabric. <i>Fabric = multiple chips to interconnect.</i> (Distinction is architecture, not box size: Nexus 9500 is a shallow chassis.)</div>
+  <div class="room"><b>QoS vs architectural latency:</b> a strict-priority queue fixes <b>queuing</b> latency (voice doesn't wait behind bulk &mdash; SP edge does this on deep boxes daily). It CANNOT fix the <b>architectural floor</b> every packet pays on a VOQ box: cell seg/reassembly + credit grant + off-chip HBM (+ jitter). So deep+QoS = fine for ms-tolerant voice; <b>fails for ns/deterministic HFT/RoCE</b> &rarr; those need shallow cut-through (tens of ns) or L1 (~5ns).</div>
+</section>
+</section>
+
+<section>
+<section>
+<h2>4 &middot; EVPN / VXLAN</h2>
+
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">4 &middot; EVPN / VXLAN</h4>
+<h3>How we got here &mdash; the topology evolution (each step fixes the last)</h3>
+<div class="tbl">
+  <table>
+    <tr><th>Step</th><th>What it gave</th><th>What forced the next</th></tr>
+    <tr><td><b>vPC / MLAG</b></td><td>active/active dual-homing, no STP block</td><td>2-switch only; big L2 flooding/blast radius</td></tr>
+    <tr><td><b>L3 Clos</b> <span class="small">(= fat-tree)</span></td><td>scale, ECMP, no STP</td><td>routes to leaf &rarr; <b>lost L2 stretch</b> (VM mobility, clustering)</td></tr>
+    <tr><td><b>VXLAN overlay</b></td><td>L2 back <i>on</i> the L3 fabric; 16M VNIs vs 4K VLANs</td><td>1st gen = flood-and-learn; no control plane</td></tr>
+    <tr><td><b>EVPN-VXLAN</b></td><td>BGP advertises MAC/IP &rarr; ARP suppression, mobility, IRB, ESI</td><td>(current)</td></tr>
+  </table>
+  </div>
+  <p class="small"><b>Through-line:</b> active/active &rarr; scale &rarr; L2-back-as-overlay &rarr; control plane. <b>Fat-tree = the L3-Clos topology</b> (non-blocking Clos), at the underlay; VXLAN/EVPN ride on top. <b>ESI-LAG = vPC done fabric-wide.</b> Trap: L3-Clos and VXLAN aren't opposite moves &mdash; L3 left L2 for scale, VXLAN got L2 back without losing it.</p>
+  <div class="hook"><b>Collapsed spine</b> &mdash; the <i>small-DC</i> deployment of EVPN-VXLAN, <b>not a new step</b>: delete the leaf row &mdash; the <b>spine pair itself is leaf + spine + VTEP</b> and servers plug straight into it. Dual-homed with <b>ESI-LAG</b>, it's the standards-based <b>EVPN successor to the vPC pair</b> (two boxes run the whole site, BGP control plane instead of vPC). Big DC &rarr; full leaf-spine; small DC &rarr; collapse to the pair. <b>Trade-off:</b> capped by the two boxes' port count &mdash; outgrow it &rarr; break out to a real leaf-spine. ("Border-collapsed" = same move at the edge: spine also does the L3 gateway / external handoff, no separate border-leaf.)</div>
+  <p class="small"><b>Heads-up:</b> "collapsed spine" here = the small-DC leaf+spine pair. A <i>different</i> "collapse" = <b>chassis-as-spine</b> (&sect;8) &mdash; folding the spine onto a chassis backplane to kill a tier of optics. Same phrase, two moves.</p>
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">4 &middot; EVPN / VXLAN</h4>
+<h3>The 2&times;2 &mdash; the data-plane spine</h3>
+<div class="tbl">
+  <table>
+    <tr><th></th><th>Learn it (route type, control plane)</th><th>Carry it (VNI in packet, data plane)</th></tr>
+    <tr><th>Bridge (same subnet)</th><td><span class="k">Type-2</span> (MAC+IP)</td><td><span class="k">L2VNI</span></td></tr>
+    <tr><th>Route (diff subnet)</th><td><span class="k">Type-5</span> (IP prefix)</td><td><span class="k">L3VNI</span></td></tr>
+  </table>
+  </div>
+  <div class="room"><b>MPLS L3VPN map (you know this cold):</b> <span class="k">Type-5 = VPNv4 route</span> (how leaf learns) &middot; <span class="k">L3VNI = VPN label</span> (in the packet) &middot; <span class="k">egress leaf = egress PE</span>. Same machine, VXLAN wrapper instead of label stack. "Symmetric IRB" = both ends route (route-in &rarr; L3VNI &rarr; route-out).</div>
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">4 &middot; EVPN / VXLAN</h4>
+<h3>Symmetric vs Asymmetric IRB</h3>
+<div class="tbl">
+  <table>
+    <tr><th></th><th>Symmetric (modern default)</th><th>Asymmetric</th></tr>
+    <tr><th>Path</th><td>bridge &rarr; <b>route into shared L3VNI</b> &rarr; fabric &rarr; <b>route out</b> &rarr; bridge. Both ends route.</td><td>ingress <b>routes AND bridges</b> (routes from source L2VNI into the <i>destination's</i> L2VNI) &rarr; fabric &rarr; egress <b>bridges only</b>.</td></tr>
+    <tr><th>Carries</th><td>one per-VRF <b>L3VNI</b> (transit)</td><td>the <b>destination L2VNI</b> (different VNI each direction = "asymmetric")</td></tr>
+    <tr><th>What every leaf needs</th><td>just the <b>L3VNI</b></td><td><span class="r">every L2VNI + ARP/MAC state</span> for every subnet it talks to</td></tr>
+    <tr><th>Scale</th><td><span class="g">scales</span> &mdash; modern default, pairs with distributed anycast GW</td><td>VNI sprawl &rarr; <span class="r">doesn't scale</span>; fine for small/few-VNI</td></tr>
+  </table>
+  </div>
+  <p class="small">One-liner: <b>asymmetric needs all VNIs on all leaves; symmetric needs only the L3VNI</b> &mdash; that's why symmetric won.</p>
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">4 &middot; EVPN / VXLAN</h4>
+<h3>Unicast walk A&rarr;B (same subnet)</h3>
+<ol>
+    <li><b>Type-2</b> pre-loaded B's MAC+IP to every leaf via BGP.</li>
+    <li>A ARPs &rarr; local leaf answers from its table = <b>ARP suppression</b> (never floods). The "IP" in Type-2 is what enables this.</li>
+    <li>Ingress leaf encaps: inner frame + <b>VNI</b> + outer IP (src leaf loopback &rarr; dst leaf loopback).</li>
+    <li><b>Spine sees outer IP only</b> &mdash; blind to tenant MAC/VNI. Picks ONE spine via ECMP.</li>
+    <li>Egress leaf reads VNI &rarr; decaps &rarr; delivers.</li>
+  </ol>
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">4 &middot; EVPN / VXLAN</h4>
+<h3>BUM (broadcast/unknown/multicast)</h3>
+<p><b>Type-3</b> (IMET) = the per-VNI flood list (who). <b>Ingress replication</b> = the how (leaf unicasts one copy to each leaf on the list; no multicast underlay needed = DC default). What's left after ARP suppression: real broadcast (DHCP) + multicast, not unknown-unicast.</p>
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">4 &middot; EVPN / VXLAN</h4>
+<h3>Multihoming &mdash; ESI-LAG (= vPC, standards-based)</h3>
+<div class="tbl">
+  <table>
+    <tr><th>Mechanism</th><th>Route</th><th>Prevents</th></tr>
+    <tr><td><b>DF election</b></td><td>Type-4</td><td>duplicate BUM to host (one forwarder)</td></tr>
+    <tr><td><b>Aliasing</b></td><td>Type-1 / EVI</td><td>idle link (both uplinks used)</td></tr>
+    <tr><td><b>Mass-withdraw</b></td><td>Type-1 / ES</td><td>slow failover (one withdraw clears all MACs)</td></tr>
+  </table>
+  </div>
+  <p class="small">Say "<b>DF election</b>", not "broadcast suppression" (that's ARP suppression, a different thing).</p>
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">4 &middot; EVPN / VXLAN</h4>
+<h3>Underlay / overlay</h3>
+<p>Underlay = IP reachability for VTEP loopbacks + ECMP. OSPF/IS-IS, or <b>eBGP (RFC 7938)</b> at hyperscale (per-leaf ASN, shared spine ASN, blast-radius contained). Overlay = BGP EVPN (spines = route reflectors). VXLAN needs <b>jumbo MTU 9216</b> (~50B overhead) or silent blackhole.</p>
+</section>
+</section>
+
+<section>
+<section>
+<h2>5 &middot; AI / GPU fabric</h2>
+
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">5 &middot; AI / GPU fabric</h4>
+<h3>Scale-up vs scale-out</h3>
+<p><b>Scale-up</b> = inside a node, GPUs glued by <b>NVLink/NVSwitch</b> (NVIDIA), ~TB/s. <b>Scale-out</b> = the network between nodes = what's sold: <span class="k">Ethernet (Juniper/Broadcom/Spectrum-X + UEC) vs InfiniBand (NVIDIA Quantum)</span>.</p>
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">5 &middot; AI / GPU fabric</h4>
+<h3>Why ECMP breaks for all-reduce</h3>
+<p>All-reduce = a few huge <b>elephant</b> flows. ECMP hashes <b>per-flow</b> &rarr; pins each to one path &rarr; elephants collide while links idle. Barrier-synced &rarr; slowest path stalls every GPU.</p>
+  <div class="room"><b>Fix = packet spraying / adaptive routing</b> (spread one flow across all paths: Broadcom DLB, Spectrum-X adaptive, UEC). Safe ONLY on <b>lossless + reorder-tolerant</b>: <span class="k">RoCEv2 over PFC + ECN + DCQCN</span>. NIC reassembles; fabric must not drop. Plain TCP = disaster.</div>
+  <div class="hook"><b>DCQCN &mdash; who actually slows down (plain words):</b><br>
+  A congested switch sets the <b>ECN</b> mark on the packet. The packet carries that mark to the <b>receiver</b>. The receiver sends a <b>CNP</b> (Congestion Notification Packet) back to the <b>sender</b>. The <b>sender</b> cuts its send rate.<br>
+  So the <b>sender throttles, not the receiver</b>. <b>PFC</b> is the last resort: when a queue is nearly full it sends a per-priority PAUSE to the previous hop, so the hop pauses instead of dropping.</div>
+  <div class="hook"><b>"AI has incast &mdash; why shallow buffers, not deep?"</b> (likely probe) Because AI solves congestion at the <b>transport</b> with <b>lossless RoCE (PFC/ECN/DCQCN)</b>, not in the box. Deep buffers add the latency AI hates &mdash; so AI is deliberately <b>shallow + lossless</b>. Deep buffer is for traffic you <i>can't</i> make lossless: WAN, DCI, peering, mixed enterprise (big RTT, speed mismatch, classic TCP).</div>
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">5 &middot; AI / GPU fabric</h4>
+<h3>Non-Clos topologies (sold into AI/HPC)</h3>
+<ul>
+    <li><b>Rail-optimized Clos</b> &mdash; each GPU NIC on its own rail/leaf; same-rank GPUs = 1 hop (NVIDIA default).</li>
+    <li><b>Dragonfly</b> &mdash; groups fully meshed by global links; cuts optics; needs adaptive routing (HPE Slingshot).</li>
+    <li><b>Torus</b> &mdash; wrap-around grid, no spine; cheap, multi-hop (Google TPU).</li>
+    <li><b>OCS</b> &mdash; optical circuit switch rewires topology per job (Google Jupiter).</li>
+  </ul>
+  <p class="small">Every non-Clos topology kills simple ECMP &rarr; all need adaptive routing + lossless. <b>UEC</b> = the open standard replacing per-flow ECMP + IB lock-in.</p>
+  <p class="small"><b>Fat-tree</b> = the non-blocking (full-bisection) <b>Clos</b> these sit on (HPC name for spine-leaf; the underlay VXLAN rides on). A <b>rail-optimized fabric is a fat-tree</b> tuned to GPU ranks.</p>
+  <div class="hook"><b>Meta F16 &mdash; "wide, not fast."</b> Meta's DC fabric (~2019): <b>16 spine planes</b> (was 4), built from mature <b>100G merchant silicon</b> instead of waiting for faster optics &rarr; ~4&times; capacity; <b>HGRID</b> aggregates above. All fixed-form-factor, <b>disaggregated</b> &mdash; lose one plane = 1/16, not 1/4 (blast-radius win). The <b>scale-OUT</b> (add planes of cheap boxes) counterpart to the <b>scale-UP</b> (radix in a chassis) move. Arc: 2014 4-post &rarr; 2019 F16+HGRID &rarr; 400/800G &rarr; AI RoCE fabrics &rarr; NVLink copper (NVL72).</div>
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">5 &middot; AI / GPU fabric</h4>
+<h3>What a "stripe" is &mdash; the building block</h3>
+<p>A <b>stripe</b> is one rail-optimized block: 8 leaves (one per rail) plus all the GPUs hanging off them. It's the repeatable unit you tile to grow the fabric. It is NOT "rail vs Clos" &mdash; a stripe IS a slice of the Clos, aligned to the 8 rails.</p>
+  <p class="small"><b>Don't confuse:</b> this "stripe" (the rail tile) &ne; <b>"L1/L3 striping"</b> = load-<i>spreading</i> traffic across parallel paths (optical wavelengths at L1 / ECMP at L3) to beat polarisation. Same word, different concept.</p>
+  <div class="hook"><b>The ladder (plain words):</b><br>
+  <b>GPU</b> = one accelerator, one NIC, one rail (an H100 NIC is 400G).<br>
+  <b>Server</b> = 8 GPUs, 8 NICs. Inside the server the GPUs talk over NVLink, off the fabric.<br>
+  <b>Leaf</b> = one switch per rail. An H100 leaf holds 32 GPUs (12.8T of host-facing capacity divided by 400G).<br>
+  <b>Stripe</b> = 8 leaves, so 256 H100 = 32 servers. (A100 at 200G is 64 per leaf, so 512 per stripe = 64 servers.)<br>
+  <b>Cluster</b> = many stripes joined through the spine tier.</div>
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">5 &middot; AI / GPU fabric</h4>
+<h3>Sizing &mdash; how many GPUs fit (rail-optimized, 1:1, 8-GPU servers)</h3>
+<div class="hook"><b>One division does it:</b> <code>GPUs/leaf = 12.8T &divide; GPU-port-speed</code> &rarr; A100@200G = 64, H100@400G = 32. &times; <b>8 leaves</b> (8 rails) = per stripe. <code>Spines = 256 leaf-uplinks &divide; spine-ports</code>.</div>
+  <div class="tbl">
+  <table>
+    <tr><th></th><th>A100 (200G port)</th><th>H100 (400G port)</th></tr>
+    <tr><th>GPUs / leaf <span class="small">(12.8T &divide; port)</span></th><td><span class="k">64</span></td><td><span class="k">32</span></td></tr>
+    <tr><th>GPUs / stripe <span class="small">(&times; 8 leaves)</span></th><td><b>512</b></td><td><b>256</b></td></tr>
+    <tr><th>Servers / stripe <span class="small">(&divide; 8 GPU/srv)</span></th><td>64</td><td>32</td></tr>
+    <tr><th>Spines <span class="small">(256 uplinks &divide; ports)</span></th><td colspan="2"><b>4&times; QFX5230-64CD</b> (64p) &nbsp;or&nbsp; <b>2&times; PTX10008</b> (288p, room to grow)</td></tr>
+  </table>
+  </div>
+  <p class="small">Leaf = QFX5230-64CD: 64&times;400G = 25.6T &rarr; 32 down + 32 up = <b>12.8T each way</b> &rarr; that's the &divide; that gives 64/32. Intra-server GPU&harr;GPU = NVLink (off-fabric).</p>
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">5 &middot; AI / GPU fabric</h4>
+<h3>Juniper's AI scale-out answer (don't fall for "Q5")</h3>
+<div class="hook"><b>Q5 is NOT the AI answer.</b> Q5 (QFX10000) is the older deep-buffer DC <i>switch</i>. For the AI back-end fabric Juniper does what everyone does &mdash; <b>buys Broadcom Tomahawk 5/6</b> (QFX5240 / QFX5250). <i>(confirm current model names &mdash; AI naming moves fast.)</i></div>
+  <ul>
+    <li><b>Why no in-house Jericho3-AI clone:</b> the AI fabric is built <b>shallow + lossless</b> (Tomahawk + RoCE/PFC/ECN), not deep-buffer. Jericho3-AI is Broadcom's <i>deep-buffer</i> AI angle; most AI fabrics go shallow TH + lossless instead.</li>
+    <li><b>AI leaf/spine</b> &rarr; Broadcom TH5/TH6 (QFX5240/5250) &mdash; merchant, same as Arista.</li>
+    <li><b>Scale across AI data centres</b> (the J4 role) &rarr; in-house <b>Express (PTX)</b>.</li>
+    <li><b>Differentiation = Apstra + AI-Native (Mist/Marvis) + open Ethernet/UEC</b> &mdash; NOT the chip.</li>
+  </ul>
+  <div class="room"><b>Room line:</b> "For the AI fabric the silicon's merchant Tomahawk &mdash; same as Arista &mdash; so we don't compete on the chip; we compete on <b>automation, openness and the operational model</b>." Honest + strong.</div>
+</section>
+</section>
+
+<section>
+<section>
+<h2>8 &middot; Chassis / line cards / optics (pre-sales hardware)</h2>
+<div class="hook"><b>A chassis IS a folded Clos.</b> Line cards = the <b>leaf</b> stage (the ports); fabric modules = the <b>spine</b> stage, meshed over the <b>copper backplane</b> (no optics). So a "2-tier" fabric whose spine is a chassis is really a <b>5-stage Clos</b> &mdash; the middle 3 stages hidden on the backplane ("show the backplane as a layer"). <b>Why cheaper:</b> you buried a tier of optics inside the box. Same move recurs &mdash; <b>chassis backplane</b> &middot; <b>NVLink copper rack (GB200 NVL72)</b> &middot; <b>IP+Optical coherent pluggable</b>: all <b>collapse a tier of optics into copper</b> where the failure domain allows. Not "leaf-spine is dead" &mdash; it's <i>where the stages physically live</i>, and it's the AI back-end where it pays.</div>
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">8 &middot; Chassis / line cards / optics (pre-sales hardware)</h4>
+<h3>What's in a deep-buffer modular chassis</h3>
+<ul>
+    <li><b>Line cards</b> &mdash; the ports + the forwarding ASIC (e.g. Jericho). Packets enter, get looked up, buffered in the <b>ingress VOQ</b>. The silicon lives here.</li>
+    <li><b>Fabric modules</b> (SFMs) &mdash; the internal switch carrying <b>cells</b> between line cards. Broadcom's fabric chip = <b>Ramon</b> (pairs with Jericho).</li>
+    <li><b>Supervisors / Route Engines</b> &mdash; the control plane (runs BGP/EVPN, programs the line cards). Redundant pair.</li>
+    <li>Power supplies, fans.</li>
+  </ul>
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">8 &middot; Chassis / line cards / optics (pre-sales hardware)</h4>
+<h3>Silicon generation maps to the LINE CARD</h3>
+<p>Each line card is built around <b>one ASIC generation</b> (Jericho2 &rarr; J2c+ &rarr; J3). The chassis is a <b>generation-agnostic backplane</b> &mdash; you populate it with whatever-gen line cards you buy. "Arista 7800<b>R3</b> vs <b>R4</b>" = same chassis, different-gen line cards.</p>
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">8 &middot; Chassis / line cards / optics (pre-sales hardware)</h4>
+<h3>Fabric data path</h3>
+<p>ingress line card: lookup &rarr; <b>ingress VOQ</b> &rarr; segment into <b>cells</b> &rarr; spray across <b>fabric modules</b> &rarr; egress line card <b>reassembles</b>. More fabric modules = more internal bandwidth + redundancy.</p>
+  <div class="hook"><b>Ramon is Broadcom-only</b> (goes with Jericho). In-house vendors build their own fabric chips: <b>Juniper</b> (Q5/Express), <b>Cisco Silicon One</b>, <b>Nokia FP5</b>. Concept is universal (line-card ASIC + separate fabric ASIC); the chip is merchant-vs-in-house.</div>
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">8 &middot; Chassis / line cards / optics (pre-sales hardware)</h4>
+<h3>Upgrade to 800G without a forklift</h3>
+<p>Swap the <b>line cards</b> for newer-gen silicon with 800G ports (e.g. 100G Jericho2 cards &rarr; 800G Jericho3 cards). Likely add/upgrade <b>fabric modules</b> too so the fabric can feed them. <b>Chassis, backplane, power frame persist</b> &mdash; that's the whole point of modular: buy the chassis once, refresh line cards over a decade. (Fixed shallow box = single die, 1RU, no line cards/fabric &mdash; you replace the whole box.)</p>
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">8 &middot; Chassis / line cards / optics (pre-sales hardware)</h4>
+<h3>Optics (big AI cost + power lever)</h3>
+<ul>
+    <li><b>Form factors</b>: SFP28 (25G) &rarr; QSFP28 (100G) &rarr; <b>QSFP-DD / OSFP</b> (400/800G = the AI optics).</li>
+    <li><b>LPO</b> (Linear Pluggable Optics) &mdash; strips the DSP, ~50-60% less power. Arista 7060XE7 headline; AI cost lever.</li>
+    <li><b>CPO</b> (co-packaged optics) &mdash; optics next to the ASIC; the next power step at huge scale.</li>
+    <li><b>DAC</b> (direct-attach copper) &mdash; passive, in-rack GPU-to-leaf, cheapest + lowest power. <b>AOC</b> = active optical cable.</li>
+    <li><b>Grey</b> optics (single wavelength) = inside the DC, short reach, cheap. <b>Coloured / DWDM</b> = <b>DCI</b> over distance (multiplex onto scarce fibre) &mdash; lives at the deep-buffer DCI edge.</li>
+    <li><b>IP + Optical</b> &mdash; put the <b>coherent DWDM optics inside the router port</b> (<b>400ZR / ZR+</b>) &rarr; router lights the line system directly, <b>deletes the transponder shelf</b> (cost/power/space). One controller over both layers = multi-layer restore; Google's <b>OCS</b> is the extreme (rewires the fibre topology). Your CV anchor: <b>IPoDWDM</b> at DT. Same "collapse a tier of optics" move as the chassis backplane.</li>
+  </ul>
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">8 &middot; Chassis / line cards / optics (pre-sales hardware)</h4>
+<h3>Cooling</h3>
+<p>Air vs <b>liquid</b>. AI boxes (Arista 7060XE7, Juniper QFX5250) are liquid-cooled. <b>Why:</b> chip power (TH6 at 100T+) + dense 800G optics + GPUs pack <b>too many watts into too little space</b> &mdash; air physically can't move the heat away fast enough. Liquid carries far more heat per volume (direct-to-chip cold plate / immersion). <b>Power density outran air.</b> Net: <b>optics + power + cooling = the AI-fabric cost conversation</b> = where pre-sales money actually is.</p>
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">8 &middot; Chassis / line cards / optics (pre-sales hardware)</h4>
+<h3>Oversubscription</h3>
+<p>Set at the <b>leaf uplink:downlink ratio</b> (sum of fabric-facing vs host-facing bandwidth). <b>1:1 (non-blocking)</b> for AI / trading; up to <b>3:1</b> for general compute. The <b>spine is non-blocking by construction</b> &mdash; oversubscription is a leaf decision, not a spine one. (Weak answer says "the spine" &mdash; wrong.)</p>
+</section>
+</section>
+
+<section>
+<section>
+<h2>9 &middot; Virtualization &amp; containers (network view)</h2>
+
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">9 &middot; Virtualization &amp; containers (network view)</h4>
+<h3>Three layers</h3>
+<div class="tbl">
+  <table>
+    <tr><th>Layer</th><th>What it virtualizes</th><th>Network</th></tr>
+    <tr><td><b>VM</b> (VMware/ESXi)</td><td>the <b>hardware</b> &mdash; a full guest OS each, heavy</td><td>vSwitch / <b>NSX</b> overlay</td></tr>
+    <tr><td><b>Container</b> (Docker)</td><td>the <b>OS</b> &mdash; shares the host kernel, isolated process, light/dense</td><td>veth+bridge / CNI</td></tr>
+    <tr><td><b>Kubernetes</b></td><td>nothing &mdash; <b>orchestrates</b> containers across a cluster (schedule/scale/heal)</td><td>CNI + Services + NetworkPolicy</td></tr>
+  </table>
+  </div>
+  <p class="small">k8s runtime = <b>containerd</b> (Docker shim dropped at v1.24); Docker just builds the OCI image. "k8s manages Docker" = stale.</p>
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">9 &middot; Virtualization &amp; containers (network view)</h4>
+<h3>The networking (why it's yours, not devops)</h3>
+<ul>
+    <li><b>K8s CNI</b> &mdash; every pod gets an IP; the CNI plugin does pod-to-pod (Calico/Cilium, usually a Geneve/VXLAN overlay); <b>Services</b>+kube-proxy load-balance across replicas; <b>NetworkPolicy</b> is the distributed firewall. An overlay on your EVPN/VXLAN underlay.</li>
+    <li><b>VMware NSX</b> &mdash; Geneve overlay + micro-segmentation (distributed firewall in the hypervisor).</li>
+    <li><b>Service chaining (SFC)</b> &mdash; stitch network functions into a path: <b>VNFs</b> (VMs) / <b>CNFs</b> (containers).</li>
+    <li><b>Juniper hook</b> &mdash; <b>Contrail / CN2</b> = a k8s CNI + SDN controller (multivendor). Apstra automates the fabric; Contrail does the workload overlay/policy.</li>
+    <li><b>AI/GPU</b> &mdash; GPU clusters run on k8s (NVIDIA GPU Operator); RoCE NICs reach pods via <b>SR-IOV + Multus</b> + GPUDirect RDMA (&sect;5 fabric meeting containers).</li>
+  </ul>
+  <div class="hook"><b>The one-liner:</b> k8s and NSX build <b>another overlay on top of your fabric overlay</b> &mdash; overlay on overlay. Your EVPN/VXLAN is the underlay to their CNI/NSX.</div>
+</section>
+</section>
+
+<section>
+<section>
+<h2>10 &middot; AI DC end-to-end &mdash; front-end vs back-end (the Nscale picture)</h2>
+<div class="hook"><b>An AI DC is 3&ndash;4 SEPARATE networks, not one.</b> The split to own: <b>front-end</b> (north-south, the normal DC) vs <b>back-end = the GPU fabric</b> (the special one). A GPU server sits on <b>both</b> &mdash; one front-end NIC <i>plus</i> one back-end NIC per GPU. (Plus usually a separate <b>storage</b> net and a 1G <b>OOB/mgmt</b> net.)</div>
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">10 &middot; AI DC end-to-end &mdash; front-end vs back-end (the Nscale picture)</h4>
+<h3>The whole picture</h3>
+<pre style="overflow-x:auto;-webkit-overflow-scrolling:touch;background:#f3f5f9;border:1px solid var(--line);border-radius:8px;padding:10px;font-size:11.5px;line-height:1.35">        INTERNET / USERS / other DCs / WAN
+                     |
+  +-------------  FRONT-END fabric  (north-south)  --------------+
+  |  EVPN-VXLAN leaf-spine . TCP . ECMP . can run 3:1 oversub    |
+  |  carries: API/users . data ingest . checkpoints . STORAGE   |
+  |           . k8s orchestration . telemetry . management       |
+  +----+------------------+--------------------+-----------------+
+       | 1 front-end NIC  |                    |
+   +---+----+         +---+----+          +----+-----+
+   |  GPU   |         |  GPU   |          | Storage  |
+   | server |         | server |          |  / CPU   |
+   +---+----+         +---+----+          +----------+
+       | 8x back-end NICs |   (one 400/800G NIC per GPU)
+  +----+-----------------+--------------------------------------+
+  |  BACK-END  =  GPU FABRIC  (east-west)                       |
+  |  rail-optimized Clos . RoCEv2 LOSSLESS (PFC/ECN/DCQCN) or   |
+  |  InfiniBand . packet-spray . 1:1 non-blocking . 400/800G    |
+  |  GPU-to-GPU collectives (AllReduce) ONLY . no users/net     |
+  +------------------------------------------------------------+</pre>
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">10 &middot; AI DC end-to-end &mdash; front-end vs back-end (the Nscale picture)</h4>
+<h3>Front-end vs back-end &mdash; the table to own</h3>
+<div class="tbl">
+  <table>
+    <tr><th></th><th class="k">Front-end (north-south)</th><th class="k">Back-end = GPU fabric (east-west)</th></tr>
+    <tr><th>Carries</th><td>users/API, ingest, checkpoints, storage, k8s, mgmt, telemetry</td><td>GPU&harr;GPU collectives (AllReduce) <b>only</b></td></tr>
+    <tr><th>Transport</th><td>TCP</td><td><b>RoCEv2</b> (lossless) or <b>InfiniBand</b></td></tr>
+    <tr><th>Lossless?</th><td class="r">no</td><td class="g">YES &mdash; PFC + ECN + DCQCN</td></tr>
+    <tr><th>Topology</th><td>EVPN-VXLAN leaf-spine</td><td><b>rail-optimized Clos</b></td></tr>
+    <tr><th>Load-balance</th><td>per-flow ECMP</td><td><b>packet-spray</b> / adaptive routing</td></tr>
+    <tr><th>Bandwidth</th><td>moderate</td><td>huge &mdash; 400/800G <i>per GPU</i></td></tr>
+    <tr><th>Oversub</th><td>up to 3:1</td><td><b>1:1 non-blocking</b></td></tr>
+    <tr><th>Silicon</th><td>Trident / Tomahawk</td><td>Tomahawk (shallow + lossless)</td></tr>
+  </table>
+  </div>
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">10 &middot; AI DC end-to-end &mdash; front-end vs back-end (the Nscale picture)</h4>
+<h3>Inside the GPU server &mdash; scale-up vs scale-out</h3>
+<pre style="overflow-x:auto;-webkit-overflow-scrolling:touch;background:#f3f5f9;border:1px solid var(--line);border-radius:8px;padding:10px;font-size:11.5px;line-height:1.35">   GPU SERVER  (HGX/DGX H100 - 8 GPUs)
+   +-------------------------------------------------+
+   | GPU0  GPU1  GPU2  GPU3  GPU4  GPU5  GPU6  GPU7   |
+   |  +------ NVLink / NVSwitch ------+   SCALE-UP    |  ~TB/s, in-box, off-fabric
+   |  |     |     |     |     |     |     |     |       |
+   | NIC0  NIC1  NIC2  NIC3  NIC4  NIC5  NIC6  NIC7    |  1 back-end NIC per GPU (400/800G)
+   +--+-----+-----+-----+-----+-----+-----+-----+-----+
+     rail0 rail1 rail2 rail3 rail4 rail5 rail6 rail7     SCALE-OUT to back-end rails (RoCE/IB)
+
+   + a separate front-end NIC to the front-end fabric (storage / mgmt / ingest)</pre>
+  <p class="small"><b>Scale-up</b> = NVLink inside the box (off-fabric, ~TB/s). <b>Scale-out</b> = the back-end fabric between boxes. Two different networks &mdash; don't merge them.</p>
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">10 &middot; AI DC end-to-end &mdash; front-end vs back-end (the Nscale picture)</h4>
+<h3>Back-end topology options</h3>
+<pre style="overflow-x:auto;-webkit-overflow-scrolling:touch;background:#f3f5f9;border:1px solid var(--line);border-radius:8px;padding:10px;font-size:11.5px;line-height:1.35">   RAIL-OPTIMIZED CLOS  (the back-end default)
+
+       spine  spine  spine  spine     (added at scale to join rails/stripes)
+         |      |      |      |
+   +----++----++----++----+ ...  +----+
+   |rail||rail||rail||rail|      |rail|   8 rail leaves, one per GPU rank
+   | 0  || 1  || 2  || 3  |      | 7  |
+   +-+--++-+--++-+--++-+--+      +-+--+
+     |     |     |     |           |
+   every server's GPU-k NIC lands on rail-k leaf
+   so: same-rank GPUs across all servers = 1 hop (matches AllReduce rings)</pre>
+  <p class="small"><b>Rail-optimized</b> and <b>fat-tree</b> are both the Clos shape above (fat-tree = full-bisection; rail-optimized = a fat-tree aligned to the 8 GPU rails). The genuinely <i>different</i> shapes, drawn:</p>
+  <pre style="overflow-x:auto;-webkit-overflow-scrolling:touch;background:#f3f5f9;border:1px solid var(--line);border-radius:8px;padding:10px;font-size:11.5px;line-height:1.35">   DRAGONFLY - groups, each a mini-fabric, meshed by GLOBAL links
+     [grp A]======[grp B]
+        ||  \\    //  ||
+        ||   \\  //   ||
+     [grp D]======[grp C]
+   groups connect all-to-all via high-BW global links, so few long
+   hops + cuts long-haul optics. Needs adaptive routing (UGAL). (HPE Slingshot)</pre>
+  <pre style="overflow-x:auto;-webkit-overflow-scrolling:touch;background:#f3f5f9;border:1px solid var(--line);border-radius:8px;padding:10px;font-size:11.5px;line-height:1.35">   TORUS (2D mesh, wrap-around, NO spine)
+     n--n--n--n    each node wired to its N/S/E/W neighbours;
+     |  |  |  |     edges WRAP (last col joins first, last row joins
+     n--n--n--n     first) = a ring on each axis
+     |  |  |  |
+     n--n--n--n
+   cheapest, scales linearly; multi-hop, pattern-sensitive (Google TPU)</pre>
+  <pre style="overflow-x:auto;-webkit-overflow-scrolling:touch;background:#f3f5f9;border:1px solid var(--line);border-radius:8px;padding:10px;font-size:11.5px;line-height:1.35">   OCS - optical circuit switch (Google Jupiter)
+     leaf   leaf   leaf
+        \    |    /
+        [ O C S ]       mirrors physically steer the light:
+        /    |    \       RECONFIGURES the topology per job
+     leaf   leaf   leaf
+   no packet spine - an optical cross-connect, reconfig not per-packet</pre>
+  <p class="small"><b>Common thread:</b> every non-Clos shape kills simple per-flow ECMP, so they all lean on <b>adaptive routing / packet-spray on lossless</b> (ties &sect;5). Topology is half the story; the routing/transport is the other half.</p>
+  <div class="hook"><b>Back-end transport choice:</b> <b>InfiniBand</b> (NVIDIA Quantum &mdash; mature, lossless by design, but lock-in) vs <b>Ethernet</b> RoCEv2 (Spectrum-X / Broadcom / Juniper + <b>UEC</b> &mdash; open, multi-vendor). Juniper's whole AI play = <b>open Ethernet scale-out</b>.</div>
+</section>
+<section>
+<h4 style="color:#888;font-size:0.7em;margin-bottom:.2em">10 &middot; AI DC end-to-end &mdash; front-end vs back-end (the Nscale picture)</h4>
+<h3>Front-end = the DC you already know</h3>
+<p>Standard <b>eBGP underlay + EVPN-VXLAN leaf-spine</b> (your &sect;4). Nothing new here &mdash; that's the point: the <b>back-end GPU fabric is the differentiator</b>; the front-end is your home turf.</p>
+
+  <div class="room"><b>Room walk (memorise the shape):</b> "Two fabrics. The <b>front-end</b> is a normal EVPN-VXLAN leaf-spine &mdash; storage, ingest, checkpoints, k8s, mgmt, over TCP. The <b>back-end</b> is the GPU fabric &mdash; rail-optimized Clos, RoCEv2 lossless or InfiniBand, packet-spray, 1:1 non-blocking, 400/800G per GPU, carrying nothing but AllReduce. Inside the server, <b>NVLink</b> glues the 8 GPUs (scale-up); the back-end connects servers (scale-out)."</div>
+
+
+
+</main>
+</section>
+</section>
 </div>
 </div>
 
