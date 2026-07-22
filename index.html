@@ -48,6 +48,22 @@
   .reveal .g{color:#4ec9b0;font-weight:700}
   .reveal .room{background:#1e2d1e;border-left:3px solid #4ec9b0;padding:8px 10px;border-radius:0 6px 6px 0;margin:8px 0;font-size:.8em}
   .reveal .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+  /* --- folded-in teach-deck utility classes --- */
+  .reveal .key{background:#0f2030;border-left:3px solid #4ec9b0;border-radius:0 8px 8px 0;padding:10px 15px;margin:.6em 0 0;font-size:.8em;color:#bfe9df}
+  .reveal .key b{color:#4ec9b0}
+  .reveal .say{background:#12202f;border:1px solid #2e6e5e;border-radius:10px;padding:10px 15px;margin:.6em 0 0;font-size:.82em}
+  .reveal .say:before{content:"THE ROOM LINE";color:#4ec9b0;font-size:.6em;font-weight:700;letter-spacing:1.5px;display:block;margin-bottom:4px}
+  .reveal .danger{background:#2a1620;border-left:3px solid #ff7b8a;border-radius:0 8px 8px 0;padding:10px 15px;margin:.6em 0 0;font-size:.8em;color:#ffd4da}
+  .reveal .danger b{color:#ff9aa6}
+  .reveal .lead{color:#9db0d0}
+  .reveal .em{color:#4ec9b0;font-weight:600}
+  .reveal .em2{color:#569cd6;font-weight:600}
+  .reveal .warn{color:#dcdcaa}
+  .reveal .box{background:#152136;border:1px solid #2b3a56;border-radius:12px;padding:13px 18px;margin:.4em 0}
+  .reveal .box h3{margin:.05em 0 .3em;color:#9cdcfe}
+  .reveal .cols{display:flex;gap:2vw;flex-wrap:wrap}
+  .reveal .col{flex:1;min-width:280px}
 </style>
 </head>
 <body>
@@ -5318,6 +5334,581 @@ J2 &rarr; J2c+ &rarr; J3-AI &rarr; <b>J4 ~51.2T</b><br><span class="small">J3-AI
 
 
 </main>
+</section>
+</section>
+<section>
+<section class="center"><h1>Appendix — Linux receive path &amp; kernel bypass</h1><h3>the host side: four stages, four buffers, the counter that names each one, the tuning, and the gapping walk</h3></section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">HRT · weak axis · teach deck</h4>
+    <h1>The Linux receive path &amp; kernel bypass</h1>
+    <p class="lead">The one axis HRT know you're building: <b>where packets die between the wire and the app, how you prove which stage, and why bypass exists.</b> This is the "feed is gapping — network or host?" round, taught as a machine you derive answers from. The key experiment is set up on the EC2 box for you to run and diagnose cold — reproduce it yourself and the numbers become yours.</p>
+</section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">The core model</h4>
+    <h2>Four stages, four buffers — each drops when it fills</h2>
+    <svg viewBox="0 0 1000 300" role="img" aria-label="Receive path ladder">
+      <g font-size="14" text-anchor="middle">
+        <rect x="20" y="90" width="120" height="60" rx="8" fill="#0f2030" stroke="#9db0d0" stroke-width="1.6"/>
+        <text x="80" y="125" fill="#9db0d0">wire</text>
+        <rect x="190" y="80" width="170" height="80" rx="8" fill="#152136" stroke="#4da3ff" stroke-width="2"/>
+        <text x="275" y="108" fill="#eaf0fb" font-weight="700">NIC ring (DMA)</text>
+        <text x="275" y="130" fill="#9db0d0" font-size="11">hardware queue the NIC</text>
+        <text x="275" y="146" fill="#9db0d0" font-size="11">writes packets into</text>
+        <rect x="410" y="80" width="170" height="80" rx="8" fill="#152136" stroke="#4da3ff" stroke-width="2"/>
+        <text x="495" y="108" fill="#eaf0fb" font-weight="700">IRQ / softirq</text>
+        <text x="495" y="130" fill="#9db0d0" font-size="11">the kernel (NAPI) draining</text>
+        <text x="495" y="146" fill="#9db0d0" font-size="11">the ring on a CPU core</text>
+        <rect x="630" y="80" width="170" height="80" rx="8" fill="#152136" stroke="#ffcf6b" stroke-width="2.5"/>
+        <text x="715" y="108" fill="#ffcf6b" font-weight="700">socket buffer</text>
+        <text x="715" y="130" fill="#9db0d0" font-size="11">per-socket queue until</text>
+        <text x="715" y="146" fill="#9db0d0" font-size="11">the app reads</text>
+        <rect x="850" y="90" width="130" height="60" rx="8" fill="#12241d" stroke="#54e0c7" stroke-width="2"/>
+        <text x="915" y="118" fill="#54e0c7" font-weight="700">app recv()</text>
+        <text x="915" y="138" fill="#9db0d0" font-size="11">your code</text>
+      </g>
+      <g stroke="#54e0c7" stroke-width="2.5">
+        <line x1="140" y1="120" x2="190" y2="120"/><line x1="360" y1="120" x2="410" y2="120"/>
+        <line x1="580" y1="120" x2="630" y2="120"/><line x1="800" y1="120" x2="850" y2="120"/>
+      </g>
+      <g font-size="12" text-anchor="middle">
+        <text x="275" y="210" fill="#ffcf6b">drops as: rx_dropped / rx_no_buffer</text>
+        <text x="275" y="230" fill="#9db0d0">see it: ethtool -S · ip -s link</text>
+        <text x="495" y="210" fill="#ffcf6b">drops as: softnet col2 / col3</text>
+        <text x="495" y="230" fill="#9db0d0">see it: /proc/net/softnet_stat</text>
+        <text x="715" y="210" fill="#ffcf6b">drops as: RcvbufErrors</text>
+        <text x="715" y="230" fill="#9db0d0">see it: netstat -su · nstat · ss -uapm</text>
+        <text x="915" y="210" fill="#ffcf6b">too slow → fills stage 3</text>
+        <text x="915" y="230" fill="#9db0d0">see it: Recv-Q in ss</text>
+      </g>
+      <text x="500" y="278" fill="#54e0c7" font-size="14" text-anchor="middle" font-weight="700">there is no "the network is slow" — there is a SPECIFIC stage with a full buffer, and a counter that names it</text>
+    </svg>
+</section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">Reading the counters = the diagnosis</h4>
+    <h2>Which counter names which stage</h2>
+    <ul>
+      <li><code>rx_dropped</code> rising, CPUs idle — <b>ring too small for the burst.</b> Grow it: <code>ethtool -G</code>.</li>
+      <li>ring drops <b>with one core pegged in softirq</b> — <b>the CPU can't drain fast enough.</b> Spread with RSS/RPS, pin the IRQ off the app core, raise <code>netdev_budget</code>. <code>time_squeeze</code> (softnet col3) is the tell.</li>
+      <li><code>RcvbufErrors</code> rising, CPU idle — <b>socket buffer overran: the app reads too slowly.</b> Raise <code>rmem_max</code> + <code>SO_RCVBUF</code>, then fix the reader.</li>
+      <li><code>InErrors ≥ RcvbufErrors</code> always — a buffer-full drop charges both. <code>InErrors</code> rising <b>without</b> <code>RcvbufErrors</code> = corrupt / no-listening-port, NOT gapping.</li>
+    </ul>
+    <div class="key"><b>The triage tree, one line:</b> a gap on ONE consumer = host problem · gaps on ALL consumers of one line = that line/network · both lines everywhere = upstream of you. Decide that BEFORE touching a CLI — it picks the layer for free.</div>
+</section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">The stage that matters — gapping lives here</h4>
+    <h2>The socket buffer — the experiment to run cold</h2>
+    <p>Market-data gapping is almost always this stage: bursts arrive fine, the app drains too slowly, UDP drops locally, sequence numbers go missing. Reproduce it end-to-end on the EC2 box yourself — these are the target numbers, not ones you've produced yet:</p>
+    <table>
+      <tr><th></th><th>buffer</th><th>app received</th><th>RcvbufErrors</th></tr>
+      <tr><td>tiny buffer + slow reader</td><td>16 KB</td><td><span class="warn">1,248 / 300,000</span></td><td><span class="warn">+298,752</span></td></tr>
+      <tr><td>32 MB buffer + reader keeping up</td><td>64 MB</td><td><span class="em">300,000 / 300,000</span></td><td><span class="em">0</span></td></tr>
+    </table>
+    <ul>
+      <li><code>OutDatagrams</code> climbed by exactly 300,000 — <b>the packets reached the host.</b> The loss was local.</li>
+      <li>The silent villain: <code>net.core.rmem_max</code> defaults to ~208 KB and <b>silently caps</b> whatever <code>SO_RCVBUF</code> the app asks for — ask for 32 MB, get 425 KB, never told.</li>
+      <li>Fix order: raise the ceiling (<code>sysctl net.core.rmem_max</code>), raise the ask (<code>SO_RCVBUF</code>), size to burst × rate.</li>
+    </ul>
+    <div class="key"><b>Why a big buffer is NOT the real fix:</b> it absorbs a <b>burst</b>, not a sustained rate mismatch. If arrival &gt; drain, any finite buffer fills — the buffer is a shock absorber. The real fix is a faster consumer: pin it off the IRQ core, busy-poll, or bypass the kernel entirely.</div>
+</section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">The code behind the drill — write it cold, deck is the check</h4>
+    <h2>The sender, the receiver, and the counter</h2>
+    <div class="cols">
+      <div class="col">
+        <p><b>Receiver</b> — small buffer, reads slowly, so it overruns:</p>
+        <pre>import socket, time
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+s.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 16384)
+s.bind(("127.0.0.1", 9999))
+print("SO_RCVBUF =", s.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF))
+n = 0
+while True:
+    s.recvfrom(2048); n += 1
+    if n % 500 == 0: time.sleep(0.05)   # slow reader = overrun</pre>
+      </div>
+      <div class="col">
+        <p><b>Sender</b> — flood, no throttle (a throttle would never overrun it):</p>
+        <pre>import socket
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+for _ in range(300000):
+    s.sendto(b'a' * 1400, ("127.0.0.1", 9999))
+print("sent")</pre>
+        <p style="margin-top:.6em"><b>Watch it drop, then fix it:</b></p>
+        <pre>nstat -n                    # snapshot baseline (silent)
+#   ...run the sender...
+nstat -a | grep -i rcvbuf   # UdpRcvbufErrors = dropped at the socket
+sudo sysctl -w net.core.rmem_max=33554432
+#   raise ceiling (default ~208 KB caps SO_RCVBUF),
+#   then set SO_RCVBUF=33554432 in receiver -> ~0 for a burst</pre>
+      </div>
+    </div>
+    <div class="key"><b>The four verbs to own cold:</b> <code>socket()</code> make it · <code>bind()</code> claim a port (receiver only) · <code>recvfrom()</code> / <code>sendto()</code> in a loop. Everything else — buffer size, payload, port — you invent each time. Constants live in the module: <code>socket.AF_INET</code>, <code>socket.SOCK_DGRAM</code>. And <code>nstat -n</code> snapshots silently; plain <code>nstat</code> / <code>-a</code> shows the count.</div>
+</section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">The low-latency host — before bypass</h4>
+    <h2>The tuning checklist (know why each exists)</h2>
+    <div class="cols">
+      <div class="col box"><h3>Isolate the hot cores</h3>
+        <p><code>isolcpus</code> + <code>nohz_full</code> + <code>rcu_nocbs</code> — dedicate cores, kill the scheduler tick. SMT off (a sibling on the shared physical core = contention = jitter). Governor = performance, deep C-states off.</p></div>
+      <div class="col box"><h3>Keep interrupts away</h3>
+        <p>Pin NIC-queue IRQs to housekeeping cores (<code>smp_affinity</code>), never the app core. Coalescing DOWN for latency (<code>rx-usecs</code>), ring UP for burst, GRO/LRO off when latency beats throughput.</p></div>
+    </div>
+    <div class="cols">
+      <div class="col box"><h3>Steer flows to the app</h3>
+        <p><b>RSS</b> = hardware hash spreads queues across cores; <b>RFS</b> = deliver a flow to the core its app runs on (cache locality). Busy-poll (<code>SO_BUSY_POLL</code>) — spin instead of sleeping: an idle wake ≈ 8µs, busy-poll ≈ 4µs.</p></div>
+      <div class="col box"><h3>Memory discipline</h3>
+        <p>NIC + app on the same NUMA node. Hugepages (fewer TLB misses), <code>mlockall</code>, swap off. The frame: <b>determinism</b> — the average was never the problem, the tail is.</p></div>
+    </div>
+</section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">When the kernel itself is the tax</h4>
+    <h2>Kernel bypass — why, and the three ways</h2>
+    <p>The normal path (IRQ → kernel stack → socket → syscall → copy) costs a few µs <b>and jitters</b> — every interrupt, context switch and copy is variable. For trading, the jitter matters more than the average. Bypass deletes those steps:</p>
+    <ul>
+      <li><b>DPDK</b> — a userspace <span class="em">poll-mode driver</span> owns the NIC and spins a dedicated core. Lowest, most deterministic. You rewrite the app to its API, and that core is 100% busy forever.</li>
+      <li><b>Solarflare / Onload</b> — <span class="em">transparent</span>: shims the standard socket calls, existing app gets userspace networking with <b>no code change</b>. The pragmatic trading-desk default.</li>
+      <li><b>AF_XDP</b> — the modern in-kernel middle ground: an eBPF hook at the driver redirects chosen packets to a userspace ring. Faster than the stack, keeps more kernel tooling than DPDK.</li>
+    </ul>
+    <div class="key"><b>The trade to state unprompted:</b> bypass <b>burns whole cores</b> (poll-mode = 100% CPU by design) and <b>blinds normal tooling</b> — tcpdump, ss, netfilter no longer see the traffic. You spend cores + observability to buy deterministic latency. Saying the cost is what makes the answer senior.</div>
+    <div class="key"><b>Choosing between them:</b> Onload when you cannot touch the app · DPDK when you own it and the latency budget pays for a burnt core · AF_XDP when you need the speed but want to keep the kernel's tooling.</div>
+</section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">The cloud wrinkle you can speak to first-hand</h4>
+    <h2>EC2 / ENA — the invisible drop ceiling</h2>
+    <pre>ip -s link ens5   →  errors 0, dropped 0        (looks clean!)
+ethtool -S ens5   →  bw_in_allowance_exceeded: 498   ← AWS shaped you at the hypervisor</pre>
+    <ul>
+      <li>Nitro enforces per-instance allowances — <code>bw_in / bw_out / pps / conntrack</code> — and when you exceed them the hypervisor drops <b>silently</b>: kernel counters read zero.</li>
+      <li>The tell: <b>"0 drops but losing packets"</b> on EC2 = check the ENA <code>*_allowance_exceeded</code> counters. <code>ethtool -S</code> is your only visibility.</li>
+      <li>Honest frame: real HFT is colocated bare metal (Solarflare + bypass + hardware timestamps). EC2 can't bypass ENA and its coalescing knobs are limited — know the difference, say it plainly.</li>
+    </ul>
+    <div class="key"><b>PTP belongs in this story:</b> you cannot optimise latency you can't measure. NTP is milliseconds; hardware timestamping (NIC PHC, <code>ptp4l</code> + <code>phc2sys</code>) is nanoseconds — it's both the measurement floor and the regulatory timestamp (RTS-25 class).</div>
+</section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">Putting it together — the round itself</h4>
+    <h2>"The feed is gapping" — the walk you own</h2>
+    <ul>
+      <li><b>1 · Localise first.</b> One consumer or all? One line or both? That alone picks host / line / upstream.</li>
+      <li><b>2 · Wire truth.</b> The tap (hardware timestamps, pre-socket) shows every sequence present and in order — so the network delivered. It's the host.</li>
+      <li><b>3 · Walk the ladder up.</b> Ring counters clean → softirq <code>time_squeeze</code> rising → <code>RcvbufErrors</code> climbing with <code>Recv-Q</code> pegged at the buffer cap = the socket stage, named.</li>
+      <li><b>4 · Fix in two tiers.</b> Immediate: raise <code>rmem_max</code> + <code>SO_RCVBUF</code>, repin the consumer. Structural: faster consumer / bypass — and note what the A/B arbitration was doing meanwhile (if BOTH feeds gapped on one host, it's that host, full stop).</li>
+      <li><b>5 · Narrate calmly.</b> The composure while walking counters IS the test for a trading-infra seat.</li>
+    </ul>
+    <div class="key"><b>Your grounding — once you've done the drills:</b> this exact fault is planted in the pcap drill (<code>captures/pcap-drill-01.html</code>), waiting for you to diagnose cold — wire complete + softnet time_squeeze + RcvbufErrors + Recv-Q pegged at the 212992 cap — and the socket-stage overrun is set up to reproduce and fix on the EC2 box. Do both and you'll be describing something you've done, not read.</div>
+</section>
+</section>
+
+<section>
+<section class="center"><h1>Appendix — AWS networking</h1><h3>the vocabulary, VPC/AZ/subnet, SG vs NACL, peering/TGW/Direct Connect, and the GPU-fabric angle (placement groups + EFA)</h3></section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">Study · your weak axis · covers HRT + Nscale</h4>
+    <h1>AWS networking = your own model, in AWS words</h1>
+    <p class="lead">The whole trick: <b>AWS networking is your 25-year WAN/DC model with different labels.</b> Learn the label map and you already know it. This is what keeps slipping — read it till the mapping is automatic.</p>
+</section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">First — the words, so the rest reads</h4>
+    <h2>The vocabulary (it's naming, not technology)</h2>
+    <p class="lead"><b>"Elastic" is branding</b> — it means software-defined, detachable, scale-on-demand. It is <i>not</i> a technology, and the Elastic-somethings are unrelated to each other beyond the word.</p>
+    <table>
+      <tr><th>Term</th><th>Stands for</th><th>= what it actually is</th></tr>
+      <tr><td class="a">EC2</td><td>Elastic Compute Cloud</td><td>the <b>virtual machine</b> service. One VM = an "instance". Its size/shape = the "instance type" (t3.micro, c6i.xlarge).</td></tr>
+      <tr><td class="a">AMI</td><td>Amazon Machine Image</td><td>the <b>OS image</b> an instance boots from</td></tr>
+      <tr><td class="a">EBS</td><td>Elastic Block Store</td><td>the <b>virtual disk</b> attached to an instance</td></tr>
+      <tr><td class="a">S3</td><td>Simple Storage Service</td><td><b>object storage</b> — you PUT/GET whole objects over an API. Not a disk, no filesystem.</td></tr>
+      <tr><td class="a">ENI</td><td>Elastic Network Interface</td><td>the <b>NIC</b>. Lives in one subnet; holds the private IP, MAC and security groups. Detachable — move it and the IP and MAC move with it.</td></tr>
+      <tr><td class="a">EIP</td><td>Elastic IP</td><td>a <b>static public IPv4 you own</b> and can remap. (The default public IP is ephemeral — it changes on stop/start.)</td></tr>
+      <tr><td class="a">ELB</td><td>Elastic Load Balancer</td><td>the <b>load balancer</b>: ALB = L7, NLB = L4</td></tr>
+      <tr><td class="a">EFA</td><td>Elastic Fabric Adapter</td><td>a <b>kernel-bypass NIC</b> for HPC/GPU (slide 8)</td></tr>
+      <tr><td class="a">VPC</td><td>Virtual Private Cloud</td><td>your <b>routing domain / VRF</b> (slide 3)</td></tr>
+      <tr><td class="a">IGW · NAT GW</td><td>Internet / NAT Gateway</td><td>the <b>internet edge</b> · <b>hide-NAT for egress only</b></td></tr>
+      <tr><td class="a">TGW</td><td>Transit Gateway</td><td>the <b>regional hub</b> — a route reflector for VPCs and on-prem</td></tr>
+      <tr><td class="a">DX</td><td>Direct Connect</td><td>a <b>private circuit</b> into AWS, BGP over it</td></tr>
+      <tr><td class="a">SG · NACL</td><td>Security Group · Network ACL</td><td><b>stateful firewall on the NIC</b> · <b>stateless ACL on the subnet</b> (slide 5)</td></tr>
+      <tr><td class="a">IAM</td><td>Identity and Access Management</td><td>who may call which API. Not networking, but it gates everything.</td></tr>
+    </table>
+    <div class="key"><b>The trap:</b> <b>ElastiCache</b> is managed Redis/Memcached — <i>nothing to do with networking</i>. The "Elastic" prefix groups nothing; treat each name as arbitrary.</div>
+</section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">The core — the label map</h4>
+    <h2>AWS term → what it actually is</h2>
+    <table>
+      <tr><th>AWS</th><th>= your world</th><th>The one thing</th></tr>
+      <tr><td class="a">VPC</td><td>a routing domain / VRF</td><td>regional; a /16 you carve up; isolated by default</td></tr>
+      <tr><td class="a">Subnet</td><td>an L3 segment</td><td>lives in <b>one AZ</b>; "public/private" = just its route table</td></tr>
+      <tr><td class="a">Route table</td><td>a RIB / VRF routing table</td><td>attached to subnets; local route + what you add</td></tr>
+      <tr><td class="a">Internet Gateway</td><td>your internet edge router</td><td>public subnet = has <code>0.0.0.0/0 → IGW</code> + public IPs</td></tr>
+      <tr><td class="a">NAT Gateway</td><td>PAT / hide-NAT</td><td>private subnets egress out, nothing comes in; bills hourly</td></tr>
+    </table>
+    <div class="key"><b>The mapping:</b> VPC = routing domain · subnet = L3 segment pinned to an AZ · route table = the RIB · IGW = internet edge. Public versus private is <i>only</i> whether the route table has a default route to the IGW.</div>
+    <svg viewBox="0 0 1000 430" role="img" aria-label="VPC anatomy">
+      <ellipse cx="500" cy="42" rx="120" ry="30" fill="#0f2030" stroke="#9db0d0"/>
+      <text x="500" y="48" fill="#9db0d0" font-size="15" text-anchor="middle">internet</text>
+      <rect x="452" y="86" width="96" height="30" rx="6" fill="#241f10" stroke="#ffcf6b" stroke-width="2"/>
+      <text x="500" y="106" fill="#ffcf6b" font-size="13" text-anchor="middle" font-weight="700">IGW</text>
+      <line x1="500" y1="72" x2="500" y2="86" stroke="#9db0d0" stroke-width="2"/>
+      <rect x="40" y="130" width="920" height="280" rx="12" fill="#111c2e" stroke="#4da3ff" stroke-width="2"/>
+      <text x="60" y="156" fill="#eaf0fb" font-size="15" font-weight="700">VPC 10.0.0.0/16 — one region, your routing domain</text>
+      <line x1="500" y1="116" x2="500" y2="130" stroke="#ffcf6b" stroke-width="2"/>
+      <!-- AZ a -->
+      <rect x="62" y="172" width="420" height="216" rx="8" fill="none" stroke="#2b3a56" stroke-dasharray="6 4"/>
+      <text x="82" y="194" fill="#9db0d0" font-size="12">Availability Zone a</text>
+      <rect x="84" y="206" width="376" height="118" rx="6" fill="#12241d" stroke="#54e0c7" stroke-width="1.6"/>
+      <text x="102" y="228" fill="#54e0c7" font-size="13" font-weight="700">PUBLIC subnet 10.0.1.0/24</text>
+      <rect x="102" y="242" width="150" height="52" rx="5" fill="#0f2030" stroke="#54e0c7"/>
+      <text x="177" y="264" fill="#eaf0fb" font-size="12" text-anchor="middle">instance</text>
+      <text x="177" y="282" fill="#9db0d0" font-size="10" text-anchor="middle">public + private IP</text>
+      <rect x="292" y="242" width="150" height="52" rx="5" fill="#0f2030" stroke="#ffcf6b"/>
+      <text x="367" y="264" fill="#ffcf6b" font-size="12" text-anchor="middle">NAT gateway</text>
+      <text x="367" y="282" fill="#9db0d0" font-size="10" text-anchor="middle">egress-only, bills hourly</text>
+      <rect x="84" y="336" width="376" height="34" rx="5" fill="#0f2030" stroke="#54e0c7"/>
+      <text x="272" y="358" fill="#54e0c7" font-size="12" text-anchor="middle">route table: 0.0.0.0/0 → IGW   =  what makes it PUBLIC</text>
+      <!-- AZ b -->
+      <rect x="518" y="172" width="420" height="216" rx="8" fill="none" stroke="#2b3a56" stroke-dasharray="6 4"/>
+      <text x="538" y="194" fill="#9db0d0" font-size="12">Availability Zone b</text>
+      <rect x="540" y="206" width="376" height="118" rx="6" fill="#141f33" stroke="#4da3ff" stroke-width="1.6"/>
+      <text x="558" y="228" fill="#4da3ff" font-size="13" font-weight="700">PRIVATE subnet 10.0.2.0/24</text>
+      <rect x="558" y="242" width="150" height="52" rx="5" fill="#0f2030" stroke="#4da3ff"/>
+      <text x="633" y="264" fill="#eaf0fb" font-size="12" text-anchor="middle">instance</text>
+      <text x="633" y="282" fill="#9db0d0" font-size="10" text-anchor="middle">private IP only</text>
+      <rect x="540" y="336" width="376" height="34" rx="5" fill="#0f2030" stroke="#4da3ff"/>
+      <text x="728" y="358" fill="#4da3ff" font-size="12" text-anchor="middle">route table: 0.0.0.0/0 → NAT GW   =  PRIVATE (egress only)</text>
+      <!-- flows -->
+      <path d="M500,116 C440,150 260,180 200,242" fill="none" stroke="#54e0c7" stroke-width="2.5"/>
+      <path d="M558,268 C500,268 460,268 442,268" fill="none" stroke="#4da3ff" stroke-width="2.5" stroke-dasharray="7 5"/>
+      <text x="500" y="258" fill="#4da3ff" font-size="10" text-anchor="middle">out via NAT</text>
+      <path d="M367,242 C400,170 470,140 496,118" fill="none" stroke="#ffcf6b" stroke-width="2" stroke-dasharray="7 5"/>
+    </svg>
+</section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">The bit that isn't networking — it's geography</h4>
+    <h2>Region · Availability Zone · subnet</h2>
+    <table>
+      <tr><th>AWS</th><th>= your world</th><th>The one thing</th></tr>
+      <tr><td class="a">Region</td><td>a metro you built in — London, Dublin</td><td>separate estate, separate address plan; joined by a WAN link with real latency (ms)</td></tr>
+      <tr><td class="a">Availability Zone</td><td>a separate DC building in that metro</td><td>own power + cooling, km apart, dark fibre between, <b>sub-millisecond</b></td></tr>
+      <tr><td class="a">Subnet</td><td>a segment inside ONE building</td><td><b>cannot span buildings</b> — pinned to one AZ, by design</td></tr>
+      <tr><td class="a">ENI</td><td><b>the NIC</b> — a virtual interface in a subnet</td><td>holds the private IP, MAC and security groups; instances, NAT GWs, endpoints and TGW attachments all get one</td></tr>
+    </table>
+    <svg viewBox="0 0 1000 330" role="img" aria-label="Regions, AZs and subnets mapped to Sky expanding to Ireland">
+      <rect x="30" y="50" width="420" height="240" rx="12" fill="#111c2e" stroke="#4da3ff" stroke-width="2"/>
+      <text x="240" y="76" fill="#4da3ff" font-size="15" text-anchor="middle" font-weight="700">REGION — London</text>
+      <rect x="52" y="92" width="185" height="180" rx="8" fill="#152136" stroke="#54e0c7" stroke-width="1.6"/>
+      <text x="144" y="114" fill="#54e0c7" font-size="12" text-anchor="middle" font-weight="700">AZ — building A</text>
+      <rect x="68" y="126" width="153" height="42" rx="5" fill="#0f2030" stroke="#2b3a56"/>
+      <text x="144" y="146" fill="#eaf0fb" font-size="11" text-anchor="middle">subnet 10.0.1.0/24</text>
+      <text x="144" y="160" fill="#9db0d0" font-size="10" text-anchor="middle">(a segment in THIS building)</text>
+      <rect x="90" y="182" width="110" height="34" rx="4" fill="#12241d" stroke="#54e0c7"/>
+      <text x="145" y="203" fill="#54e0c7" font-size="11" text-anchor="middle">instance + ENI</text>
+      <rect x="253" y="92" width="185" height="180" rx="8" fill="#152136" stroke="#54e0c7" stroke-width="1.6"/>
+      <text x="345" y="114" fill="#54e0c7" font-size="12" text-anchor="middle" font-weight="700">AZ — building B</text>
+      <rect x="269" y="126" width="153" height="42" rx="5" fill="#0f2030" stroke="#2b3a56"/>
+      <text x="345" y="146" fill="#eaf0fb" font-size="11" text-anchor="middle">subnet 10.0.2.0/24</text>
+      <text x="345" y="160" fill="#9db0d0" font-size="10" text-anchor="middle">(different building = different subnet)</text>
+      <rect x="291" y="182" width="110" height="34" rx="4" fill="#12241d" stroke="#54e0c7"/>
+      <text x="346" y="203" fill="#54e0c7" font-size="11" text-anchor="middle">instance + ENI</text>
+      <line x1="237" y1="200" x2="253" y2="200" stroke="#54e0c7" stroke-width="2.5"/>
+      <text x="245" y="248" fill="#9db0d0" font-size="10" text-anchor="middle">dark fibre, &lt;1 ms</text>
+      <rect x="550" y="50" width="420" height="240" rx="12" fill="#111c2e" stroke="#4da3ff" stroke-width="2"/>
+      <text x="760" y="76" fill="#4da3ff" font-size="15" text-anchor="middle" font-weight="700">REGION — Dublin</text>
+      <rect x="572" y="92" width="185" height="180" rx="8" fill="#152136" stroke="#54e0c7" stroke-width="1.6"/>
+      <text x="664" y="114" fill="#54e0c7" font-size="12" text-anchor="middle" font-weight="700">AZ — building A</text>
+      <rect x="588" y="126" width="153" height="42" rx="5" fill="#0f2030" stroke="#2b3a56"/>
+      <text x="664" y="146" fill="#eaf0fb" font-size="11" text-anchor="middle">subnet 10.1.1.0/24</text>
+      <text x="664" y="160" fill="#9db0d0" font-size="10" text-anchor="middle">own address plan</text>
+      <rect x="773" y="92" width="185" height="180" rx="8" fill="#152136" stroke="#54e0c7" stroke-width="1.6"/>
+      <text x="865" y="114" fill="#54e0c7" font-size="12" text-anchor="middle" font-weight="700">AZ — building B</text>
+      <rect x="789" y="126" width="153" height="42" rx="5" fill="#0f2030" stroke="#2b3a56"/>
+      <text x="865" y="146" fill="#eaf0fb" font-size="11" text-anchor="middle">subnet 10.1.2.0/24</text>
+      <path d="M450,170 C490,150 510,150 550,170" fill="none" stroke="#ffcf6b" stroke-width="3.5"/>
+      <text x="500" y="132" fill="#ffcf6b" font-size="12" text-anchor="middle">the Irish Sea crossing</text>
+      <text x="500" y="196" fill="#9db0d0" font-size="11" text-anchor="middle">= inter-region link</text>
+      <text x="500" y="212" fill="#9db0d0" font-size="11" text-anchor="middle">(latency is real — ms)</text>
+      <text x="500" y="316" fill="#54e0c7" font-size="13" text-anchor="middle" font-weight="700">Same app in BOTH buildings = losing a DC doesn't kill the service. That's why AWS pins a subnet to one AZ — it forces the question.</text>
+    </svg>
+    <div class="key"><b>As geography:</b> region = a metro · AZ = a building in that metro · subnet = a segment in one building. A subnet cannot span buildings — AWS forcing the design question of losing one. Same shape as Sky into Ireland: two sites per metro, a subsea crossing between metros.</div>
+</section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">The classic exam question</h4>
+    <h2>Security Group vs NACL</h2>
+    <table>
+      <tr><th></th><th class="a">Security Group</th><th class="a">Network ACL</th></tr>
+      <tr><td><b>Where</b></td><td>on the instance (its NIC)</td><td>on the subnet</td></tr>
+      <tr><td><b>State</b></td><td><b>stateful</b> — return traffic auto-allowed</td><td><b>stateless</b> — you size return ports yourself</td></tr>
+      <tr><td><b>Rules</b></td><td>allow-only</td><td>allow + deny, ordered (numbered)</td></tr>
+      <tr><td><b>Like</b></td><td>a stateful firewall / reflexive ACL on a port</td><td>an ordered ACL on a segment</td></tr>
+    </table>
+    <div class="key"><b>The distinction:</b> SG = stateful, instance-level, allow-only. NACL = stateless, subnet-level, ordered allow/deny, and you size the return traffic yourself.</div>
+</section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">Connecting VPCs + on-prem</h4>
+    <h2>Peering · Transit Gateway · Direct Connect</h2>
+    <ul>
+      <li><b>VPC peering</b> = a point-to-point link between two VPCs. Doesn't scale — N VPCs = an N² mesh.</li>
+      <li><b>Transit Gateway (TGW)</b> = <span class="em">a cloud hub / route-reflector</span> — hub-and-spoke for many VPCs + on-prem. The fix for the peering mesh. <i>You've designed exactly this topology in the physical world.</i></li>
+      <li><b>Direct Connect (DX)</b> = <span class="em">a private circuit into AWS</span> — a leased line / cross-connect, <b>BGP over it</b>. DX + TGW = the hybrid edge. <i>You've turned up hundreds of BGP peerings — say so.</i></li>
+      <li><b>Site-to-Site VPN</b> = IPsec over the internet — the cheaper/backup path to DX (local-pref out, more-specific back, withdraw-on-failure — your DX-primary/VPN-backup answer).</li>
+    </ul>
+    <svg viewBox="0 0 1000 300" role="img" aria-label="Peering mesh vs Transit Gateway">
+      <text x="250" y="28" fill="#ffcf6b" font-size="15" text-anchor="middle" font-weight="700">VPC peering — N² mesh, non-transitive</text>
+      <g stroke="#2b3a56" stroke-width="2">
+        <line x1="250" y1="70" x2="130" y2="150"/><line x1="250" y1="70" x2="370" y2="150"/><line x1="250" y1="70" x2="175" y2="245"/><line x1="250" y1="70" x2="325" y2="245"/>
+        <line x1="130" y1="150" x2="370" y2="150"/><line x1="130" y1="150" x2="175" y2="245"/><line x1="130" y1="150" x2="325" y2="245"/>
+        <line x1="370" y1="150" x2="175" y2="245"/><line x1="370" y1="150" x2="325" y2="245"/>
+        <line x1="175" y1="245" x2="325" y2="245"/>
+      </g>
+      <g font-size="12" text-anchor="middle">
+        <circle cx="250" cy="70" r="24" fill="#152136" stroke="#9db0d0" stroke-width="1.6"/><text x="250" y="75" fill="#eaf0fb">VPC</text>
+        <circle cx="130" cy="150" r="24" fill="#152136" stroke="#9db0d0" stroke-width="1.6"/><text x="130" y="155" fill="#eaf0fb">VPC</text>
+        <circle cx="370" cy="150" r="24" fill="#152136" stroke="#9db0d0" stroke-width="1.6"/><text x="370" y="155" fill="#eaf0fb">VPC</text>
+        <circle cx="175" cy="245" r="24" fill="#152136" stroke="#9db0d0" stroke-width="1.6"/><text x="175" y="250" fill="#eaf0fb">VPC</text>
+        <circle cx="325" cy="245" r="24" fill="#152136" stroke="#9db0d0" stroke-width="1.6"/><text x="325" y="250" fill="#eaf0fb">VPC</text>
+      </g>
+      <text x="250" y="288" fill="#9db0d0" font-size="12" text-anchor="middle">5 VPCs = 10 links, and A–B + B–C still ≠ A–C</text>
+      <line x1="500" y1="30" x2="500" y2="280" stroke="#2b3a56" stroke-width="1.5" stroke-dasharray="6 5"/>
+      <text x="750" y="28" fill="#54e0c7" font-size="15" text-anchor="middle" font-weight="700">Transit Gateway — hub, transitive</text>
+      <g stroke="#54e0c7" stroke-width="2.5">
+        <line x1="750" y1="155" x2="750" y2="70"/><line x1="750" y1="155" x2="630" y2="150"/><line x1="750" y1="155" x2="870" y2="150"/><line x1="750" y1="155" x2="675" y2="245"/><line x1="750" y1="155" x2="825" y2="245"/>
+      </g>
+      <rect x="700" y="132" width="100" height="44" rx="8" fill="#12241d" stroke="#54e0c7" stroke-width="2"/>
+      <text x="750" y="159" fill="#54e0c7" font-size="13" text-anchor="middle" font-weight="700">TGW</text>
+      <g font-size="12" text-anchor="middle">
+        <circle cx="750" cy="70" r="24" fill="#152136" stroke="#9db0d0" stroke-width="1.6"/><text x="750" y="75" fill="#eaf0fb">VPC</text>
+        <circle cx="630" cy="150" r="24" fill="#152136" stroke="#9db0d0" stroke-width="1.6"/><text x="630" y="155" fill="#eaf0fb">VPC</text>
+        <circle cx="870" cy="150" r="24" fill="#152136" stroke="#9db0d0" stroke-width="1.6"/><text x="870" y="155" fill="#eaf0fb">VPC</text>
+        <circle cx="675" cy="245" r="24" fill="#152136" stroke="#9db0d0" stroke-width="1.6"/><text x="675" y="250" fill="#eaf0fb">VPC</text>
+        <circle cx="825" cy="245" r="24" fill="#152136" stroke="#9db0d0" stroke-width="1.6"/><text x="825" y="250" fill="#eaf0fb">VPC</text>
+      </g>
+      <text x="750" y="288" fill="#9db0d0" font-size="12" text-anchor="middle">5 links, any-to-any via the hub — your route-reflector instinct</text>
+    </svg>
+    <svg viewBox="0 0 1000 250" role="img" aria-label="Hybrid edge — DX primary, VPN backup">
+      <rect x="50" y="60" width="230" height="130" rx="10" fill="#152136" stroke="#9db0d0" stroke-width="1.6"/>
+      <text x="165" y="88" fill="#eaf0fb" font-size="15" text-anchor="middle" font-weight="700">On-prem DC</text>
+      <circle cx="165" cy="140" r="26" fill="#0f2030" stroke="#4da3ff" stroke-width="2"/>
+      <text x="165" y="145" fill="#4da3ff" font-size="12" text-anchor="middle">edge rtr</text>
+      <rect x="620" y="30" width="340" height="190" rx="12" fill="#111c2e" stroke="#4da3ff" stroke-width="2"/>
+      <text x="790" y="56" fill="#eaf0fb" font-size="14" text-anchor="middle" font-weight="700">AWS</text>
+      <rect x="650" y="96" width="110" height="52" rx="8" fill="#12241d" stroke="#54e0c7" stroke-width="2"/>
+      <text x="705" y="127" fill="#54e0c7" font-size="13" text-anchor="middle" font-weight="700">TGW</text>
+      <rect x="800" y="76" width="130" height="40" rx="6" fill="#152136" stroke="#9db0d0"/>
+      <text x="865" y="101" fill="#eaf0fb" font-size="12" text-anchor="middle">VPC A</text>
+      <rect x="800" y="136" width="130" height="40" rx="6" fill="#152136" stroke="#9db0d0"/>
+      <text x="865" y="161" fill="#eaf0fb" font-size="12" text-anchor="middle">VPC B</text>
+      <line x1="760" y1="106" x2="800" y2="96" stroke="#2b3a56" stroke-width="2"/>
+      <line x1="760" y1="140" x2="800" y2="156" stroke="#2b3a56" stroke-width="2"/>
+      <line x1="191" y1="128" x2="650" y2="112" stroke="#54e0c7" stroke-width="5"/>
+      <text x="420" y="98" fill="#54e0c7" font-size="13" text-anchor="middle" font-weight="700">Direct Connect — dedicated circuit, BGP, consistent latency</text>
+      <line x1="191" y1="152" x2="650" y2="138" stroke="#9db0d0" stroke-width="2.5" stroke-dasharray="9 7"/>
+      <text x="420" y="180" fill="#9db0d0" font-size="13" text-anchor="middle">Site-to-Site VPN — IPsec over internet, the backup (two tunnels)</text>
+    </svg>
+    <div class="key"><b>The framing that wins:</b> none of this is new to you — it's DCI and hybrid WAN with AWS names. TGW = hub-and-spoke, DX = a BGP circuit, VPN = IPsec backup.</div>
+</section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">The design question — metro to metro</h4>
+    <h2>Region to region: a TGW each, peered</h2>
+    <ul>
+      <li><b>A TGW is regional</b> — it cannot span regions. So it's <span class="em">one TGW per region</span>, plus a <b>peering attachment</b> between them, running over AWS's own backbone (private, encrypted, no internet path).</li>
+      <li><b>Attach the VPC in EVERY AZ you use.</b> The attachment plants an <span class="em">ENI in one subnet per AZ you select</span> — an instance in building A leaves via building A's ENI and stays local. Attach one AZ only and everything hairpins through it: cross-AZ charges, and that building becomes a failure domain.</li>
+      <li><b>Routing across the peering is STATIC</b> — route propagation doesn't run over a peering attachment, so you write the remote region's CIDR into each TGW route table yourself. <span class="warn">Worth re-checking against current docs before quoting it</span>, but that's been the behaviour, and it surprises everyone who lives in BGP.</li>
+      <li><b>Non-transitive across regions</b> — A↔B and B↔C peered does NOT give you A↔C. Mesh the TGWs, or move to <b>Cloud WAN</b>, the managed wrapper for exactly this.</li>
+    </ul>
+    <svg viewBox="0 0 1000 300" role="img" aria-label="Cross-region TGW peering">
+      <rect x="20" y="40" width="430" height="220" rx="12" fill="#111c2e" stroke="#4da3ff" stroke-width="2"/>
+      <text x="235" y="64" fill="#4da3ff" font-size="14" text-anchor="middle" font-weight="700">REGION 1</text>
+      <rect x="40" y="82" width="150" height="70" rx="6" fill="#152136" stroke="#9db0d0"/>
+      <text x="115" y="104" fill="#eaf0fb" font-size="12" text-anchor="middle">VPC A</text>
+      <text x="115" y="122" fill="#9db0d0" font-size="10" text-anchor="middle">AZ-a subnet · ENI</text>
+      <text x="115" y="138" fill="#9db0d0" font-size="10" text-anchor="middle">AZ-b subnet · ENI</text>
+      <rect x="40" y="166" width="150" height="70" rx="6" fill="#152136" stroke="#9db0d0"/>
+      <text x="115" y="188" fill="#eaf0fb" font-size="12" text-anchor="middle">VPC B</text>
+      <text x="115" y="206" fill="#9db0d0" font-size="10" text-anchor="middle">AZ-a subnet · ENI</text>
+      <text x="115" y="222" fill="#9db0d0" font-size="10" text-anchor="middle">AZ-b subnet · ENI</text>
+      <rect x="280" y="120" width="120" height="60" rx="10" fill="#12241d" stroke="#54e0c7" stroke-width="2.5"/>
+      <text x="340" y="146" fill="#54e0c7" font-size="14" text-anchor="middle" font-weight="700">TGW</text>
+      <text x="340" y="164" fill="#9db0d0" font-size="10" text-anchor="middle">region's hub</text>
+      <line x1="190" y1="117" x2="280" y2="140" stroke="#54e0c7" stroke-width="2.5"/>
+      <line x1="190" y1="201" x2="280" y2="162" stroke="#54e0c7" stroke-width="2.5"/>
+      <rect x="550" y="40" width="430" height="220" rx="12" fill="#111c2e" stroke="#4da3ff" stroke-width="2"/>
+      <text x="765" y="64" fill="#4da3ff" font-size="14" text-anchor="middle" font-weight="700">REGION 2</text>
+      <rect x="810" y="82" width="150" height="70" rx="6" fill="#152136" stroke="#9db0d0"/>
+      <text x="885" y="104" fill="#eaf0fb" font-size="12" text-anchor="middle">VPC C</text>
+      <text x="885" y="122" fill="#9db0d0" font-size="10" text-anchor="middle">AZ-a subnet · ENI</text>
+      <text x="885" y="138" fill="#9db0d0" font-size="10" text-anchor="middle">AZ-b subnet · ENI</text>
+      <rect x="810" y="166" width="150" height="70" rx="6" fill="#152136" stroke="#9db0d0"/>
+      <text x="885" y="188" fill="#eaf0fb" font-size="12" text-anchor="middle">VPC D</text>
+      <text x="885" y="206" fill="#9db0d0" font-size="10" text-anchor="middle">AZ-a subnet · ENI</text>
+      <text x="885" y="222" fill="#9db0d0" font-size="10" text-anchor="middle">AZ-b subnet · ENI</text>
+      <rect x="600" y="120" width="120" height="60" rx="10" fill="#12241d" stroke="#54e0c7" stroke-width="2.5"/>
+      <text x="660" y="146" fill="#54e0c7" font-size="14" text-anchor="middle" font-weight="700">TGW</text>
+      <text x="660" y="164" fill="#9db0d0" font-size="10" text-anchor="middle">region's hub</text>
+      <line x1="810" y1="117" x2="720" y2="140" stroke="#54e0c7" stroke-width="2.5"/>
+      <line x1="810" y1="201" x2="720" y2="162" stroke="#54e0c7" stroke-width="2.5"/>
+      <line x1="400" y1="150" x2="600" y2="150" stroke="#ffcf6b" stroke-width="4"/>
+      <text x="500" y="138" fill="#ffcf6b" font-size="12" text-anchor="middle" font-weight="700">TGW peering attachment</text>
+      <text x="500" y="176" fill="#9db0d0" font-size="11" text-anchor="middle">over the AWS backbone</text>
+      <text x="500" y="192" fill="#ffcf6b" font-size="11" text-anchor="middle">STATIC routes — no propagation</text>
+      <text x="500" y="285" fill="#54e0c7" font-size="13" text-anchor="middle" font-weight="700">The TGW is the region's route reflector; the peering is the DCI between two of them — with no dynamic routing across the seam.</text>
+    </svg>
+    <div class="key"><b>The simpler alternative, for completeness:</b> inter-region <b>VPC peering</b>, direct VPC to VPC, no hub — fine for one or two, but it's the N² mesh again the moment there are several (slide 5). <b>And cost is the design driver:</b> cross-region transfer + per-attachment-hour + per-GB processed on the TGW.</div>
+</section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">Where you out-depth them (Nscale-relevant)</h4>
+    <h2>Cluster placement groups + EFA — the GPU fabric angle</h2>
+    <ul>
+      <li><b>Cluster placement group</b> = AWS packs instances <span class="em">physically close</span> (same rack/spine) for low, consistent latency — the "rail-optimised" idea, AWS-side.</li>
+      <li><b>EFA (Elastic Fabric Adapter)</b> = a <span class="em">kernel-bypass NIC</span> (RDMA-style, OS-bypass) so GPU collective ops (all-reduce) skip the network stack — AWS's answer to InfiniBand/Spectrum-X.</li>
+      <li>This is the <b>same physics</b> as the AI-fabric backend and as HFT kernel bypass.</li>
+    </ul>
+    <svg viewBox="0 0 1000 290" role="img" aria-label="Cluster placement group with EFA">
+      <rect x="60" y="40" width="880" height="220" rx="12" fill="#111c2e" stroke="#4da3ff" stroke-width="2" stroke-dasharray="8 5"/>
+      <text x="500" y="68" fill="#4da3ff" font-size="14" text-anchor="middle" font-weight="700">cluster placement group — instances packed on the same rack/spine, lowest consistent latency</text>
+      <g font-size="12" text-anchor="middle">
+        <rect x="110" y="96" width="200" height="110" rx="8" fill="#152136" stroke="#9db0d0" stroke-width="1.6"/>
+        <text x="210" y="122" fill="#eaf0fb" font-weight="700">GPU instance</text>
+        <rect x="130" y="136" width="160" height="26" rx="4" fill="#0f2030" stroke="#2b3a56"/>
+        <text x="210" y="153" fill="#9db0d0" font-size="11">kernel / TCP stack</text>
+        <line x1="138" y1="149" x2="282" y2="149" stroke="#ffcf6b" stroke-width="2"/>
+        <rect x="150" y="174" width="120" height="26" rx="4" fill="#12241d" stroke="#54e0c7" stroke-width="2"/>
+        <text x="210" y="191" fill="#54e0c7" font-weight="700">EFA NIC</text>
+        <rect x="400" y="96" width="200" height="110" rx="8" fill="#152136" stroke="#9db0d0" stroke-width="1.6"/>
+        <text x="500" y="122" fill="#eaf0fb" font-weight="700">GPU instance</text>
+        <rect x="420" y="136" width="160" height="26" rx="4" fill="#0f2030" stroke="#2b3a56"/>
+        <text x="500" y="153" fill="#9db0d0" font-size="11">kernel / TCP stack</text>
+        <line x1="428" y1="149" x2="572" y2="149" stroke="#ffcf6b" stroke-width="2"/>
+        <rect x="440" y="174" width="120" height="26" rx="4" fill="#12241d" stroke="#54e0c7" stroke-width="2"/>
+        <text x="500" y="191" fill="#54e0c7" font-weight="700">EFA NIC</text>
+        <rect x="690" y="96" width="200" height="110" rx="8" fill="#152136" stroke="#9db0d0" stroke-width="1.6"/>
+        <text x="790" y="122" fill="#eaf0fb" font-weight="700">GPU instance</text>
+        <rect x="710" y="136" width="160" height="26" rx="4" fill="#0f2030" stroke="#2b3a56"/>
+        <text x="790" y="153" fill="#9db0d0" font-size="11">kernel / TCP stack</text>
+        <line x1="718" y1="149" x2="862" y2="149" stroke="#ffcf6b" stroke-width="2"/>
+        <rect x="730" y="174" width="120" height="26" rx="4" fill="#12241d" stroke="#54e0c7" stroke-width="2"/>
+        <text x="790" y="191" fill="#54e0c7" font-weight="700">EFA NIC</text>
+      </g>
+      <line x1="270" y1="187" x2="440" y2="187" stroke="#54e0c7" stroke-width="3.5"/>
+      <line x1="560" y1="187" x2="730" y2="187" stroke="#54e0c7" stroke-width="3.5"/>
+      <text x="500" y="232" fill="#54e0c7" font-size="13" text-anchor="middle" font-weight="700">all-reduce goes NIC-to-NIC (SRD, RDMA-style) — the crossed-out stack is the point</text>
+      <text x="500" y="252" fill="#9db0d0" font-size="12" text-anchor="middle">OS-bypass = the kernel never touches collective traffic — same move as Onload/DPDK in HFT</text>
+    </svg>
+</section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">How to handle it in the room</h4>
+    <h2>When AWS specifics get deep — pull up a layer</h2>
+    <ul>
+      <li><b>Lead with the primitives you own</b> (VPC/subnet/route-table/IGW = routing-domain/segment/RIB/edge) — that's authority, not memorisation.</li>
+      <li><b>When it gets deep into AWS-native services you don't have cold, pull it up to <span class="em">design / topology / why</span></b> — that's your ground, not theirs. "At the primitive level it's the same routing problem; the AWS service is just the packaging."</li>
+      <li><b>Don't fake depth</b> on AWS-native managed services — be curious, ask about their estate.</li>
+    </ul>
+    <div class="key"><b>Questions for them:</b> how their VPC and Transit Gateway estate is laid out, and whether they run EFA for the GPU fabric.</div>
+    <div class="key"><b>Both interviews:</b> Nscale's director is AWS-certified (be fluent + the EFA angle). HRT — if AWS comes up it's the hybrid/edge, same map. One study, both rooms.</div>
+</section>
+</section>
+
+<section>
+<section class="center"><h1>Appendix — the design round, as a method</h1><h3>four moves in order, sizing that forces the architecture, the failure sweep, the should-we-use-SR judgement, and delivery</h3></section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">HRT · the round you lead · teach deck</h4>
+    <h1>The design round — drill the attack, never the scenario</h1>
+    <p class="lead">You've done ~100 design interviews; the design body is lived ground. What this deck holds is the <b>attack made explicit</b> — the order, the sizing reflex, and the judgment through-line — so it fires cold into ANY scenario they pose. The reframe that unlocks it: <span class="em">a design round is your day job narrated out loud.</span> Only the structure is new, and the structure is four moves.</p>
+</section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">The spine — order IS the seniority signal</h4>
+    <h2>Four moves, in order, every time</h2>
+    <svg viewBox="0 0 1000 200" role="img" aria-label="The four steps">
+      <g font-size="14" text-anchor="middle">
+        <rect x="30" y="50" width="200" height="90" rx="10" fill="#152136" stroke="#4da3ff" stroke-width="2"/>
+        <text x="130" y="82" fill="#4da3ff" font-weight="700">1 · SCOPE</text>
+        <text x="130" y="104" fill="#9db0d0" font-size="11">don't design yet —</text>
+        <text x="130" y="120" fill="#9db0d0" font-size="11">PROPOSE the NFRs, confirm</text>
+        <rect x="280" y="50" width="200" height="90" rx="10" fill="#152136" stroke="#54e0c7" stroke-width="2.5"/>
+        <text x="380" y="82" fill="#54e0c7" font-weight="700">1.5 · SIZE IT</text>
+        <text x="380" y="104" fill="#9db0d0" font-size="11">back-of-envelope — the</text>
+        <text x="380" y="120" fill="#9db0d0" font-size="11">numbers force the architecture</text>
+        <rect x="530" y="50" width="200" height="90" rx="10" fill="#152136" stroke="#4da3ff" stroke-width="2"/>
+        <text x="630" y="82" fill="#4da3ff" font-weight="700">2 · HIGH-LEVEL</text>
+        <text x="630" y="104" fill="#9db0d0" font-size="11">boxes + dataflow,</text>
+        <text x="630" y="120" fill="#9db0d0" font-size="11">happy path, get buy-in</text>
+        <rect x="780" y="50" width="200" height="90" rx="10" fill="#152136" stroke="#ffcf6b" stroke-width="2"/>
+        <text x="880" y="82" fill="#ffcf6b" font-weight="700">3 · DEEP-DIVE</text>
+        <text x="880" y="104" fill="#9db0d0" font-size="11">bottlenecks, tradeoffs,</text>
+        <text x="880" y="120" fill="#9db0d0" font-size="11">what breaks at 3am — YOUR ground</text>
+      </g>
+      <g stroke="#9db0d0" stroke-width="2"><line x1="230" y1="95" x2="280" y2="95"/><line x1="480" y1="95" x2="530" y2="95"/><line x1="730" y1="95" x2="780" y2="95"/></g>
+      <text x="500" y="180" fill="#9db0d0" font-size="13" text-anchor="middle">wrap: recap · what you'd monitor · what you'd do with more time. Time-box: ~10 min scope · ~10 high-level · the rest deep-dive.</text>
+    </svg>
+    <ul>
+      <li><b>Scope in the trading register:</b> what traffic — one-to-many market-data / many-to-one order flow / control? Latency and loss profile — deterministic or throughput? Scale — nodes, rate each, one DC or across colos?</li>
+      <li><b>The senior move:</b> don't ask open questions — <span class="em">propose</span> the requirements and confirm: "I'll assume market-data distribution, N consumers, latency-critical, gap-free — right?"</li>
+    </ul>
+</section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">Your self-named rust — made reflex</h4>
+    <h2>Size it: the numbers force the architecture</h2>
+    <div class="cols">
+      <div class="col box"><h3>The worked example (own it cold)</h3>
+        <p>300 consumers × 10G of one fat stream = 3T of <b>duplication</b> — and the wall is the <b>SOURCE's egress</b> (one host cannot produce 300 copies), not the switch fabric. <span class="em">You didn't choose multicast; the arithmetic did.</span></p></div>
+      <div class="col box"><h3>Reflex numbers (keep hot)</h3>
+        <p>1 ms ≈ <b>200 km</b> in fibre · air/microwave ≈ <b>300 km/ms</b> (1.5× fibre) · bytes × 8 = bits · a 100G NIC ≈ <b>12.5 GB/s</b> · serialisation = header bits ÷ line rate.</p></div>
+    </div>
+    <div class="key"><b>The two-buffers seam (your own realisation — HFT panels probe exactly this):</b> BDP = bandwidth × RTT = data <i>in flight</i> = the <b>TCP window / socket buffer</b> needed to keep a long fat pipe full — too small and the pipe <i>starves</i> (a throughput problem). The <b>router egress buffer</b> is different: packets queued at an output port, fills on microburst, tail-drops (an <i>overflow</i> problem). BOTH are sized bandwidth × delay — that's why they pattern-match: 100G × 60 ms = 6 Gbit ÷ 8 = <b>750 MB window</b>; 50 ms × 100G ≈ <b>625 MB egress buffer</b>. Same product, two different problems.</div>
+    <div class="key"><b>Worked example:</b> 50,000 messages a second at 100 bytes = 5 MB/s = 40 megabits. Bandwidth is trivial; determinism and the message rate drive the design, not throughput.</div>
+</section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">Where 25 years wins — structured, not recalled</h4>
+    <h2>Deep-dive: the failure-mode sweep</h2>
+    <ul>
+      <li><b>Run the sweep in a fixed order</b> so nothing hides: single link · single node · the SHARED-fate pair (SRLG — "two of everything" in one duct is one of everything) · the slow consumer · the control-plane loss (does it degrade to "no changes" or to "no forwarding"?) · the operational failure (who fat-fingers what).</li>
+      <li><b>Quantify the failover:</b> what carries the load the instant it breaks (pre-installed repair, ECMP survivors) vs after reconvergence — and does the surviving capacity actually hold the inherited reroute (the N-1 budget question).</li>
+      <li><b>Validate before capex</b> — "why has nobody complained?" is a design input: if the pain isn't real, the build isn't justified. Commercial judgment is screened for.</li>
+      <li><b>Monitoring closes it:</b> say what you'd watch — tail percentiles not averages, one-way latency (PTP-disciplined), the per-stage drop counters.</li>
+    </ul>
+    <div class="key"><b>Whiteboard discipline:</b> draw first, talk to the drawing — you design against a picture, not prose. Happy path fully drawn BEFORE any failure talk. When corrected on a hard fact, concede fast and fold it in; otherwise hold your line.</div>
+</section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">The through-line they advanced you for</h4>
+    <h2>"Should we use SR?" — the judgment, not the sell</h2>
+    <table>
+      <tr><th>The ask</th><th>The tool you already own (no SR)</th><th>SR needed?</th></tr>
+      <tr><td>Spread load by capacity (UCMP)</td><td>BGP link-bandwidth → weighted FIB</td><td><span class="em">NO</span> — never sell SR on UCMP; you'd lose to anyone who knows DMZ link-bandwidth</td></tr>
+      <tr><td>Pin a CLASS to a path/plane</td><td>metric = one tree for all; PBR doesn't scale</td><td><span class="warn">YES</span> — source routing is the definition of the problem (SR-TE colour policy)</td></tr>
+      <tr><td>Sub-50ms deterministic protection</td><td>LFA — coverage gaps, arbitrary backup path</td><td><span class="warn">YES</span> — TI-LFA: guaranteed coverage, repair = the post-convergence path</td></tr>
+      <tr><td>Fewer control planes</td><td>IGP + LDP + RSVP-TE stack</td><td><span class="warn">YES</span> — labels ride the IGP; LDP and RSVP soft-state retire</td></tr>
+      <tr><td>Deterministic one-to-many feed</td><td>PIM-SSM, its own plane</td><td><span class="em">NO</span> — keep market-data OFF the SR fabric; steering + protection + consolidation carry the case</td></tr>
+    </table>
+    <div class="key"><b>Practise BOTH verdicts:</b> the market-data problem where SR is the WRONG tool, and the steering/protection problem where it earns its keep. Making the call — not reciting the tech — is the seniority signal, and it's the exact judgment your migration deck walks.</div>
+</section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">Vary the surface, never repeat the rep</h4>
+    <h2>The eight surfaces the attack must fire into</h2>
+    <div class="cols">
+      <div class="col">
+        <ul>
+          <li><b>Market-data distribution</b> — fan-out → multicast, A/B + sequence arbitration, slow consumer</li>
+          <li><b>Order-entry / gateway path</b> — asymmetry: multicast in, <i>reliable unicast</i> out; risk inline; kill switch; the RATE drives it, not bandwidth</li>
+          <li><b>Inter-DC / colo transport</b> — latency budget picks the medium (microwave vs fibre vs λ), diversity SRLG-audited</li>
+          <li><b>Time distribution (PTP)</b> — why, fan-out, accuracy budget, failure modes</li>
+        </ul>
+      </div>
+      <div class="col">
+        <ul>
+          <li><b>Risk / kill-switch fan-in</b> — stateless inline vs stateful beside the path; fail-closed; blast radius</li>
+          <li><b>Exchange connectivity</b> — cross-connect pairs, session failover, drop copy, cancel-on-disconnect</li>
+          <li><b>SR-earns-it design</b> — per-class steering / TI-LFA / consolidation on ground you own</li>
+          <li><b>Hub-and-spoke at scale</b> — push the failure: hub = SPOF + bottleneck → regional hubs / hierarchy</li>
+        </ul>
+      </div>
+    </div>
+    <div class="key"><b>The law:</b> what becomes reflex is the ATTACK — scope → size → draw → break — never any one scenario. Memorised scenarios break on a new case; the varied rep transfers. Each rep = a fresh surface, cold, timed.</div>
+</section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">How it lands in the room</h4>
+    <h2>Delivery — the half that isn't networking</h2>
+    <ul>
+      <li><b>~90 seconds per answer</b> — land the point, then offer to go deeper. Rambling is the failure mode they name.</li>
+      <li><b>You lead.</b> Set the agenda, state assumptions, propose the architecture, invite them to pick the deep-dive, lead that subdiscussion — your natural mode; the clock is the only new constraint.</li>
+      <li><b>Never STAR a technical question</b> — structured diagnosis for technical, STAR for "tell me about a time" only.</li>
+      <li><b>Calm narration IS the test</b> — for a trading-infra seat, composure while working a live problem is half the grade.</li>
+      <li><b>Defer on their network.</b> The verified facts you hold: massively multi-AS · deploying BGP communities · IGP is OSPF (as far as you know) · eBGP got a raised eyebrow. Assert nothing beyond that — ask.</li>
+    </ul>
 </section>
 </section>
 </div>
