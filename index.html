@@ -4712,7 +4712,7 @@ One pattern everywhere: **declare intent centrally, controller computes, devices
 
 **THE interview question: what happens when the controller dies?**
 - SD-WAN: edges keep forwarding on **last-known OMP state** (headless); no new sites/policy until it returns.
-- ACI: fabric forwards fine without APIC; you lose change, not traffic.
+- Closed DC fabric controllers: the fabric forwards fine without the controller; you lose change, not traffic.
 - Apstra: off-box intent + validation — no dataplane dependency at all.
 - The grading point: **control-plane loss must degrade to "no changes", never to "no forwarding".** Same fail-direction logic as the §22 deadman — but inverted: risk fails closed, networks fail open (keep forwarding).
 
