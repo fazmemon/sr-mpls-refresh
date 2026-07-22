@@ -4654,7 +4654,7 @@ A firm trades many venues, so the estate is colo islands joined by a WAN — and
   <textarea data-template>
 ## 23 · SD-WAN & SDN controllers
 
-Completeness section — enterprise/contract screens and the vendor tracks ask this straight. HRT are unlikely to (branch-scale tech vs a few engineered colo links — tunnels, controller-in-path and probe-steering are anti-goals in a deterministic trading WAN), **but "why would you NOT run SD-WAN here?" is a live judgment probe** — same species as "should we use SR" — and this section is that answer. The transferable part is the **controller pattern**, which you already own from three directions: ACI at Sky (closed DC SDN), Apstra (open DC intent), controller-driven SR-TE over BGP (§6 / the migration deck).
+Completeness section — enterprise/contract screens and the vendor tracks ask this straight. HRT are unlikely to (branch-scale tech vs a few engineered colo links — tunnels, controller-in-path and probe-steering are anti-goals in a deterministic trading WAN), **but "why would you NOT run SD-WAN here?" is a live judgment probe** — same species as "should we use SR" — and this section is that answer. **⚠️ Honest ground for this section: no SDN-product experience — say so plainly and go where the substance is.** The real anchor is the **Sky model-driven transformation**, and it is an architect's story, not an operator's: the build-versus-buy call (off-the-shelf vs ops-scripts vs **in-house end-to-end orchestration** — in-house won), **deciding what got automated**, taking the architectures and designs and **sitting with the developers to extract them into the data model** (**OpenConfig**, vendor-neutral across the estate), then **designing the transition, overseeing the migrations, and troubleshooting them when they broke**. Apstra and controller-driven SR-TE over BGP-LS are the same pattern wearing different clothes.
 
 ↓ what SD-WAN is · the Catalyst architecture · the controller map · interview lines
   </textarea>
@@ -4703,7 +4703,7 @@ Day-0 reality (Dib's lab, lostintransit.se 2026-06): interfaces split **VPN 0 (c
 
 | Domain | Closed | Open / multivendor |
 |--------|--------|--------------------|
-| DC fabric | **ACI / APIC** (your Sky build) | **Apstra** (intent + continuous validation) |
+| DC fabric | **ACI / APIC** — Cisco's closed intent fabric. Know what it is; do NOT claim it | **Apstra** (intent + continuous validation, multivendor) |
 | WAN TE | — | **SR-PCE / CloudVision** — SR policies via BGP (§6, migration deck) |
 | SD-WAN branch | **Catalyst/Viptela** (OMP) · Fortinet (firewall-led) · Prisma (ex-CloudGenix) | **HPE/Juniper Mist + Session Smart Router** (ex-128 Tech — **tunnel-less** SVR, no IPsec overhead) |
 | Host overlay | **NSX** (Geneve, micro-seg) | K8s **CNI** (Calico/Cilium) |
@@ -4716,7 +4716,9 @@ One pattern everywhere: **declare intent centrally, controller computes, devices
 - Apstra: off-box intent + validation — no dataplane dependency at all.
 - The grading point: **control-plane loss must degrade to "no changes", never to "no forwarding".** Same fail-direction logic as the §22 deadman — but inverted: risk fails closed, networks fail open (keep forwarding).
 
-<span class="tag ok">Your positioning line</span> *"I've run the closed version (ACI at Sky), designed the open version (controller-driven SR-TE over BGP-LS), and SD-WAN is the same pattern at the branch edge — the differences that matter are trust bootstrap and what breaks when the controller is gone."*
+<span class="tag ok">The honest positioning</span> *"I haven't run an SDN controller product. What I did was lead the move to model-driven at Sky: we chose an in-house end-to-end orchestration system over off-the-shelf and over ops-scripts, I decided what we automated, we took the architecture and designs and sat with the developers to extract them into the data model — OpenConfig, so one stack drove a multi-vendor estate — and I designed the transition, oversaw the migrations and troubleshot them when they went wrong. So the controller pattern I know from the inside is: declare intent centrally, compile it to device config, and keep the dataplane independent of the controller being alive."*
+
+<span class="tag warn">Why that is the stronger answer</span> a controller product is an operations skill; **choosing the model, owning what gets automated, and converting design intent into a data model is the architecture** — and it is the half that transfers to any controller. Follow it with the two questions that show you think about the failure mode: what happens to forwarding when the controller dies, and where does the trust bootstrap (certs, identity, licensing) actually bleed.
   </textarea>
   </section>
 
