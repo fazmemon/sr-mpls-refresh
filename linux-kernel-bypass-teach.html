@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linux receive path &amp; kernel bypass — teach deck</title>
+<style>
+  :root{--bg:#0e1726;--panel:#152136;--panel2:#19243c;--ink:#eaf0fb;--muted:#9db0d0;--accent:#4da3ff;--accent2:#54e0c7;--warn:#ffcf6b;--line:#2b3a56;--ex:#0f2030}
+  *{box-sizing:border-box}html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--ink);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  #deck{height:100vh;width:100vw;overflow:hidden;position:relative}
+  .slide{position:absolute;inset:0;padding:4vh 6vw 8vh;display:none;flex-direction:column;justify-content:center;animation:fade .3s ease;overflow-y:auto}
+  .slide.active{display:flex}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  h1{font-size:min(4.8vw,46px);line-height:1.1;margin:0 0 .35em;letter-spacing:-.5px}
+  h2{font-size:min(3vw,30px);margin:0 0 .5em;letter-spacing:-.3px}
+  .kicker{color:var(--accent);font-weight:700;text-transform:uppercase;letter-spacing:2px;font-size:12px;margin-bottom:10px}
+  p{font-size:min(1.95vw,18px);max-width:84ch;margin:.45em 0;color:#dbe6f7}
+  .lead{color:var(--muted);font-size:min(1.95vw,18px);max-width:82ch}
+  .em{color:var(--accent2);font-weight:600}.em2{color:var(--accent);font-weight:600}.warn{color:var(--warn)}
+  b{color:#fff}
+  code{background:#1e2a3e;padding:1px 6px;border-radius:3px;color:#ffd9a0;font-size:.92em}
+  ul{margin:.3em 0;padding-left:0;list-style:none}
+  li{margin:.42em 0;padding-left:1.3em;position:relative;font-size:min(1.9vw,17px);max-width:86ch}
+  li:before{content:"";position:absolute;left:0;top:.55em;width:8px;height:8px;border-radius:2px;background:var(--accent2)}
+  .key{background:var(--ex);border-left:3px solid var(--accent2);border-radius:0 8px 8px 0;padding:10px 15px;margin:.6em 0 0;font-size:min(1.85vw,16px);color:#bfe9df;max-width:88ch}
+  .key b{color:var(--accent2)}
+  .say{background:#12202f;border:1px solid #2e6e5e;border-radius:10px;padding:10px 15px;margin:.6em 0 0;font-size:min(1.9vw,17px);color:#eaf0fb;max-width:88ch}
+  .say:before{content:"THE ROOM LINE  ";color:var(--accent2);font-size:10px;font-weight:700;letter-spacing:1.5px}
+  .cols{display:flex;gap:2.2vw;flex-wrap:wrap;margin-top:.2em}
+  .col{flex:1;min-width:300px}
+  .box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px 18px;margin:.4em 0}
+  .box h3{margin:.05em 0 .3em;font-size:min(2vw,19px);color:#9cdcfe}.box p{font-size:min(1.8vw,16px);margin:.2em 0}
+  table{border-collapse:collapse;width:100%;margin-top:.4em;font-size:min(1.75vw,16px)}
+  td,th{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+  th{color:var(--accent);font-weight:700}
+  pre{background:#0b1420;border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-size:min(1.7vw,14px);color:#cfe0f5;overflow-x:auto;max-width:92ch}
+  .foot{position:fixed;bottom:14px;left:6vw;right:6vw;display:flex;justify-content:space-between;color:var(--muted);font-size:12px;border-top:1px solid var(--line);padding-top:7px}
+  .nav{position:fixed;bottom:1px;left:50%;transform:translateX(-50%);color:var(--muted);font-size:11px;opacity:.5}
+  svg{width:100%;max-height:56vh}
+  .pgbtn{position:fixed;top:50%;transform:translateY(-50%);width:46px;height:66px;border:1px solid var(--line);background:rgba(21,33,54,.9);color:var(--ink);font-size:26px;border-radius:10px;cursor:pointer;z-index:20}
+  .pgbtn.prev{left:10px}.pgbtn.next{right:10px}
+  @media(max-width:820px){
+    .cols{flex-direction:column;gap:0}
+    #deck{height:auto;overflow:visible}
+    .slide{display:flex!important;position:static;inset:auto;height:auto;min-height:auto;padding:5vh 7vw 4vh;border-bottom:1px solid var(--line);justify-content:flex-start}
+    .foot,.nav,.pgbtn{display:none}
+    svg{max-height:none}
+    table{font-size:13px}
+    pre{font-size:12px}
+  }
+</style>
+</head>
+<body>
+<div id="deck">
+
+  <!-- 1 · cover -->
+  <section class="slide active">
+    <div class="kicker">HRT · weak axis · teach deck</div>
+    <h1>The Linux receive path &amp; kernel bypass</h1>
+    <p class="lead">The one axis HRT know you're building: <b>where packets die between the wire and the app, how you prove which stage, and why bypass exists.</b> This is the "feed is gapping — network or host?" round, taught as a machine you derive answers from. The key experiment is set up on the EC2 box for you to run and diagnose cold — reproduce it yourself and the numbers become yours.</p>
+    <div class="foot"><span>Linux RX path &amp; bypass</span><span>1</span></div>
+  </section>
+
+  <!-- 2 · the ladder -->
+  <section class="slide">
+    <div class="kicker">The core model</div>
+    <h2>Four stages, four buffers — each drops when it fills</h2>
+    <svg viewBox="0 0 1000 300" role="img" aria-label="Receive path ladder">
+      <g font-size="14" text-anchor="middle">
+        <rect x="20" y="90" width="120" height="60" rx="8" fill="#0f2030" stroke="#9db0d0" stroke-width="1.6"/>
+        <text x="80" y="125" fill="#9db0d0">wire</text>
+        <rect x="190" y="80" width="170" height="80" rx="8" fill="#152136" stroke="#4da3ff" stroke-width="2"/>
+        <text x="275" y="108" fill="#eaf0fb" font-weight="700">NIC ring (DMA)</text>
+        <text x="275" y="130" fill="#9db0d0" font-size="11">hardware queue the NIC</text>
+        <text x="275" y="146" fill="#9db0d0" font-size="11">writes packets into</text>
+        <rect x="410" y="80" width="170" height="80" rx="8" fill="#152136" stroke="#4da3ff" stroke-width="2"/>
+        <text x="495" y="108" fill="#eaf0fb" font-weight="700">IRQ / softirq</text>
+        <text x="495" y="130" fill="#9db0d0" font-size="11">the kernel (NAPI) draining</text>
+        <text x="495" y="146" fill="#9db0d0" font-size="11">the ring on a CPU core</text>
+        <rect x="630" y="80" width="170" height="80" rx="8" fill="#152136" stroke="#ffcf6b" stroke-width="2.5"/>
+        <text x="715" y="108" fill="#ffcf6b" font-weight="700">socket buffer</text>
+        <text x="715" y="130" fill="#9db0d0" font-size="11">per-socket queue until</text>
+        <text x="715" y="146" fill="#9db0d0" font-size="11">the app reads</text>
+        <rect x="850" y="90" width="130" height="60" rx="8" fill="#12241d" stroke="#54e0c7" stroke-width="2"/>
+        <text x="915" y="118" fill="#54e0c7" font-weight="700">app recv()</text>
+        <text x="915" y="138" fill="#9db0d0" font-size="11">your code</text>
+      </g>
+      <g stroke="#54e0c7" stroke-width="2.5">
+        <line x1="140" y1="120" x2="190" y2="120"/><line x1="360" y1="120" x2="410" y2="120"/>
+        <line x1="580" y1="120" x2="630" y2="120"/><line x1="800" y1="120" x2="850" y2="120"/>
+      </g>
+      <g font-size="12" text-anchor="middle">
+        <text x="275" y="210" fill="#ffcf6b">drops as: rx_dropped / rx_no_buffer</text>
+        <text x="275" y="230" fill="#9db0d0">see it: ethtool -S · ip -s link</text>
+        <text x="495" y="210" fill="#ffcf6b">drops as: softnet col2 / col3</text>
+        <text x="495" y="230" fill="#9db0d0">see it: /proc/net/softnet_stat</text>
+        <text x="715" y="210" fill="#ffcf6b">drops as: RcvbufErrors</text>
+        <text x="715" y="230" fill="#9db0d0">see it: netstat -su · nstat · ss -uapm</text>
+        <text x="915" y="210" fill="#ffcf6b">too slow → fills stage 3</text>
+        <text x="915" y="230" fill="#9db0d0">see it: Recv-Q in ss</text>
+      </g>
+      <text x="500" y="278" fill="#54e0c7" font-size="14" text-anchor="middle" font-weight="700">there is no "the network is slow" — there is a SPECIFIC stage with a full buffer, and a counter that names it</text>
+    </svg>
+    <div class="foot"><span>2 · The ladder</span><span>2</span></div>
+  </section>
+
+  <!-- 3 · diagnosis -->
+  <section class="slide">
+    <div class="kicker">Reading the counters = the diagnosis</div>
+    <h2>Which counter names which stage</h2>
+    <ul>
+      <li><code>rx_dropped</code> rising, CPUs idle — <b>ring too small for the burst.</b> Grow it: <code>ethtool -G</code>.</li>
+      <li>ring drops <b>with one core pegged in softirq</b> — <b>the CPU can't drain fast enough.</b> Spread with RSS/RPS, pin the IRQ off the app core, raise <code>netdev_budget</code>. <code>time_squeeze</code> (softnet col3) is the tell.</li>
+      <li><code>RcvbufErrors</code> rising, CPU idle — <b>socket buffer overran: the app reads too slowly.</b> Raise <code>rmem_max</code> + <code>SO_RCVBUF</code>, then fix the reader.</li>
+      <li><code>InErrors ≥ RcvbufErrors</code> always — a buffer-full drop charges both. <code>InErrors</code> rising <b>without</b> <code>RcvbufErrors</code> = corrupt / no-listening-port, NOT gapping.</li>
+    </ul>
+    <div class="key"><b>The triage tree, one line:</b> a gap on ONE consumer = host problem · gaps on ALL consumers of one line = that line/network · both lines everywhere = upstream of you. Decide that BEFORE touching a CLI — it picks the layer for free.</div>
+    <div class="foot"><span>3 · Diagnosis</span><span>3</span></div>
+  </section>
+
+  <!-- 4 · the socket stage: gapping -->
+  <section class="slide">
+    <div class="kicker">The stage that matters — gapping lives here</div>
+    <h2>The socket buffer — the experiment to run cold</h2>
+    <p>Market-data gapping is almost always this stage: bursts arrive fine, the app drains too slowly, UDP drops locally, sequence numbers go missing. Reproduce it end-to-end on the EC2 box yourself — these are the target numbers, not ones you've produced yet:</p>
+    <table>
+      <tr><th></th><th>buffer</th><th>app received</th><th>RcvbufErrors</th></tr>
+      <tr><td>tiny buffer + slow reader</td><td>16 KB</td><td><span class="warn">1,248 / 300,000</span></td><td><span class="warn">+298,752</span></td></tr>
+      <tr><td>32 MB buffer + reader keeping up</td><td>64 MB</td><td><span class="em">300,000 / 300,000</span></td><td><span class="em">0</span></td></tr>
+    </table>
+    <ul>
+      <li><code>OutDatagrams</code> climbed by exactly 300,000 — <b>the packets reached the host.</b> The loss was local.</li>
+      <li>The silent villain: <code>net.core.rmem_max</code> defaults to ~208 KB and <b>silently caps</b> whatever <code>SO_RCVBUF</code> the app asks for — ask for 32 MB, get 425 KB, never told.</li>
+      <li>Fix order: raise the ceiling (<code>sysctl net.core.rmem_max</code>), raise the ask (<code>SO_RCVBUF</code>), size to burst × rate.</li>
+    </ul>
+    <div class="key"><b>Why a big buffer is NOT the real fix:</b> it absorbs a <b>burst</b>, not a sustained rate mismatch. If arrival &gt; drain, any finite buffer fills — the buffer is a shock absorber. The real fix is a faster consumer: pin it off the IRQ core, busy-poll, or bypass the kernel entirely.</div>
+    <div class="foot"><span>4 · Socket stage</span><span>4</span></div>
+  </section>
+
+  <!-- 4b · the drill code -->
+  <section class="slide">
+    <div class="kicker">The code behind the drill — write it cold, deck is the check</div>
+    <h2>The sender, the receiver, and the counter</h2>
+    <div class="cols">
+      <div class="col">
+        <p><b>Receiver</b> — small buffer, reads slowly, so it overruns:</p>
+        <pre>import socket, time
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+s.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 16384)
+s.bind(("127.0.0.1", 9999))
+print("SO_RCVBUF =", s.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF))
+n = 0
+while True:
+    s.recvfrom(2048); n += 1
+    if n % 500 == 0: time.sleep(0.05)   # slow reader = overrun</pre>
+      </div>
+      <div class="col">
+        <p><b>Sender</b> — flood, no throttle (a throttle would never overrun it):</p>
+        <pre>import socket
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+for _ in range(300000):
+    s.sendto(b'a' * 1400, ("127.0.0.1", 9999))
+print("sent")</pre>
+        <p style="margin-top:.6em"><b>Watch it drop, then fix it:</b></p>
+        <pre>nstat -n                    # snapshot baseline (silent)
+#   ...run the sender...
+nstat -a | grep -i rcvbuf   # UdpRcvbufErrors = dropped at the socket
+sudo sysctl -w net.core.rmem_max=33554432
+#   raise ceiling (default ~208 KB caps SO_RCVBUF),
+#   then set SO_RCVBUF=33554432 in receiver -> ~0 for a burst</pre>
+      </div>
+    </div>
+    <div class="key"><b>The four verbs to own cold:</b> <code>socket()</code> make it · <code>bind()</code> claim a port (receiver only) · <code>recvfrom()</code> / <code>sendto()</code> in a loop. Everything else — buffer size, payload, port — you invent each time. Constants live in the module: <code>socket.AF_INET</code>, <code>socket.SOCK_DGRAM</code>. And <code>nstat -n</code> snapshots silently; plain <code>nstat</code> / <code>-a</code> shows the count.</div>
+    <div class="foot"><span>4b · The drill code</span><span>4b</span></div>
+  </section>
+
+  <!-- 5 · tuning checklist -->
+  <section class="slide">
+    <div class="kicker">The low-latency host — before bypass</div>
+    <h2>The tuning checklist (know why each exists)</h2>
+    <div class="cols">
+      <div class="col box"><h3>Isolate the hot cores</h3>
+        <p><code>isolcpus</code> + <code>nohz_full</code> + <code>rcu_nocbs</code> — dedicate cores, kill the scheduler tick. SMT off (a sibling on the shared physical core = contention = jitter). Governor = performance, deep C-states off.</p></div>
+      <div class="col box"><h3>Keep interrupts away</h3>
+        <p>Pin NIC-queue IRQs to housekeeping cores (<code>smp_affinity</code>), never the app core. Coalescing DOWN for latency (<code>rx-usecs</code>), ring UP for burst, GRO/LRO off when latency beats throughput.</p></div>
+    </div>
+    <div class="cols">
+      <div class="col box"><h3>Steer flows to the app</h3>
+        <p><b>RSS</b> = hardware hash spreads queues across cores; <b>RFS</b> = deliver a flow to the core its app runs on (cache locality). Busy-poll (<code>SO_BUSY_POLL</code>) — spin instead of sleeping: an idle wake ≈ 8µs, busy-poll ≈ 4µs.</p></div>
+      <div class="col box"><h3>Memory discipline</h3>
+        <p>NIC + app on the same NUMA node. Hugepages (fewer TLB misses), <code>mlockall</code>, swap off. The frame: <b>determinism</b> — the average was never the problem, the tail is.</p></div>
+    </div>
+    <div class="foot"><span>5 · Tuning</span><span>5</span></div>
+  </section>
+
+  <!-- 6 · kernel bypass -->
+  <section class="slide">
+    <div class="kicker">When the kernel itself is the tax</div>
+    <h2>Kernel bypass — why, and the three ways</h2>
+    <p>The normal path (IRQ → kernel stack → socket → syscall → copy) costs a few µs <b>and jitters</b> — every interrupt, context switch and copy is variable. For trading, the jitter matters more than the average. Bypass deletes those steps:</p>
+    <ul>
+      <li><b>DPDK</b> — a userspace <span class="em">poll-mode driver</span> owns the NIC and spins a dedicated core. Lowest, most deterministic. You rewrite the app to its API, and that core is 100% busy forever.</li>
+      <li><b>Solarflare / Onload</b> — <span class="em">transparent</span>: shims the standard socket calls, existing app gets userspace networking with <b>no code change</b>. The pragmatic trading-desk default.</li>
+      <li><b>AF_XDP</b> — the modern in-kernel middle ground: an eBPF hook at the driver redirects chosen packets to a userspace ring. Faster than the stack, keeps more kernel tooling than DPDK.</li>
+    </ul>
+    <div class="key"><b>The trade to state unprompted:</b> bypass <b>burns whole cores</b> (poll-mode = 100% CPU by design) and <b>blinds normal tooling</b> — tcpdump, ss, netfilter no longer see the traffic. You spend cores + observability to buy deterministic latency. Saying the cost is what makes the answer senior.</div>
+    <div class="key"><b>Choosing between them:</b> Onload when you cannot touch the app · DPDK when you own it and the latency budget pays for a burnt core · AF_XDP when you need the speed but want to keep the kernel's tooling.</div>
+    <div class="foot"><span>6 · Bypass</span><span>6</span></div>
+  </section>
+
+  <!-- 7 · EC2 / ENA reality -->
+  <section class="slide">
+    <div class="kicker">The cloud wrinkle you can speak to first-hand</div>
+    <h2>EC2 / ENA — the invisible drop ceiling</h2>
+    <pre>ip -s link ens5   →  errors 0, dropped 0        (looks clean!)
+ethtool -S ens5   →  bw_in_allowance_exceeded: 498   ← AWS shaped you at the hypervisor</pre>
+    <ul>
+      <li>Nitro enforces per-instance allowances — <code>bw_in / bw_out / pps / conntrack</code> — and when you exceed them the hypervisor drops <b>silently</b>: kernel counters read zero.</li>
+      <li>The tell: <b>"0 drops but losing packets"</b> on EC2 = check the ENA <code>*_allowance_exceeded</code> counters. <code>ethtool -S</code> is your only visibility.</li>
+      <li>Honest frame: real HFT is colocated bare metal (Solarflare + bypass + hardware timestamps). EC2 can't bypass ENA and its coalescing knobs are limited — know the difference, say it plainly.</li>
+    </ul>
+    <div class="key"><b>PTP belongs in this story:</b> you cannot optimise latency you can't measure. NTP is milliseconds; hardware timestamping (NIC PHC, <code>ptp4l</code> + <code>phc2sys</code>) is nanoseconds — it's both the measurement floor and the regulatory timestamp (RTS-25 class).</div>
+    <div class="foot"><span>7 · ENA / measurement</span><span>7</span></div>
+  </section>
+
+  <!-- 8 · the room walk -->
+  <section class="slide">
+    <div class="kicker">Putting it together — the round itself</div>
+    <h2>"The feed is gapping" — the walk you own</h2>
+    <ul>
+      <li><b>1 · Localise first.</b> One consumer or all? One line or both? That alone picks host / line / upstream.</li>
+      <li><b>2 · Wire truth.</b> The tap (hardware timestamps, pre-socket) shows every sequence present and in order — so the network delivered. It's the host.</li>
+      <li><b>3 · Walk the ladder up.</b> Ring counters clean → softirq <code>time_squeeze</code> rising → <code>RcvbufErrors</code> climbing with <code>Recv-Q</code> pegged at the buffer cap = the socket stage, named.</li>
+      <li><b>4 · Fix in two tiers.</b> Immediate: raise <code>rmem_max</code> + <code>SO_RCVBUF</code>, repin the consumer. Structural: faster consumer / bypass — and note what the A/B arbitration was doing meanwhile (if BOTH feeds gapped on one host, it's that host, full stop).</li>
+      <li><b>5 · Narrate calmly.</b> The composure while walking counters IS the test for a trading-infra seat.</li>
+    </ul>
+    <div class="key"><b>Your grounding — once you've done the drills:</b> this exact fault is planted in the pcap drill (<code>captures/pcap-drill-01.html</code>), waiting for you to diagnose cold — wire complete + softnet time_squeeze + RcvbufErrors + Recv-Q pegged at the 212992 cap — and the socket-stage overrun is set up to reproduce and fix on the EC2 box. Do both and you'll be describing something you've done, not read.</div>
+    <div class="foot"><span>8 · The walk</span><span>8</span></div>
+  </section>
+
+</div>
+<div class="nav">← → navigate · F fullscreen · (phone: just scroll)</div>
+<script>
+  const slides=[...document.querySelectorAll('.slide')];let i=0;
+  function show(n){slides[i].classList.remove('active');i=(n+slides.length)%slides.length;slides[i].classList.add('active');slides[i].scrollTop=0;}
+  document.addEventListener('keydown',e=>{
+    if(e.key==='ArrowRight'||e.key==='PageDown'){show(i+1);e.preventDefault();}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){show(i-1);e.preventDefault();}
+    else if(e.key==='Home')show(0);else if(e.key==='End')show(slides.length-1);
+    else if(e.key.toLowerCase()==='f'){if(!document.fullscreenElement)document.documentElement.requestFullscreen();else document.exitFullscreen();}
+  });
+  document.addEventListener('click',e=>{ if(e.target.closest('button,a'))return; (e.clientX>innerWidth/2?show(i+1):show(i-1)); });
+  ['prev','next'].forEach(d=>{const b=document.createElement('button');b.className='pgbtn '+d;b.textContent=d==='prev'?'‹':'›';b.onclick=ev=>{ev.stopPropagation();show(d==='prev'?i-1:i+1);};document.body.appendChild(b);});
+</script>
+</body>
+</html>
