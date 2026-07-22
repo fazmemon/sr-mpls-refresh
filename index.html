@@ -4703,7 +4703,7 @@ Day-0 reality (Dib's lab, lostintransit.se 2026-06): interfaces split **VPN 0 (c
 
 | Domain | Closed | Open / multivendor |
 |--------|--------|--------------------|
-| DC fabric | **ACI / APIC** — Cisco's closed intent fabric. Know what it is; do NOT claim it | **Apstra** (intent + continuous validation, multivendor) |
+| DC fabric | closed, vendor-locked fabric controllers | **Apstra** — intent + continuous validation, multivendor |
 | WAN TE | — | **SR-PCE / CloudVision** — SR policies via BGP (§6, migration deck) |
 | SD-WAN branch | **Catalyst/Viptela** (OMP) · Fortinet (firewall-led) · Prisma (ex-CloudGenix) | **HPE/Juniper Mist + Session Smart Router** (ex-128 Tech — **tunnel-less** SVR, no IPsec overhead) |
 | Host overlay | **NSX** (Geneve, micro-seg) | K8s **CNI** (Calico/Cilium) |
