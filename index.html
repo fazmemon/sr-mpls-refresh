@@ -5911,6 +5911,130 @@ ethtool -S ens5   →  bw_in_allowance_exceeded: 498   ← AWS shaped you at the
     </ul>
 </section>
 </section>
+<section>
+<section class="center"><h1>Appendix — Multicast, the machine</h1><h3>two layers, two jobs — and why trading deleted the RP</h3></section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">HRT · market-data IS this · teach deck</h4>
+    <h1>Multicast — the machine, not the flashcards</h1>
+    <p class="lead">One organising idea and everything else falls out of it: <b>two layers, two jobs.</b> Routers <span class="em">build the tree</span> (PIM, receiver toward source). Switches <span class="em">eavesdrop on it</span> (IGMP snooping — they never speak PIM). Every multicast fault is one of those two layers failing, and the symptom tells you which. Your anchor: you ran exactly this machinery at carrier scale for IPTV — trading only raises the determinism bar.</p>
+</section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">The organising idea</h4>
+    <h2>Two layers, two jobs</h2>
+    <svg viewBox="0 0 1000 280" role="img" aria-label="Two layers of multicast">
+      <rect x="40" y="40" width="440" height="200" rx="12" fill="#152136" stroke="#4da3ff" stroke-width="2"/>
+      <text x="260" y="72" fill="#4da3ff" font-size="16" text-anchor="middle" font-weight="700">L3 — routers BUILD the tree</text>
+      <g font-size="12" text-anchor="middle">
+        <circle cx="130" cy="140" r="24" fill="#0f2030" stroke="#4da3ff"/><text x="130" y="145" fill="#eaf0fb">rtr</text>
+        <circle cx="260" cy="140" r="24" fill="#0f2030" stroke="#4da3ff"/><text x="260" y="145" fill="#eaf0fb">rtr</text>
+        <circle cx="390" cy="140" r="24" fill="#0f2030" stroke="#4da3ff"/><text x="390" y="145" fill="#eaf0fb">rtr</text>
+      </g>
+      <line x1="154" y1="140" x2="236" y2="140" stroke="#4da3ff" stroke-width="2.5"/>
+      <line x1="284" y1="140" x2="366" y2="140" stroke="#4da3ff" stroke-width="2.5"/>
+      <text x="260" y="192" fill="#9db0d0" font-size="12" text-anchor="middle">they speak PIM to each other:</text>
+      <text x="260" y="212" fill="#9db0d0" font-size="12" text-anchor="middle">"the stream must flow here" — hop by hop, receiver toward source</text>
+      <rect x="520" y="40" width="440" height="200" rx="12" fill="#12241d" stroke="#54e0c7" stroke-width="2"/>
+      <text x="740" y="72" fill="#54e0c7" font-size="16" text-anchor="middle" font-weight="700">L2 — switches EAVESDROP on it</text>
+      <g font-size="12" text-anchor="middle">
+        <rect x="620" y="116" width="90" height="44" rx="6" fill="#0f2030" stroke="#54e0c7"/><text x="665" y="143" fill="#eaf0fb">switch</text>
+        <circle cx="810" cy="138" r="22" fill="#0f2030" stroke="#9db0d0"/><text x="810" y="143" fill="#eaf0fb">host</text>
+      </g>
+      <line x1="710" y1="138" x2="788" y2="138" stroke="#54e0c7" stroke-width="2.5"/>
+      <text x="740" y="192" fill="#9db0d0" font-size="12" text-anchor="middle">they never speak PIM — they overhear the hosts' IGMP</text>
+      <text x="740" y="212" fill="#9db0d0" font-size="12" text-anchor="middle">conversation to learn which PORTS want the stream. That's all "snooping" is.</text>
+    </svg>
+    <div class="key"><b>Hold that split</b> and most interview answers derive themselves: darkness on one switch = the eavesdropping layer; darkness everywhere on one feed = the tree; gaps on one host = the host. You don't memorise answers — the model hands them to you.</div>
+</section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">The machine in motion</h4>
+    <h2>The story of one receiver joining feed A</h2>
+    <ol>
+      <li style="font-size:min(1.9vw,17px)">The host wants feed A, so it sends an <b>IGMPv3 membership report</b>: <i>include source 10.10.0.1, group 232.1.1.1</i> — it names the source AND the group: the <span class="em">(S,G)</span>.</li>
+      <li style="font-size:min(1.9vw,17px)">The <b>access switch overhears</b> that report (snooping) and opens this port for the group. Eavesdropping, nothing more.</li>
+      <li style="font-size:min(1.9vw,17px)">The <b>last-hop router</b> sees it and sends a <b>PIM (S,G) join toward the source</b> — each router on the way installs state and passes the join up until it splices into the existing tree. <span class="em">The tree grows from receiver toward source</span>, on the shortest path.</li>
+      <li style="font-size:min(1.9vw,17px)">Packets flow down the tree. Each router forwards a multicast packet <b>only if it arrived on the interface facing the source</b> — the <span class="em">RPF check</span>. That is multicast's loop protection: no RPF, and any topology loop becomes a packet storm.</li>
+    </ol>
+    <div class="key"><b>The overlooked worker — the querier.</b> Snooped state is soft; it expires. Someone must keep asking the wire <i>"who still wants what?"</i> (the IGMP General Query) so hosts re-answer and switches refresh their port state. Normally the router does it. <b>A VLAN with no querier rots silently</b> — memberships age out group by group while packets keep arriving upstream. Design a querier onto every receiver VLAN; don't discover it at 3am.</div>
+</section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">Why trading killed the rendezvous point</h4>
+    <h2>ASM vs SSM</h2>
+    <div class="cols">
+      <div class="col box"><h3>Classic ASM — (*,G)</h3>
+        <p>The receiver joins "anyone sending to group G." The network now has a <b>matchmaking problem</b> — receivers don't know the sources — so it needs a matchmaker: the <b>RP</b>, where senders register and the shared tree roots, then a switchover to the source tree.</p>
+        <p><span class="warn">The cost:</span> shared state, shared fate, RP redundancy engineering, MSDP between RPs — a whole failure-mode family that exists ONLY to answer "who is sending?"</p></div>
+      <div class="col box"><h3>SSM — (S,G)</h3>
+        <p>The receiver <b>already knows the source</b> — market-data vendors publish it — and names it in the join: (S,G), IGMPv3 include, the 232/8 range.</p>
+        <p>The matchmaking problem disappears, and with it the RP, the register process, the shared tree, and MSDP. What remains is the minimal machine: <span class="em">a shortest-path tree from each receiver to a named source. Deterministic by construction.</span></p></div>
+    </div>
+    <div class="key"><b>That determinism is why trading runs SSM</b> — and it makes the A/B feed model trivial: two sources, two groups, join both (S,G)s, arbitrate by sequence number. Nothing shared between the planes, so nothing correlates their failures.</div>
+</section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">The trading application of the machine</h4>
+    <h2>A/B feeds — redundancy at zero added latency</h2>
+    <svg viewBox="0 0 1000 270" role="img" aria-label="A and B disjoint feed planes">
+      <g font-size="12" text-anchor="middle">
+        <rect x="40" y="60" width="120" height="46" rx="8" fill="#152136" stroke="#4da3ff" stroke-width="2"/>
+        <text x="100" y="80" fill="#eaf0fb" font-weight="700">Source A</text><text x="100" y="97" fill="#9db0d0" font-size="10">(10.10.0.1, 232.1.1.1)</text>
+        <rect x="40" y="170" width="120" height="46" rx="8" fill="#152136" stroke="#54e0c7" stroke-width="2"/>
+        <text x="100" y="190" fill="#eaf0fb" font-weight="700">Source B</text><text x="100" y="207" fill="#9db0d0" font-size="10">(10.20.0.1, 232.2.2.2)</text>
+        <circle cx="420" cy="83" r="24" fill="#0f2030" stroke="#4da3ff"/><text x="420" y="88" fill="#eaf0fb">A plane</text>
+        <circle cx="420" cy="193" r="24" fill="#0f2030" stroke="#54e0c7"/><text x="420" y="198" fill="#eaf0fb">B plane</text>
+        <rect x="700" y="105" width="150" height="66" rx="8" fill="#0f2030" stroke="#9db0d0" stroke-width="1.6"/>
+        <text x="775" y="130" fill="#eaf0fb" font-weight="700">feed handler</text>
+        <text x="775" y="150" fill="#9db0d0" font-size="11">arbitrates by seq#,</text>
+        <text x="775" y="164" fill="#9db0d0" font-size="11">first arrival wins</text>
+      </g>
+      <line x1="160" y1="83" x2="396" y2="83" stroke="#4da3ff" stroke-width="3"/>
+      <line x1="444" y1="83" x2="700" y2="120" stroke="#4da3ff" stroke-width="3"/>
+      <line x1="160" y1="193" x2="396" y2="193" stroke="#54e0c7" stroke-width="3"/>
+      <line x1="444" y1="193" x2="700" y2="156" stroke="#54e0c7" stroke-width="3"/>
+      <text x="500" y="250" fill="#9db0d0" font-size="13" text-anchor="middle">two SPTs, physically disjoint end to end — no shared link, no shared RP, no shared fate (and "disjoint" only counts SRLG-audited)</text>
+    </svg>
+    <ul>
+      <li>Feeds carry <b>sequence numbers</b> — take whichever of A/B delivers each sequence first, discard the duplicate. Loss on one line is <b>invisible</b>.</li>
+      <li>That's why retransmission never leads the design: a resend costs milliseconds; <span class="em">the B feed is already there.</span></li>
+      <li>Recovery ladder when BOTH gap: retransmit request (off the hot path) → snapshot/refresh channel (also how a late joiner starts).</li>
+    </ul>
+</section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">Derive the answer from the symptom</h4>
+    <h2>The failure catalogue — symptom names the layer</h2>
+    <table>
+      <tr><th>Symptom</th><th>Layer</th><th>Why / confirm</th></tr>
+      <tr><td><b>One switch dark</b>, its uplink still receiving</td><td><span class="em">L2 — snooping / querier</span></td><td>state aged out with no querier to refresh it. Confirm: disable snooping on the VLAN → it floods → receivers return = snooping's signature</td></tr>
+      <tr><td><b>Group dark everywhere on ONE feed</b>, other feed fine</td><td><span class="em">L3 — the tree</span></td><td>RPF failing after a topology change, or (S,G) state torn down upstream — the tree didn't rebuild where you think</td></tr>
+      <tr><td><b>Both feeds missing the SAME sequences</b> everywhere</td><td><span class="em">upstream of you</span></td><td>exchange or extranet side; your plant delivered what it was given</td></tr>
+      <tr><td><b>One consumer gapping</b>, wire clean at the tap</td><td><span class="em">the host</span></td><td>socket buffer overrun — <code>RcvbufErrors</code> (the Linux deck's stage 3)</td></tr>
+      <tr><td><b>Receivers flapping in and out</b></td><td><span class="em">L2 — querier election</span></td><td>duelling or flapping queriers churn the snooped state</td></tr>
+    </table>
+    <div class="key"><b>The rule that compresses the table: darkness is a STATE problem, gaps are a DROP problem.</b> Trees don't drop packets — they exist or they don't. Drops live in buffers — hosts and edges. Decide dark-vs-gappy first and you've picked the layer before touching a CLI.</div>
+</section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">The sharp edge + the boundary</h4>
+    <h2>No backpressure — and what stays off the SR fabric</h2>
+    <ul>
+      <li><b>Multicast has no backpressure.</b> The feed never slows because one box is slow — a slow consumer <span class="em">gaps itself</span>: its socket buffer fills and UDP drops locally while every other consumer stays clean.</li>
+      <li>Isolation: latency-insensitive consumers ride <b>conflated</b> streams (the price now, bounded staleness); the hot path gets its own rail; a bulk consumer never joins a raw full-depth group it can't drain.</li>
+      <li><b>Keep the SSM plane its own plane.</b> EVPN-VXLAN and SR are unicast — don't tunnel a deterministic A/B feed through a controller-computed fabric. If convergence is ever mandated: Tree-SID (SR point-to-multipoint) is the EOS-supported path; BIER is cleaner but unproven there — verify before committing.</li>
+      <li><b>Ordering matters more than loss:</b> per-flow ECMP is safe (one flow pins one path); per-packet spray is forbidden here — arbitration tolerates loss but reordering poisons gap detection.</li>
+    </ul>
+    <div class="key"><b>The model in one breath:</b> routers build the tree with PIM toward a source the receiver names; switches eavesdrop the IGMP conversation to know which ports care; a querier keeps that eavesdropped state alive; RPF keeps the whole thing loop-free. Break any one of the four and the symptom tells you which.</div>
+</section>
+<section>
+<h4 style="color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em">When it's posed as design</h4>
+    <h2>What the room grades</h2>
+    <ul>
+      <li><b>1 · The arithmetic forces multicast</b> — fan-out sizing first: hundreds of consumers of one fat stream make unicast infeasible at the SOURCE's egress. You didn't choose multicast; the numbers did.</li>
+      <li><b>2 · SSM, named unprompted</b> — (S,G) joins via IGMPv3, 232/8, no RP — and <i>why</i>: the RP failure-mode family bought nothing a published source list doesn't.</li>
+      <li><b>3 · The querier as a design item</b> — on every receiver VLAN, decided at design time.</li>
+      <li><b>4 · RPF as the safety story</b> — why a multicast plane doesn't loop.</li>
+      <li><b>5 · A/B on physically disjoint planes</b> + sequence arbitration above — with SRLG honesty about "disjoint".</li>
+      <li><b>6 · Know the boundary</b> — the deterministic SSM plane stays off the SR/VXLAN fabric.</li>
+    </ul>
+    <div class="key"><b>Your anchor, said once:</b> carrier IPTV ran exactly this machinery at scale — same PIM, same IGMP, same trees. The trading version raises the determinism bar and adds the arbitration layer on top. You're updating lived ground, not learning a new field.</div>
+</section>
+</section>
 </div>
 </div>
 
