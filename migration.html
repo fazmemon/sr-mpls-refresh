@@ -23,6 +23,7 @@
 code { font-family: ui-monospace, Menlo, Consolas, monospace; color: #ce9178; background:#15191e; padding:1px 5px; border-radius:3px; }
 .cap { font-size: 0.62em; color: #8a97a3; text-align:center; }
 pre { color:#ccc; }
+  .reveal .room{background:#1e2d1e;border-left:3px solid #4ec9b0;padding:8px 12px;border-radius:0 6px 6px 0;margin:10px 0;font-size:.78em}
 </style>
 </head>
 <body>
@@ -1591,6 +1592,103 @@ ip access-list standard SSM-FEEDS
 
   <p class="cap">Bottom line: don't tunnel a deterministic A/B market-data feed through a controller-computed unicast fabric just to win an architecture-diagram aesthetic. The replication plane is a solved, separate problem; SR-MPLS earns its keep on the unicast side. If convergence is ever mandated, SR P2MP / Tree-SID is the EOS-supported path (and does not need PCEP - install via CVX/controller or CLI); BIER is architecturally cleaner for a stateless core but is not in the EOS multicast docs, so it is a hard to-verify before anyone commits. Pin exact R-series platform support in the lab.</p>
 </section>
+<section><section class="center">
+<h1>Appendix — the inter-DC backbone</h1>
+<h3>knitting the HPC sites together</h3>
+<p style="font-size:.72em;color:#888">Folded in from the global SR backbone strawman. The recruiter's brief (22 Jul) put the role on
+<b>connecting the HPC datacentres</b> — which makes this the shape of the job, not a side-topic.</p>
+</section></section>
+
+<section>
+<section>
+<h2>Requirements drive the design</h2>
+<p>The move that separates an architect answer from a technology answer: <em>let the workload pick the architecture</em>, out loud, before naming a single protocol.</p>
+<ul>
+<li><strong>The traffic is a few enormous, sustained elephant flows</strong> — dataset and checkpoint sync, model distribution, results coming back. Bursty, throughput-hungry, and relatively loss-tolerant.</li>
+<li><strong>It is NOT tight collective training across the WAN.</strong> RTT destroys all-reduce, so training stays inside a DC. The global layer therefore needs <em>bulk capacity, steerability and resilience</em> — <strong>not</strong> lossless RDMA.</li>
+<li><strong>So the WAN is not a stretched fabric.</strong> Anyone proposing PFC/DCQCN across the WAN has mistaken the problem.</li>
+</ul>
+<div class="room"><b>The line:</b> "Before I pick anything — what actually crosses this WAN? If it's checkpoint and dataset movement, that's bulk capacity and steering. If someone's trying to run collectives across it, that's a different and much worse conversation."</div>
+</section>
+
+<section>
+<h3>A few enormous flows breaks your load balancing</h3>
+<ul>
+<li>ECMP hashes <strong>per flow</strong>. A handful of elephants means hashing has almost nothing to work with — one link saturates while the others idle, and the averages look fine.</li>
+<li>This is the honest case for <strong>explicit steering</strong>: pin the big flows to chosen paths rather than praying to a hash.</li>
+<li>Mitigations before you reach for SR: <strong>DMZ link-bandwidth</strong> for unequal-cost sharing, and flow-level striping in the application (parallel streams to create entropy).</li>
+</ul>
+<div class="room"><b>Say it against yourself:</b> "UCMP alone isn't a reason to deploy SR — BGP link-bandwidth already does that on plain IP. The reason is <em>which</em> path a given flow takes, and being able to change it."</div>
+</section>
+
+<section>
+<h3>Topology shape</h3>
+<ul>
+<li>Each DC terminates on a <strong>redundant backbone node pair</strong> — no site hangs off a single box.</li>
+<li><strong>Physically disjoint</strong> inter-site paths, verified at the duct and landing-station level, not on the supplier's map.</li>
+<li>Start as a <strong>single SR domain</strong>; multi-domain per region stitched with <strong>binding-SIDs</strong> is the scaling answer when the IGP gets uncomfortable — not on day one.</li>
+<li><strong>SR-TE / flex-algo</strong> to separate a low-latency plane from a capacity plane, so the elephants and anything latency-sensitive stop competing.</li>
+</ul>
+</section>
+</section>
+
+<section>
+<section>
+<h2>Design choices, with the reasoning</h2>
+<table>
+<tr><th>Choice</th><th>Call</th><th>Why — and the honest counter</th></tr>
+<tr><td><strong>IGP</strong></td><td>IS-IS for greenfield</td><td>L2-native so it isn't dependent on the IP layer it builds; TLV-extensible, which is why SR, SRv6 and flex-algo landed there first. <em>Counter: if the estate already runs OSPF and the team knows it, "change the IGP" is cost with no benefit — OSPF carries SR fine in opaque LSAs.</em></td></tr>
+<tr><td><strong>Data plane</strong></td><td>SR-MPLS here</td><td>4 bytes per SID, mature Arista support, no LDP and no RSVP. <em>See the next slide for the SRv6 argument, which is real but loses on this network.</em></td></tr>
+<tr><td><strong>Steering</strong></td><td>flex-algo + SR-TE</td><td>Pin elephants to a plane; BGP-LS north to a controller/PCE for a global view. <em>Note EOS has no PCEP — so BGP SR Policy, not PCEP.</em></td></tr>
+<tr><td><strong>Fast reroute</strong></td><td>TI-LFA</td><td>Guaranteed post-convergence path, 100% topology coverage, no pre-built bypass tunnels. This is the benefit plain IP genuinely cannot give you.</td></tr>
+<tr><td><strong>Services</strong></td><td>L3VPN / EVPN over SR</td><td>Tenant and site separation on top, only if separation is actually required. Don't add a VPN layer to a network with one tenant.</td></tr>
+</table>
+</section>
+
+<section>
+<h3>"We're an IPv4 shop — can we still run SRv6?"</h3>
+<p>Yes, and the mechanism matters — this is a question you should expect.</p>
+<ul>
+<li>The <strong>SRH is an IPv6 extension header</strong>. It cannot exist on an IPv4 packet — so there is no "just add an EH to our v4 traffic".</li>
+<li>What happens instead is <strong>encapsulation</strong>: the headend does <strong>H.Encaps</strong> — a full outer IPv6 header plus SRH, with the IPv4 packet as payload. Egress does <strong>End.DT4</strong> (decap + IPv4 VRF lookup) or <strong>End.DX4</strong> (decap + cross-connect). That is exactly how SRv6 L3VPN carries IPv4 today.</li>
+<li><strong>The good property:</strong> the active SID sits in the IPv6 <em>destination address</em>, so transit routers need only route IPv6 normally — they don't need SRH awareness. Only the SID-owning waypoints need SRv6 behaviours.</li>
+</ul>
+<div class="room"><b>And then the honest verdict:</b> "It works — but it means deploying IPv6 across the WAN first, as a prerequisite, before you see any SR benefit. Plus 40 bytes of outer header and 8 of SRH versus 4 bytes per SID. And on Arista, SR-MPLS support is the mature one. SRv6's pitch is 'no MPLS data plane' — but SR-MPLS already needs no LDP and no RSVP, so you'd be trading 'no MPLS' for 'yes IPv6 everywhere'."</div>
+</section>
+</section>
+
+<section>
+<section>
+<h2>Physical layer and resilience</h2>
+<ul>
+<li><strong>Lease the glass, own the overlay.</strong> Dark fibre, IRUs or waves on established routes — carriers trench where population, power and permits already are. You build and own the SR layer on top.</li>
+<li><strong>Diversity is physical, not contractual.</strong> Two circuits from two suppliers routinely share a duct, a bridge crossing, or a landing station. Audit the <strong>SRLG</strong> at the duct and landing-station level or your "diverse pair" is one cable.</li>
+<li><strong>Size resilience to repair-time economics.</strong> A subsea repair is measured in <em>weeks to months</em> — a cable ship has to be chartered and sail. Where that's the exposure, <strong>N+2 or N+3</strong> is the rational answer, not a reflex N+1.</li>
+<li><strong>TI-LFA</strong> handles the sub-50ms case; the capacity plan handles the months-long one. They're different problems and conflating them is a common error.</li>
+</ul>
+<div class="room"><b>This is lived ground — use it.</b> The Sky Ireland subsea work is a real worked example of merged ducts and landing stations inside 50m defeating a paper-diverse design. Tell it as something you found and fixed, not as something you oversaw.</div>
+</section>
+
+<section>
+<h3>Open decisions — invite the steer</h3>
+<ul>
+<li>SR-MPLS vs SRv6 — hardware line-rate support and MTU, not ideology.</li>
+<li>Single SR domain vs per-region domains stitched with binding-SIDs.</li>
+<li>Controller/PCE, and how much TE is genuinely centralised versus left to the IGP.</li>
+<li>Build vs lease vs consortium, per span.</li>
+<li>How many flex-algo planes — latency, capacity, cost — before the operational overhead outweighs the benefit.</li>
+</ul>
+<div class="room"><b>The close:</b> "That's a strawman, not a proposal — I don't have your constraints or the decisions you've already taken. Where does it collide with what you're planning?"</div>
+</section>
+</section>
+
+<section class="center">
+<h2>Provenance</h2>
+<p style="font-size:.78em">This appendix was drafted as a global SR backbone strawman for a different company's GPU sites
+(UK · Norway · Portugal · Texas). The <em>reasoning</em> transfers to any multi-site HPC interconnect; the site list does not.
+<strong>Do not present it as HRT's network</strong> — present it as how you'd approach the problem, and ask where it's wrong.</p>
+</section>
+
 </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
