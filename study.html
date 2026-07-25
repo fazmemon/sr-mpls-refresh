@@ -91,6 +91,8 @@
 
   <h2>4 · The labs — the hands-on half</h2>
   <ul>
+    <li><a href="dclab-estate.html">The estate — topology and BGP</a><span class="tag live">20 nodes, LIVE</span>
+      <span class="d">Built from the running box 25 Jul. Toggle between <b>physical + IGP</b> and <b>BGP sessions</b> on the same layout. Research DC (OSPF/EVPN/VXLAN) → <code>bl1</code> border → <b>BGP-free IS-IS-SR core</b> ring → <code>asbr1</code> → inter-AS BGP-LU → AS 65001 colo edge → EPE to exchange and transit. Market data on dedicated L3 at both ends, never in the overlay.</span></li>
     <li><a href="lab-spec.html">Lab build spec — Arista SR + EVPN + SDN</a><span class="tag todo">NOT STARTED</span>
       <span class="d"><b>Stage 0</b> topology (3 leaf / 2 spine) · <b>1</b> underlay + SR-MPLS: SRGB, prefix-SIDs, the label stack hop by hop · <b>2</b> EVPN/VXLAN overlay, then break it · <b>3 the SDN layer</b>: gNMI/OpenConfig with <code>gnmic</code>, streaming telemetry with traffic running, NetBox + Ansible with drift surfacing as a diff, optional SONiC · <b>4</b> pcap on your own fabric.</span></li>
     <li><b>Linux box</b><span class="tag todo">PART DONE</span>
