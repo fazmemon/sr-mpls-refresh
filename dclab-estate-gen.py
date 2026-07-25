@@ -63,8 +63,7 @@ BGP = [
     ("leaf3","spine1","ibgp_rr",""), ("leaf3","spine2","ibgp_rr",""),
     ("spine1","spine2","ibgp",""),
     ("bl1","spine1","ibgp_rr",""), ("bl1","spine2","ibgp_rr",""),
-    ("asbr1","spine1","kill","Active"), ("asbr1","spine2","kill","Active"),
-    ("bl1","asbr1","gap","iBGP to build"),
+    ("bl1","asbr1","wan","iBGP · RR + next-hop-self"),
     ("asbr1","asbr2","lu","eBGP + BGP-LU"),
     ("asbr2","edge2","ibgp",""),
     ("edge2","peer1","ebgp","EPE"), ("edge2","transit1","ebgp","EPE"),
@@ -85,7 +84,7 @@ LC = {"dc":"var(--dc)","bd":"var(--bd)","xw":"var(--bd)","wan":"var(--wan)",
       "wanhi":"var(--wanhi)","ias":"var(--as)","ext":"var(--peer)",
       "host":"var(--host)","md":"var(--md)"}
 BC = {"ibgp":"var(--bgp)","ibgp_rr":"var(--bgp)","ebgp":"var(--bgpe)",
-      "lu":"var(--bgplu)","gap":"var(--gap)","kill":"var(--kill)"}
+      "lu":"var(--bgplu)","gap":"var(--gap)","kill":"var(--kill)","wan":"var(--gap)"}
 
 
 def edge(cx, cy, w, h, tx, ty):
@@ -134,7 +133,7 @@ for a, b, kind, lab in BGP:
     cx, cy = mx - dy / L * bow, my + dx / L * bow
     col = BC[kind]
     dash = ' stroke-dasharray="9 6"' if kind in ("gap", "kill") else ""
-    wdt = {"lu": 3.4, "gap": 3.0, "kill": 2.2, "ebgp": 2.6}.get(kind, 1.7)
+    wdt = {"lu": 3.4, "gap": 3.0, "kill": 2.2, "ebgp": 2.6, "wan": 3.0}.get(kind, 1.7)
     op = 0.55 if kind == "kill" else 1
     bgp.append(f'<path d="M{x1:.0f},{y1:.0f} Q{cx:.0f},{cy:.0f} {x2:.0f},{y2:.0f}" '
                f'fill="none" stroke="{col}" stroke-width="{wdt}"{dash} opacity="{op}"/>')
@@ -240,7 +239,7 @@ b.ink{{color:var(--ink)}}
 </style>
 <div class="wrap">
 <h1>HRT estate — topology and BGP</h1>
-<p class="sub">Built from the live box, 25 Jul 2026 · 20 nodes · EC2 netlab/containerlab · <code>netlab connect &lt;node&gt;</code> · admin/admin</p>
+<p class="sub">Built from the live box, 25 Jul 2026 · S0 complete: WAN iBGP up, label forwarding verified · 20 nodes · EC2 netlab/containerlab · <code>netlab connect &lt;node&gt;</code> · admin/admin</p>
 <div class="bar">
   <button id="b1" aria-pressed="true">Physical + IGP</button>
   <button id="b2" aria-pressed="false">BGP sessions</button>
@@ -264,8 +263,7 @@ b.ink{{color:var(--ink)}}
   <span><i class="sw" style="background:var(--as)"></i>AS 65001 / inter-AS</span>
   <span><i class="sw" style="background:var(--peer)"></i>external eBGP</span>
   <span><i class="sw" style="background:var(--md)"></i>market data, dedicated L3</span>
-  <span><i class="sw" style="background:var(--gap)"></i>session to build</span>
-  <span><i class="sw" style="background:var(--kill)"></i>session to remove</span>
+  <span><i class="sw" style="background:var(--gap)"></i>WAN-domain iBGP (over the BGP-free core)</span>
 </div>
 <p class="note">
 <b class="ink">Read the core as an absence.</b> <code>show running-config section bgp</code> returns nothing on
@@ -277,16 +275,26 @@ their own IS-IS-SR. <code>bl1</code> is the only node in two of them and it runs
 leaks between them — reachability crosses on BGP with next-hop rewrite, and SR provides transport to
 whatever next-hop lands.
 <br><br>
-<b class="ink">The amber arc is the hole.</b> <code>bl1 ↔ asbr1</code> is the WAN domain's own iBGP and it
-does not exist yet. The two red arcs are netlab's leftover full-mesh reflex — <code>asbr1</code> pointed at
-the DC route-reflectors, stuck in <code>Active</code> because it runs IS-IS only and cannot resolve
-<code>10.0.0.1</code>/<code>.2</code>. Those come out; the amber one goes in.
+<b class="ink">Service prefixes are kept out of the core IGP on purpose — this is the load-bearing bit.</b>
+While <code>172.16.2.0/24</code> was in IS-IS, the core had a native route to it and forwarded plain IP
+hop by hop; the SR label plane was fully programmed and completely unused. Removing that one interface
+from IS-IS was the entire fix — EOS immediately resolved the BGP route over the SR tunnel with no extra
+configuration:
 <br><br>
-<b class="ink">Ring metrics are deliberate.</b> core4↔core3 is 100 and the rest are 10, so for
+<code>B I 172.16.2.0/24 [200/0] via 10.0.0.6/32, IS-IS SR tunnel index 2 → label 900006</code>
+<br><br>
+and the traceroute turned into <code>core1 &lt;MPLS:L=900006&gt; → bl1 → mdrx</code>. A BGP-free core is not
+a core that happens to run no BGP — it is a core with <i>no route to the service at all</i>, which is what
+leaves label switching as the only way through. Watch for the trap that produced this: netlab had put
+<code>bl1</code>'s receiver-facing interface into <b>both</b> OSPF and IS-IS, so the prefix was being
+injected into both domains without a <code>redistribute</code> statement anywhere.
+<br><br>
+<b class="ink">Ring metrics are deliberate, and now applied.</b> core4↔core3 is 100 and the rest are 10, so for
 <code>bl1 → asbr1</code> the path is core1→core2 and the alternate neighbour core3 has no loop-free path —
 its own route back to core2 runs through core1. No LFA exists, so TI-LFA has to build a repair to the
-post-convergence path and push a two-label stack rather than a single swap. Equal metrics would give ECMP
-and prove nothing.
+post-convergence path and push a two-label stack rather than a single swap. Verified: with all four links
+at the default 10 the traceroute ECMP'd round both sides of the ring; at 100 it collapses to the single
+path <code>asbr1 → core2 → core1 → bl1</code>. Equal metrics would prove nothing.
 <br><br>
 <b class="ink">Market data never touches the overlay.</b> <code>mktdata</code> at the colo edge and
 <code>mdrx</code> in the DC both sit on dedicated routed segments — PIM-SSM inter-AS across the SR core, no
