@@ -1,0 +1,172 @@
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes">
+<title>dclab topology — HRT lab</title>
+<style>
+:root{
+  --bg:#f6f7f9; --card:#fff; --ink:#0f172a; --muted:#64748b;
+  --dc:#2563eb; --dc-fill:#eff6ff; --wan:#7c3aed; --wan-fill:#f5f3ff;
+  --peer:#059669; --peer-fill:#ecfdf5; --bd:#dc2626; --bd-fill:#fef2f2;
+  --host:#475569; --host-fill:#f1f5f9;
+  --pill:#ffffff; --pill-host:#f1f5f9; --pill-peer:#ecfdf5;
+  --zone-dc:#dbeafe55; --zone-wan:#ede9fe55;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#0b1120; --card:#111827; --ink:#e5e7eb; --muted:#94a3b8;
+    --dc:#60a5fa; --dc-fill:#0b1e3b; --wan:#a78bfa; --wan-fill:#1e1633;
+    --peer:#34d399; --peer-fill:#062b20; --bd:#f87171; --bd-fill:#3b0d0d;
+    --host:#94a3b8; --host-fill:#1e293b;
+    --pill:#0f172a; --pill-host:#1e293b; --pill-peer:#062b20;
+    --zone-dc:#1e3a8a33; --zone-wan:#4c1d9533; }
+}
+:root[data-theme=dark]{ --bg:#0b1120; --card:#111827; --ink:#e5e7eb; --muted:#94a3b8;
+  --dc:#60a5fa; --dc-fill:#0b1e3b; --wan:#a78bfa; --wan-fill:#1e1633;
+  --peer:#34d399; --peer-fill:#062b20; --bd:#f87171; --bd-fill:#3b0d0d;
+  --host:#94a3b8; --host-fill:#1e293b; --pill:#0f172a; --pill-host:#1e293b;
+  --pill-peer:#062b20; --zone-dc:#1e3a8a33; --zone-wan:#4c1d9533; }
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1300px;margin:0 auto;padding:16px}
+h1{font-size:19px;margin:6px 0 2px} .sub{color:var(--muted);font-size:13px;margin:0 0 12px}
+.card{background:var(--card);border:1px solid #94a3b833;border-radius:16px;padding:10px;overflow:auto}
+svg{width:100%;height:auto;min-width:820px;display:block}
+.zone-dc{fill:var(--zone-dc);stroke:var(--dc);stroke-width:1;stroke-dasharray:3 4}
+.zone-wan{fill:var(--zone-wan);stroke:var(--wan);stroke-width:1;stroke-dasharray:3 4}
+.zlab{font:600 15px sans-serif}
+.bdlab{font:700 13px sans-serif;fill:var(--bd)}
+.nname{font:700 16px sans-serif;fill:var(--ink)}
+.nlo{font:600 12px ui-monospace,monospace;fill:var(--ink)}
+.nsub{font:11px sans-serif;fill:var(--muted)}
+.ifl{font:600 11px ui-monospace,monospace;fill:var(--ink)}
+.subn{font:10px ui-monospace,monospace;fill:var(--ink)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;font-size:13px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:22px;height:4px;border-radius:2px;display:inline-block}
+.note{color:var(--muted);font-size:12.5px;margin-top:10px;line-height:1.5}
+code{background:#94a3b822;padding:1px 5px;border-radius:4px;font-size:12px}
+</style>
+<div class="wrap">
+<h1>dclab — HRT prep topology</h1>
+<p class="sub">EC2 · netlab/containerlab · pinch to zoom · login <code>admin/admin</code> · <code>netlab connect &lt;node&gt;</code></p>
+<div class="card">
+<svg viewBox="0 0 1260 1090" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif">
+<rect x="24" y="46" width="1212" height="550" rx="14" class="zone-dc"/>
+<text x="44" y="76" class="zlab" fill="var(--dc)">RESEARCH DC — EVPN/VXLAN overlay · OSPF underlay · AS 65000</text>
+<rect x="24" y="662" width="1212" height="366" rx="14" class="zone-wan"/>
+<text x="44" y="692" class="zlab" fill="var(--wan)">WAN — IS-IS L2 + SR-MPLS · AS 65000</text>
+<line x1="24" y1="635" x2="1236" y2="635" stroke="var(--bd)" stroke-width="2.4" stroke-dasharray="10 7"/>
+<rect x="415" y="620" width="430" height="30" rx="15" fill="var(--bd-fill)" stroke="var(--bd)" stroke-width="1.2"/>
+<text x="630" y="640" text-anchor="middle" class="bdlab">★ ISLAND BOUNDARY — no OSPF↔IS-IS redistribution</text>
+<line x1="215" y1="309" x2="370" y2="151" stroke="var(--dc)" stroke-width="2.2"/>
+<line x1="260" y1="316" x2="785" y2="144" stroke="var(--dc)" stroke-width="2.2"/>
+<line x1="447" y1="309" x2="408" y2="151" stroke="var(--dc)" stroke-width="2.2"/>
+<line x1="512" y1="309" x2="803" y2="151" stroke="var(--dc)" stroke-width="2.2"/>
+<line x1="679" y1="309" x2="446" y2="151" stroke="var(--dc)" stroke-width="2.2"/>
+<line x1="744" y1="309" x2="841" y2="151" stroke="var(--dc)" stroke-width="2.2"/>
+<line x1="967" y1="310" x2="475" y2="145" stroke="var(--bd)" stroke-width="2.2"/>
+<line x1="1026" y1="307" x2="887" y2="151" stroke="var(--bd)" stroke-width="2.2"/>
+<line x1="1010" y1="373" x2="517" y2="739" stroke="var(--bd)" stroke-width="2.2"/>
+<line x1="1040" y1="373" x2="869" y2="739" stroke="var(--bd)" stroke-width="2.2"/>
+<line x1="550" y1="770" x2="780" y2="770" stroke="var(--wan)" stroke-width="2.2"/>
+<line x1="504" y1="801" x2="636" y2="944" stroke="var(--peer)" stroke-width="2.2" stroke-dasharray="7 5"/>
+<line x1="826" y1="801" x2="694" y2="944" stroke="var(--peer)" stroke-width="2.2" stroke-dasharray="7 5"/>
+<line x1="185" y1="482" x2="185" y2="371" stroke="var(--host)" stroke-width="2.2"/>
+<line x1="455" y1="482" x2="455" y2="371" stroke="var(--host)" stroke-width="2.2"/>
+<line x1="725" y1="482" x2="725" y2="371" stroke="var(--host)" stroke-width="2.2"/>
+<g><rect x="325" y="89" width="150" height="62" rx="9" fill="var(--dc-fill)" stroke="var(--dc)" stroke-width="2"/>
+<text x="400" y="111" text-anchor="middle" class="nname">spine1</text>
+<text x="400" y="127" text-anchor="middle" class="nlo">lo 10.0.0.1</text>
+<text x="400" y="142" text-anchor="middle" class="nsub">OSPF · EVPN-RR · m.101</text></g>
+<g><rect x="785" y="89" width="150" height="62" rx="9" fill="var(--dc-fill)" stroke="var(--dc)" stroke-width="2"/>
+<text x="860" y="111" text-anchor="middle" class="nname">spine2</text>
+<text x="860" y="127" text-anchor="middle" class="nlo">lo 10.0.0.2</text>
+<text x="860" y="142" text-anchor="middle" class="nsub">OSPF · EVPN-RR · m.102</text></g>
+<g><rect x="110" y="309" width="150" height="62" rx="9" fill="var(--dc-fill)" stroke="var(--dc)" stroke-width="2"/>
+<text x="185" y="331" text-anchor="middle" class="nname">leaf1</text>
+<text x="185" y="347" text-anchor="middle" class="nlo">lo 10.0.0.3</text>
+<text x="185" y="362" text-anchor="middle" class="nsub">VTEP · m.103</text></g>
+<g><rect x="380" y="309" width="150" height="62" rx="9" fill="var(--dc-fill)" stroke="var(--dc)" stroke-width="2"/>
+<text x="455" y="331" text-anchor="middle" class="nname">leaf2</text>
+<text x="455" y="347" text-anchor="middle" class="nlo">lo 10.0.0.4</text>
+<text x="455" y="362" text-anchor="middle" class="nsub">VTEP · m.104</text></g>
+<g><rect x="650" y="309" width="150" height="62" rx="9" fill="var(--dc-fill)" stroke="var(--dc)" stroke-width="2"/>
+<text x="725" y="331" text-anchor="middle" class="nname">leaf3</text>
+<text x="725" y="347" text-anchor="middle" class="nlo">lo 10.0.0.5</text>
+<text x="725" y="362" text-anchor="middle" class="nsub">VTEP · m.105</text></g>
+<g><rect x="967" y="307" width="176" height="66" rx="9" fill="var(--bd-fill)" stroke="var(--bd)" stroke-width="2"/>
+<text x="1055" y="331" text-anchor="middle" class="nname">bl1</text>
+<text x="1055" y="347" text-anchor="middle" class="nlo">lo 10.0.0.6</text>
+<text x="1055" y="362" text-anchor="middle" class="nsub">OSPF + IS-IS-SR · m.106</text></g>
+<g><rect x="126" y="482" width="118" height="46" rx="9" fill="var(--host-fill)" stroke="var(--host)" stroke-width="2"/>
+<text x="185" y="502" text-anchor="middle" class="nname">h1</text>
+<text x="185" y="518" text-anchor="middle" class="nsub">172.16.0.10</text></g>
+<g><rect x="396" y="482" width="118" height="46" rx="9" fill="var(--host-fill)" stroke="var(--host)" stroke-width="2"/>
+<text x="455" y="502" text-anchor="middle" class="nname">h2</text>
+<text x="455" y="518" text-anchor="middle" class="nsub">172.16.0.11</text></g>
+<g><rect x="666" y="482" width="118" height="46" rx="9" fill="var(--host-fill)" stroke="var(--host)" stroke-width="2"/>
+<text x="725" y="502" text-anchor="middle" class="nname">h3</text>
+<text x="725" y="518" text-anchor="middle" class="nsub">172.16.0.12</text></g>
+<g><rect x="400" y="739" width="150" height="62" rx="9" fill="var(--wan-fill)" stroke="var(--wan)" stroke-width="2"/>
+<text x="475" y="761" text-anchor="middle" class="nname">core1</text>
+<text x="475" y="777" text-anchor="middle" class="nlo">lo 10.0.0.7</text>
+<text x="475" y="792" text-anchor="middle" class="nsub">IS-IS-SR · m.107</text></g>
+<g><rect x="780" y="739" width="150" height="62" rx="9" fill="var(--wan-fill)" stroke="var(--wan)" stroke-width="2"/>
+<text x="855" y="761" text-anchor="middle" class="nname">core2</text>
+<text x="855" y="777" text-anchor="middle" class="nlo">lo 10.0.0.8</text>
+<text x="855" y="792" text-anchor="middle" class="nsub">IS-IS-SR · m.108</text></g>
+<g><rect x="577" y="944" width="176" height="62" rx="9" fill="var(--peer-fill)" stroke="var(--peer)" stroke-width="2"/>
+<text x="665" y="966" text-anchor="middle" class="nname">isp</text>
+<text x="665" y="982" text-anchor="middle" class="nlo">lo 10.0.0.9</text>
+<text x="665" y="997" text-anchor="middle" class="nsub">AS 65100 · FRR · m.109</text></g>
+<text x="232" y="292" class="ifl">Et1 .1</text>
+<text x="353" y="168" class="ifl">Et1 .2</text>
+<text x="318" y="297" class="ifl">Et2 .5</text>
+<text x="727" y="163" class="ifl">Et1 .6</text>
+<text x="443" y="292" class="ifl">Et1 .9</text>
+<text x="412" y="168" class="ifl">Et2 .10</text>
+<text x="544" y="292" class="ifl">Et2 .13</text>
+<text x="771" y="168" class="ifl">Et2 .14</text>
+<text x="654" y="292" class="ifl">Et1 .17</text>
+<text x="471" y="168" class="ifl">Et3 .18</text>
+<text x="755" y="292" class="ifl">Et2 .21</text>
+<text x="830" y="168" class="ifl">Et3 .22</text>
+<text x="913" y="292" class="ifl">Et1 .25</text>
+<text x="529" y="163" class="ifl">Et4 .26</text>
+<text x="1011" y="290" class="ifl">Et2 .29</text>
+<text x="903" y="168" class="ifl">Et4 .30</text>
+<text x="956" y="413" class="ifl">Et3 .33</text>
+<text x="571" y="699" class="ifl">Et1 .34</text>
+<g><rect x="720" y="547" width="87" height="17" rx="8" fill="var(--pill)" stroke="var(--bd)" stroke-width="0.8"/><text x="764" y="559" class="subn" text-anchor="middle">10.1.0.32/30</text></g>
+<text x="1021" y="413" class="ifl">Et4 .37</text>
+<text x="888" y="699" class="ifl">Et1 .38</text>
+<g><rect x="911" y="547" width="87" height="17" rx="8" fill="var(--pill)" stroke="var(--bd)" stroke-width="0.8"/><text x="955" y="559" class="subn" text-anchor="middle">10.1.0.36/30</text></g>
+<text x="575" y="770" class="ifl">Et2 .41</text>
+<text x="755" y="770" class="ifl">Et2 .42</text>
+<g><rect x="622" y="761" width="87" height="17" rx="8" fill="var(--pill)" stroke="var(--wan)" stroke-width="0.8"/><text x="665" y="773" class="subn" text-anchor="middle">10.1.0.40/30</text></g>
+<text x="518" y="817" class="ifl">Et3 .45</text>
+<text x="622" y="928" class="ifl">eth1 .46</text>
+<g><rect x="527" y="864" width="87" height="17" rx="8" fill="var(--pill-peer)" stroke="var(--peer)" stroke-width="0.8"/><text x="570" y="876" class="subn" text-anchor="middle">10.1.0.44/30</text></g>
+<text x="812" y="817" class="ifl">Et3 .49</text>
+<text x="708" y="928" class="ifl">eth2 .50</text>
+<g><rect x="717" y="864" width="87" height="17" rx="8" fill="var(--pill-peer)" stroke="var(--peer)" stroke-width="0.8"/><text x="760" y="876" class="subn" text-anchor="middle">10.1.0.48/30</text></g>
+<text x="185" y="470" class="ifl">eth1</text>
+<text x="185" y="383" class="ifl">Et3</text>
+<g><rect x="116" y="418" width="138" height="17" rx="8" fill="var(--pill-host)" stroke="var(--host)" stroke-width="0.8"/><text x="185" y="430" class="subn" text-anchor="middle">vlan1000 / vni101010</text></g>
+<text x="455" y="470" class="ifl">eth1</text>
+<text x="455" y="383" class="ifl">Et3</text>
+<g><rect x="386" y="418" width="138" height="17" rx="8" fill="var(--pill-host)" stroke="var(--host)" stroke-width="0.8"/><text x="455" y="430" class="subn" text-anchor="middle">vlan1000 / vni101010</text></g>
+<text x="725" y="470" class="ifl">eth1</text>
+<text x="725" y="383" class="ifl">Et3</text>
+<g><rect x="656" y="418" width="138" height="17" rx="8" fill="var(--pill-host)" stroke="var(--host)" stroke-width="0.8"/><text x="725" y="430" class="subn" text-anchor="middle">vlan1000 / vni101010</text></g>
+</svg>
+</div>
+<div class="legend">
+  <span><i class="sw" style="background:var(--dc)"></i>DC fabric (OSPF/EVPN)</span>
+  <span><i class="sw" style="background:var(--bd)"></i>border / DC↔WAN</span>
+  <span><i class="sw" style="background:var(--wan)"></i>WAN (IS-IS-SR)</span>
+  <span><i class="sw" style="background:var(--peer)"></i>eBGP peering (EPE)</span>
+  <span><i class="sw" style="background:var(--host)"></i>host access</span>
+</div>
+<p class="note">
+All P2P links are <code>/30</code> in <code>10.1.0.0/24</code>; only the host octet is shown at each interface (e.g. <code>Et1 .34</code> = <code>10.1.0.34</code>). Loopbacks <code>10.0.0.X/32</code>, mgmt <code>192.168.121.10X</code> (shown as <code>m.10X</code>). Hosts share one stretched L2 (VLAN 1000 / VNI 101010) across the three leaves.
+<br><b>The red boundary:</b> bl1 runs OSPF and IS-IS-SR side by side with no redistribution, so the DC and WAN can't reach each other's loopbacks yet — that's the stitch to build.
+</p>
+</div>
