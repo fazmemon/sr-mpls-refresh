@@ -1,5 +1,5 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes">
-<title>TARGET architecture — HRT lab (for approval)</title>
+<title>TARGET architecture v2 — HRT lab (for approval)</title>
 <style>
 :root{--bg:#f6f7f9;--card:#fff;--ink:#0f172a;--muted:#64748b;
  --dc:#2563eb;--dc-fill:#eff6ff;--sr1:#7c3aed;--sr1-fill:#f5f3ff;
@@ -18,10 +18,10 @@
  --tran:#fbbf24;--tran-fill:#3a2a08;--mcast:#fb923c;--mcast-fill:#3a1e0a;--ctrl:#f472b6;--ctrl-fill:#3a0f26;
  --z-as1:#7c3aed22;--z-as2:#0891b222;--z-dc:#2563eb18;--z-core:#7c3aed18;}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
-.wrap{max-width:1400px;margin:0 auto;padding:16px}
+.wrap{max-width:1500px;margin:0 auto;padding:16px}
 h1{font-size:20px;margin:6px 0 2px}.sub{color:var(--muted);font-size:13px;margin:0 0 12px;line-height:1.5}
 .card{background:var(--card);border:1px solid #94a3b833;border-radius:16px;padding:10px;overflow:auto}
-svg{width:100%;height:auto;min-width:900px;display:block}
+svg{width:100%;height:auto;min-width:980px;display:block}
 .z-as1{fill:var(--z-as1);stroke:var(--sr1);stroke-width:1.4;stroke-dasharray:4 4}
 .z-as2{fill:var(--z-as2);stroke:var(--sr2);stroke-width:1.4;stroke-dasharray:4 4}
 .z-dc{fill:var(--z-dc);stroke:var(--dc);stroke-width:1;stroke-dasharray:3 4}
@@ -29,126 +29,132 @@ svg{width:100%;height:auto;min-width:900px;display:block}
 .zbig{font:700 15px sans-serif}.zsm{font:600 12.5px sans-serif}
 .bdlab{font:700 13px sans-serif;fill:var(--bd)}
 .nname{font:700 15px sans-serif;fill:var(--ink)}.nrole{font:10.5px sans-serif;fill:var(--muted)}
-.nlo{font:600 11px ui-monospace,monospace;fill:var(--ink)}
-.llab{font:700 11px sans-serif}
+.nlo{font:600 11px ui-monospace,monospace;fill:var(--ink)}.llab{font:700 11px sans-serif}
 .legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;font-size:12.5px}
 .legend span{display:inline-flex;align-items:center;gap:6px}.sw{width:22px;height:4px;border-radius:2px}
 .note{color:var(--muted);font-size:12.5px;margin-top:10px;line-height:1.55}
 code{background:#94a3b822;padding:1px 5px;border-radius:4px;font-size:12px}
 </style>
 <div class="wrap">
-<h1>TARGET architecture — for approval</h1>
-<p class="sub">2-AS SR-MPLS network: EVPN/VXLAN DC → OSPF-SR core → <b>inter-AS SR via BGP-LU</b> → AS2 exit → <b>EPE</b> (peer vs transit) · <b>PIM-SSM</b> market data · <b>Traffic Dictator</b> SR-TE controller · EVPN tenants. Not built yet — approve and I build it.</p>
+<h1>TARGET architecture — for approval (v2)</h1>
+<p class="sub">2-AS SR-MPLS: EVPN/VXLAN DC (bl1 = border-leaf → core) · OSPF-SR core · <b>inter-AS SR via BGP-LU</b> → your AS2 exit · <b>EPE</b> peer vs transit · <b>dedicated PIM-SSM market-data</b> (own L3, not overlay) · <b>Traffic Dictator</b> driving SR-TE across <b>both</b> ASes. Not built yet.</p>
 <div class="card">
-<svg viewBox="0 0 1360 1500" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif">
-<rect x="46" y="120" width="866" height="858" rx="16" class="z-as1"/>
-<text x="66" y="150" class="zbig" fill="var(--sr1)">AS 65001 — your estate · OSPF-SR + EVPN/VXLAN</text>
-<rect x="78" y="172" width="800" height="426" rx="12" class="z-dc"/>
-<text x="96" y="194" class="zsm" fill="var(--dc)">DC — EVPN/VXLAN · OSPF-SR underlay · tenants + md receivers</text>
-<rect x="78" y="630" width="800" height="320" rx="12" class="z-core"/>
-<text x="96" y="652" class="zsm" fill="var(--sr1)">Core — OSPF-SR · TI-LFA · Flex-Algo · ASBR1=core1</text>
-<line x1="46" y1="1002" x2="912" y2="1002" stroke="var(--bd)" stroke-width="2.4" stroke-dasharray="11 7"/>
-<rect x="520" y="987" width="440" height="30" rx="15" fill="var(--card)" stroke="var(--bd)" stroke-width="1.3"/>
-<text x="740" y="1007" text-anchor="middle" class="bdlab">AS 65001 ⟷ AS 65002 · inter-AS SR-MPLS (BGP-LU)</text>
-<rect x="46" y="1032" width="866" height="258" rx="16" class="z-as2"/>
-<text x="66" y="1062" class="zbig" fill="var(--sr2)">AS 65002 — SR exit AS · OSPF-SR</text>
+<svg viewBox="0 0 1470 1500" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif">
+<rect x="46" y="170" width="1160" height="800" rx="16" class="z-as1"/>
+<text x="66" y="200" class="zbig" fill="var(--sr1)">AS 65001 — your estate · OSPF-SR + EVPN/VXLAN</text>
+<rect x="78" y="222" width="1100" height="470" rx="12" class="z-dc"/>
+<text x="96" y="244" class="zsm" fill="var(--dc)">DC — EVPN/VXLAN · OSPF-SR underlay · tenants · dedicated market-data L3</text>
+<rect x="78" y="722" width="1100" height="230" rx="12" class="z-core"/>
+<text x="96" y="744" class="zsm" fill="var(--sr1)">Core — OSPF-SR · TI-LFA · Flex-Algo · ASBR1=core1</text>
+<line x1="46" y1="1002" x2="1206" y2="1002" stroke="var(--bd)" stroke-width="2.4" stroke-dasharray="11 7"/>
+<rect x="640" y="987" width="440" height="30" rx="15" fill="var(--card)" stroke="var(--bd)" stroke-width="1.3"/>
+<text x="860" y="1007" text-anchor="middle" class="bdlab">AS 65001 ⟷ AS 65002 · inter-AS SR-MPLS (BGP-LU)</text>
+<rect x="46" y="1032" width="1160" height="250" rx="16" class="z-as2"/>
+<text x="66" y="1062" class="zbig" fill="var(--sr2)">AS 65002 — your SR exit AS · OSPF-SR</text>
 <text x="66" y="1345" class="zsm" fill="var(--host)">EXTERNAL EXITS — EPE chooses peer vs transit</text>
-<line x1="310" y1="377" x2="340" y2="283" stroke="var(--dc)" stroke-width="2.2"/>
-<line x1="382" y1="377" x2="618" y2="283" stroke="var(--dc)" stroke-width="2.2"/>
-<line x1="596" y1="377" x2="414" y2="283" stroke="var(--dc)" stroke-width="2.2"/>
-<line x1="668" y1="377" x2="692" y2="283" stroke="var(--dc)" stroke-width="2.2"/>
-<line x1="490" y1="692" x2="360" y2="283" stroke="var(--dc)" stroke-width="2.2"/>
-<line x1="514" y1="692" x2="686" y2="283" stroke="var(--dc)" stroke-width="2.2"/>
-<line x1="300" y1="526" x2="300" y2="443" stroke="var(--host)" stroke-width="2.2"/>
-<line x1="660" y1="526" x2="660" y2="443" stroke="var(--host)" stroke-width="2.2"/>
-<line x1="473" y1="758" x2="387" y2="862" stroke="var(--sr1)" stroke-width="2.2"/>
-<line x1="539" y1="758" x2="661" y2="862" stroke="var(--sr1)" stroke-width="2.2"/>
-<line x1="455" y1="895" x2="605" y2="895" stroke="var(--sr1)" stroke-width="2.2"/>
-<line x1="360" y1="928" x2="360" y2="1097" stroke="var(--bd)" stroke-width="2.6" stroke-dasharray="9 5"/>
-<line x1="447" y1="1163" x2="523" y2="1192" stroke="var(--sr2)" stroke-width="2.2"/>
-<line x1="586" y1="1258" x2="493" y2="1384" stroke="var(--peer)" stroke-width="2.2" stroke-dasharray="7 5"/>
-<line x1="636" y1="1258" x2="736" y2="1384" stroke="var(--tran)" stroke-width="2.2" stroke-dasharray="7 5"/>
-<line x1="698" y1="1225" x2="885" y2="1225" stroke="var(--mcast)" stroke-width="2.2" stroke-dasharray="6 5"/>
-<line x1="1094" y1="837" x2="455" y2="888" stroke="var(--ctrl)" stroke-width="2.2" stroke-dasharray="5 5"/>
-<g><rect x="262" y="217" width="176" height="66" rx="10" fill="var(--dc-fill)" stroke="var(--dc)" stroke-width="2.2"/>
-<text x="350" y="238" text-anchor="middle" class="nname">spine1</text>
-<text x="350" y="255" text-anchor="middle" class="nrole">OSPF-SR · EVPN-RR</text>
-<text x="350" y="271" text-anchor="middle" class="nlo">lo 10.0.0.1</text></g>
-<g><rect x="612" y="217" width="176" height="66" rx="10" fill="var(--dc-fill)" stroke="var(--dc)" stroke-width="2.2"/>
-<text x="700" y="238" text-anchor="middle" class="nname">spine2</text>
-<text x="700" y="255" text-anchor="middle" class="nrole">OSPF-SR · EVPN-RR</text>
-<text x="700" y="271" text-anchor="middle" class="nlo">lo 10.0.0.2</text></g>
-<g><rect x="212" y="377" width="176" height="66" rx="10" fill="var(--dc-fill)" stroke="var(--dc)" stroke-width="2.2"/>
-<text x="300" y="398" text-anchor="middle" class="nname">leaf1</text>
-<text x="300" y="415" text-anchor="middle" class="nrole">VTEP · OSPF-SR</text>
-<text x="300" y="431" text-anchor="middle" class="nlo">lo 10.0.0.3</text></g>
-<g><rect x="572" y="377" width="176" height="66" rx="10" fill="var(--dc-fill)" stroke="var(--dc)" stroke-width="2.2"/>
-<text x="660" y="398" text-anchor="middle" class="nname">leaf2</text>
-<text x="660" y="415" text-anchor="middle" class="nrole">VTEP · OSPF-SR</text>
-<text x="660" y="431" text-anchor="middle" class="nlo">lo 10.0.0.4</text></g>
-<g><rect x="230" y="526" width="140" height="58" rx="10" fill="var(--host-fill)" stroke="var(--host)" stroke-width="2.2"/>
-<text x="300" y="547" text-anchor="middle" class="nname">h1</text>
-<text x="300" y="563" text-anchor="middle" class="nrole">tenant · md-rx</text>
-<text x="300" y="577" text-anchor="middle" class="nlo">172.16.0.10</text></g>
-<g><rect x="590" y="526" width="140" height="58" rx="10" fill="var(--host-fill)" stroke="var(--host)" stroke-width="2.2"/>
-<text x="660" y="547" text-anchor="middle" class="nname">h2</text>
-<text x="660" y="563" text-anchor="middle" class="nrole">tenant · md-rx</text>
-<text x="660" y="577" text-anchor="middle" class="nlo">172.16.0.11</text></g>
-<g><rect x="405" y="692" width="190" height="66" rx="10" fill="var(--sr1-fill)" stroke="var(--sr1)" stroke-width="2.2"/>
-<text x="500" y="713" text-anchor="middle" class="nname">bl1</text>
-<text x="500" y="730" text-anchor="middle" class="nrole">border-leaf · OSPF-SR</text>
-<text x="500" y="746" text-anchor="middle" class="nlo">lo 10.0.0.6</text></g>
-<g><rect x="265" y="862" width="190" height="66" rx="10" fill="var(--sr1-fill)" stroke="var(--sr1)" stroke-width="2.2"/>
-<text x="360" y="883" text-anchor="middle" class="nname">core1</text>
-<text x="360" y="900" text-anchor="middle" class="nrole">OSPF-SR core · ASBR1</text>
-<text x="360" y="916" text-anchor="middle" class="nlo">lo 10.0.0.7</text></g>
-<g><rect x="605" y="862" width="190" height="66" rx="10" fill="var(--sr1-fill)" stroke="var(--sr1)" stroke-width="2.2"/>
-<text x="700" y="883" text-anchor="middle" class="nname">core2</text>
-<text x="700" y="900" text-anchor="middle" class="nrole">OSPF-SR · TI-LFA/FlexAlgo</text>
-<text x="700" y="916" text-anchor="middle" class="nlo">lo 10.0.0.8</text></g>
-<g><rect x="272" y="1097" width="176" height="66" rx="10" fill="var(--sr2-fill)" stroke="var(--sr2)" stroke-width="2.2"/>
-<text x="360" y="1118" text-anchor="middle" class="nname">asbr2</text>
-<text x="360" y="1135" text-anchor="middle" class="nrole">ASBR · OSPF-SR</text>
-<text x="360" y="1151" text-anchor="middle" class="nlo">lo 10.2.0.1</text></g>
-<g><rect x="522" y="1192" width="176" height="66" rx="10" fill="var(--sr2-fill)" stroke="var(--sr2)" stroke-width="2.2"/>
-<text x="610" y="1213" text-anchor="middle" class="nname">edge2</text>
-<text x="610" y="1230" text-anchor="middle" class="nrole">SR egress · EPE SIDs</text>
-<text x="610" y="1246" text-anchor="middle" class="nlo">lo 10.2.0.2</text></g>
-<g><rect x="395" y="1384" width="150" height="62" rx="10" fill="var(--peer-fill)" stroke="var(--peer)" stroke-width="2.2"/>
-<text x="470" y="1403" text-anchor="middle" class="nname">peer1  (P)</text>
-<text x="470" y="1420" text-anchor="middle" class="nrole">peer · AS 65100</text>
-<text x="470" y="1436" text-anchor="middle" class="nlo">FRR</text></g>
-<g><rect x="680" y="1384" width="160" height="62" rx="10" fill="var(--tran-fill)" stroke="var(--tran)" stroke-width="2.2"/>
-<text x="760" y="1403" text-anchor="middle" class="nname">transit1  (T)</text>
-<text x="760" y="1420" text-anchor="middle" class="nrole">transit · AS 65200</text>
-<text x="760" y="1436" text-anchor="middle" class="nlo">FRR</text></g>
-<g><rect x="885" y="1194" width="150" height="62" rx="10" fill="var(--mcast-fill)" stroke="var(--mcast)" stroke-width="2.2"/>
-<text x="960" y="1213" text-anchor="middle" class="nname">mktdata</text>
-<text x="960" y="1230" text-anchor="middle" class="nrole">PIM-SSM source</text>
-<text x="960" y="1246" text-anchor="middle" class="nlo">exchange feed</text></g>
-<g><rect x="1094" y="797" width="182" height="66" rx="10" fill="var(--ctrl-fill)" stroke="var(--ctrl)" stroke-width="2.2"/>
-<text x="1185" y="818" text-anchor="middle" class="nname">Traffic Dictator</text>
-<text x="1185" y="835" text-anchor="middle" class="nrole">SR-TE controller</text>
-<text x="1185" y="851" text-anchor="middle" class="nlo">BGP-LS + SR-Policy</text></g>
-<g><rect x="286" y="968" width="148" height="21" rx="10" fill="var(--card)" stroke="var(--bd)" stroke-width="1.2"/><text x="360" y="982" class="llab" fill="var(--bd)" text-anchor="middle">BGP-LU · inter-AS SR</text></g>
-<g><rect x="499" y="1310" width="81" height="21" rx="10" fill="var(--card)" stroke="var(--peer)" stroke-width="1.2"/><text x="539" y="1324" class="llab" fill="var(--peer)" text-anchor="middle">eBGP · EPE</text></g>
-<g><rect x="645" y="1310" width="81" height="21" rx="10" fill="var(--card)" stroke="var(--tran)" stroke-width="1.2"/><text x="686" y="1324" class="llab" fill="var(--tran)" text-anchor="middle">eBGP · EPE</text></g>
-<g><rect x="744" y="1214" width="94" height="21" rx="10" fill="var(--card)" stroke="var(--mcast)" stroke-width="1.2"/><text x="792" y="1228" class="llab" fill="var(--mcast)" text-anchor="middle">PIM-SSM feed</text></g>
-<g><rect x="771" y="846" width="135" height="21" rx="10" fill="var(--card)" stroke="var(--ctrl)" stroke-width="1.2"/><text x="838" y="860" class="llab" fill="var(--ctrl)" text-anchor="middle">BGP-LS / SR-Policy</text></g>
+<line x1="298" y1="437" x2="347" y2="318" stroke="var(--dc)" stroke-width="2.2"/>
+<line x1="363" y1="437" x2="642" y2="318" stroke="var(--dc)" stroke-width="2.2"/>
+<line x1="524" y1="437" x2="396" y2="318" stroke="var(--dc)" stroke-width="2.2"/>
+<line x1="589" y1="437" x2="691" y2="318" stroke="var(--dc)" stroke-width="2.2"/>
+<line x1="771" y1="437" x2="448" y2="318" stroke="var(--dc)" stroke-width="2.2"/>
+<line x1="835" y1="437" x2="745" y2="318" stroke="var(--dc)" stroke-width="2.2"/>
+<line x1="285" y1="591" x2="285" y2="503" stroke="var(--host)" stroke-width="2.2"/>
+<line x1="560" y1="591" x2="560" y2="503" stroke="var(--host)" stroke-width="2.2"/>
+<line x1="955" y1="470" x2="1012" y2="470" stroke="var(--mcast)" stroke-width="2.2" stroke-dasharray="6 5"/>
+<line x1="825" y1="503" x2="495" y2="812" stroke="var(--sr1)" stroke-width="2.2"/>
+<line x1="853" y1="503" x2="782" y2="812" stroke="var(--sr1)" stroke-width="2.2"/>
+<line x1="555" y1="845" x2="680" y2="845" stroke="var(--sr1)" stroke-width="2.2"/>
+<line x1="460" y1="878" x2="460" y2="1087" stroke="var(--bd)" stroke-width="2.6" stroke-dasharray="9 5"/>
+<line x1="548" y1="1152" x2="632" y2="1183" stroke="var(--sr2)" stroke-width="2.2"/>
+<line x1="695" y1="1248" x2="598" y2="1379" stroke="var(--peer)" stroke-width="2.2" stroke-dasharray="7 5"/>
+<line x1="745" y1="1248" x2="846" y2="1379" stroke="var(--tran)" stroke-width="2.2" stroke-dasharray="7 5"/>
+<line x1="808" y1="1215" x2="957" y2="1215" stroke="var(--mcast)" stroke-width="2.2" stroke-dasharray="6 5"/>
+<line x1="1209" y1="858" x2="555" y2="847" stroke="var(--ctrl)" stroke-width="2.2" stroke-dasharray="5 5"/>
+<line x1="1209" y1="888" x2="548" y2="1093" stroke="var(--ctrl)" stroke-width="2.2" stroke-dasharray="5 5"/>
+<g><rect x="272" y="252" width="176" height="66" rx="10" fill="var(--dc-fill)" stroke="var(--dc)" stroke-width="2.2"/>
+<text x="360" y="273" text-anchor="middle" class="nname">spine1</text>
+<text x="360" y="290" text-anchor="middle" class="nrole">OSPF-SR · EVPN-RR</text>
+<text x="360" y="306" text-anchor="middle" class="nlo">lo 10.0.0.1</text></g>
+<g><rect x="632" y="252" width="176" height="66" rx="10" fill="var(--dc-fill)" stroke="var(--dc)" stroke-width="2.2"/>
+<text x="720" y="273" text-anchor="middle" class="nname">spine2</text>
+<text x="720" y="290" text-anchor="middle" class="nrole">OSPF-SR · EVPN-RR</text>
+<text x="720" y="306" text-anchor="middle" class="nlo">lo 10.0.0.2</text></g>
+<g><rect x="197" y="437" width="176" height="66" rx="10" fill="var(--dc-fill)" stroke="var(--dc)" stroke-width="2.2"/>
+<text x="285" y="458" text-anchor="middle" class="nname">leaf1</text>
+<text x="285" y="475" text-anchor="middle" class="nrole">VTEP · OSPF-SR</text>
+<text x="285" y="491" text-anchor="middle" class="nlo">lo 10.0.0.3</text></g>
+<g><rect x="472" y="437" width="176" height="66" rx="10" fill="var(--dc-fill)" stroke="var(--dc)" stroke-width="2.2"/>
+<text x="560" y="458" text-anchor="middle" class="nname">leaf2</text>
+<text x="560" y="475" text-anchor="middle" class="nrole">VTEP · OSPF-SR</text>
+<text x="560" y="491" text-anchor="middle" class="nlo">lo 10.0.0.4</text></g>
+<g><rect x="765" y="437" width="190" height="66" rx="10" fill="var(--sr1-fill)" stroke="var(--sr1)" stroke-width="2.2"/>
+<text x="860" y="458" text-anchor="middle" class="nname">bl1</text>
+<text x="860" y="475" text-anchor="middle" class="nrole">border-leaf · OSPF-SR</text>
+<text x="860" y="491" text-anchor="middle" class="nlo">lo 10.0.0.6</text></g>
+<g><rect x="215" y="591" width="140" height="58" rx="10" fill="var(--host-fill)" stroke="var(--host)" stroke-width="2.2"/>
+<text x="285" y="612" text-anchor="middle" class="nname">h1</text>
+<text x="285" y="628" text-anchor="middle" class="nrole">tenant</text>
+<text x="285" y="642" text-anchor="middle" class="nlo">172.16.0.10</text></g>
+<g><rect x="490" y="591" width="140" height="58" rx="10" fill="var(--host-fill)" stroke="var(--host)" stroke-width="2.2"/>
+<text x="560" y="612" text-anchor="middle" class="nname">h2</text>
+<text x="560" y="628" text-anchor="middle" class="nrole">tenant</text>
+<text x="560" y="642" text-anchor="middle" class="nlo">172.16.0.11</text></g>
+<g><rect x="1012" y="439" width="156" height="62" rx="10" fill="var(--mcast-fill)" stroke="var(--mcast)" stroke-width="2.2"/>
+<text x="1090" y="458" text-anchor="middle" class="nname">md-rx</text>
+<text x="1090" y="475" text-anchor="middle" class="nrole">PIM-SSM rx · no VXLAN</text>
+<text x="1090" y="491" text-anchor="middle" class="nlo">10.9.0.0/24</text></g>
+<g><rect x="365" y="812" width="190" height="66" rx="10" fill="var(--sr1-fill)" stroke="var(--sr1)" stroke-width="2.2"/>
+<text x="460" y="833" text-anchor="middle" class="nname">core1</text>
+<text x="460" y="850" text-anchor="middle" class="nrole">OSPF-SR core · ASBR1</text>
+<text x="460" y="866" text-anchor="middle" class="nlo">lo 10.0.0.7</text></g>
+<g><rect x="680" y="812" width="190" height="66" rx="10" fill="var(--sr1-fill)" stroke="var(--sr1)" stroke-width="2.2"/>
+<text x="775" y="833" text-anchor="middle" class="nname">core2</text>
+<text x="775" y="850" text-anchor="middle" class="nrole">OSPF-SR · TI-LFA/FlexAlgo</text>
+<text x="775" y="866" text-anchor="middle" class="nlo">lo 10.0.0.8</text></g>
+<g><rect x="372" y="1087" width="176" height="66" rx="10" fill="var(--sr2-fill)" stroke="var(--sr2)" stroke-width="2.2"/>
+<text x="460" y="1108" text-anchor="middle" class="nname">asbr2</text>
+<text x="460" y="1125" text-anchor="middle" class="nrole">ASBR · OSPF-SR</text>
+<text x="460" y="1141" text-anchor="middle" class="nlo">lo 10.2.0.1</text></g>
+<g><rect x="632" y="1182" width="176" height="66" rx="10" fill="var(--sr2-fill)" stroke="var(--sr2)" stroke-width="2.2"/>
+<text x="720" y="1203" text-anchor="middle" class="nname">edge2</text>
+<text x="720" y="1220" text-anchor="middle" class="nrole">SR egress · EPE SIDs</text>
+<text x="720" y="1236" text-anchor="middle" class="nlo">lo 10.2.0.2</text></g>
+<g><rect x="500" y="1379" width="150" height="62" rx="10" fill="var(--peer-fill)" stroke="var(--peer)" stroke-width="2.2"/>
+<text x="575" y="1398" text-anchor="middle" class="nname">peer1  (P)</text>
+<text x="575" y="1415" text-anchor="middle" class="nrole">peer · AS 65100</text>
+<text x="575" y="1431" text-anchor="middle" class="nlo">FRR</text></g>
+<g><rect x="790" y="1379" width="160" height="62" rx="10" fill="var(--tran-fill)" stroke="var(--tran)" stroke-width="2.2"/>
+<text x="870" y="1398" text-anchor="middle" class="nname">transit1  (T)</text>
+<text x="870" y="1415" text-anchor="middle" class="nrole">transit · AS 65200</text>
+<text x="870" y="1431" text-anchor="middle" class="nlo">FRR</text></g>
+<g><rect x="957" y="1184" width="156" height="62" rx="10" fill="var(--mcast-fill)" stroke="var(--mcast)" stroke-width="2.2"/>
+<text x="1035" y="1203" text-anchor="middle" class="nname">mktdata</text>
+<text x="1035" y="1220" text-anchor="middle" class="nrole">PIM-SSM source</text>
+<text x="1035" y="1236" text-anchor="middle" class="nlo">exchange feed</text></g>
+<g><rect x="1209" y="827" width="182" height="66" rx="10" fill="var(--ctrl-fill)" stroke="var(--ctrl)" stroke-width="2.2"/>
+<text x="1300" y="848" text-anchor="middle" class="nname">Traffic Dictator</text>
+<text x="1300" y="865" text-anchor="middle" class="nrole">SR-TE controller</text>
+<text x="1300" y="881" text-anchor="middle" class="nlo">BGP-LS + SR-Policy</text></g>
+<g><rect x="386" y="930" width="148" height="21" rx="10" fill="var(--card)" stroke="var(--bd)" stroke-width="1.2"/><text x="460" y="944" class="llab" fill="var(--bd)" text-anchor="middle">BGP-LU · inter-AS SR</text></g>
+<g><rect x="606" y="1302" width="81" height="21" rx="10" fill="var(--card)" stroke="var(--peer)" stroke-width="1.2"/><text x="647" y="1316" class="llab" fill="var(--peer)" text-anchor="middle">eBGP · EPE</text></g>
+<g><rect x="755" y="1302" width="81" height="21" rx="10" fill="var(--card)" stroke="var(--tran)" stroke-width="1.2"/><text x="796" y="1316" class="llab" fill="var(--tran)" text-anchor="middle">eBGP · EPE</text></g>
+<g><rect x="835" y="1204" width="94" height="21" rx="10" fill="var(--card)" stroke="var(--mcast)" stroke-width="1.2"/><text x="882" y="1218" class="llab" fill="var(--mcast)" text-anchor="middle">PIM-SSM feed</text></g>
+<g><rect x="946" y="844" width="135" height="21" rx="10" fill="var(--card)" stroke="var(--ctrl)" stroke-width="1.2"/><text x="1013" y="858" class="llab" fill="var(--ctrl)" text-anchor="middle">BGP-LS / SR-Policy</text></g>
+<g><rect x="742" y="1004" width="114" height="21" rx="10" fill="var(--card)" stroke="var(--ctrl)" stroke-width="1.2"/><text x="799" y="1018" class="llab" fill="var(--ctrl)" text-anchor="middle">… into AS 65002</text></g>
 </svg>
 </div>
 <div class="legend">
- <span><i class="sw" style="background:var(--dc)"></i>DC fabric (EVPN/OSPF-SR)</span>
- <span><i class="sw" style="background:var(--sr1)"></i>AS1 SR core</span>
+ <span><i class="sw" style="background:var(--dc)"></i>DC fabric</span>
+ <span><i class="sw" style="background:var(--sr1)"></i>AS1 SR core / border-leaf</span>
  <span><i class="sw" style="background:var(--sr2)"></i>AS2 SR</span>
  <span><i class="sw" style="background:var(--bd)"></i>inter-AS BGP-LU</span>
  <span><i class="sw" style="background:var(--peer)"></i>EPE peer</span>
  <span><i class="sw" style="background:var(--tran)"></i>EPE transit</span>
- <span><i class="sw" style="background:var(--mcast)"></i>PIM-SSM</span>
+ <span><i class="sw" style="background:var(--mcast)"></i>PIM-SSM market data</span>
  <span><i class="sw" style="background:var(--ctrl)"></i>controller</span>
 </div>
 <p class="note">
-<b>What it drills:</b> OSPF-SR fabric-wide (SRGB, prefix-SIDs) · TI-LFA + Flex-Algo on the core · SR-TE by hand and via Traffic Dictator · <b>inter-AS SR-MPLS</b> stitched ASBR-to-ASBR with BGP-LU (SAFI 4) · <b>EPE</b> Peer-Node-SIDs at edge2 to pick peer(65100) vs transit(65200) · <b>PIM-SSM</b> (S,G) market-data tree from <code>mktdata</code> to the DC trading hosts (IGMPv3 joins) · EVPN multi-tenancy (VRF/VNI) + the SDN-connector / k8s-CNI discussion.
-<br><b>15 nodes:</b> 10× cEOS for the SR/EVPN nodes, 5× FRR/Linux for the edges + hosts + feed (fits 32 GB; upsize the box if we push further). Loopbacks/AS numbers shown are the planned scheme.
+<b>bl1 is the border-leaf</b> — it uplinks to both spines like any leaf and it (not the spines) connects down to the core. <b>Market data is a dedicated L3 PIM-SSM segment</b> (<code>md-rx</code>, 10.9.0.0/24) off bl1, kept out of the VXLAN overlay: the (S,G) tree runs <code>mktdata</code> → edge2 → asbr2 → core → bl1 → md-rx (inter-AS SSM, IGMPv3 joins). h1/h2 are plain EVPN tenants. <b>Traffic Dictator peers both ASes</b> (BGP-LS + SR-Policy to core1 and asbr2) so it can steer inter-AS SR-TE and the EPE exit.
+<br><b>15 nodes:</b> 10× cEOS (SR/EVPN) + 5× FRR/Linux (edges, hosts, feed). Loopbacks/ASNs = planned scheme.
 </p>
 </div>
