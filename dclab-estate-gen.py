@@ -6,7 +6,7 @@ All node/link/session data taken verbatim from the live box 2026-07-25:
 """
 import os
 
-VBW, VBH = 1780, 1275
+VBW, VBH = 1790, 1180
 OUT = os.path.expanduser(
     "/private/tmp/claude-501/-Users-fazmemon-Documents-dev/"
     "89d936fb-5ee0-472c-b9cb-04d4d589aaaa/scratchpad/srmpls/dclab-estate.html")
@@ -22,17 +22,18 @@ N = {
     "h2":     (350, 432, "host",  "172.16.0.17", "117", "", ""),
     "h3":     (510, 432, "host",  "172.16.0.18", "118", "", ""),
     "bl1":    (700, 175, "border","10.0.0.6", "106", "900006", "OSPF + IS-IS-SR"),
-    "mdrx":   (700,  52, "feed",  "172.16.2.20", "120", "", "SSM receiver"),
     "core1":  (960, 508, "core",  "10.0.0.7", "107", "900007", "IS-IS-SR"),
     "core2":  (1220,508, "core",  "10.0.0.8", "108", "900008", "IS-IS-SR"),
     "core3":  (960, 722, "core",  "10.0.0.9", "109", "900009", "IS-IS-SR"),
     "core4":  (1220,722, "core",  "10.0.0.10","110", "900010", "IS-IS-SR"),
-    "asbr1":  (1440,612, "asbr",  "10.0.0.11","111", "900011", "ASBR · BGP-LU"),
-    "asbr2":  (1440,852, "asbr",  "10.0.0.12","112", "900012", "ASBR · BGP-LU"),
-    "edge2":  (1440,992, "edge",  "10.0.0.13","113", "900013", "SR egress · EPE"),
-    "peer1":  (1215,1148,"ext",   "10.0.0.14","114", "", "AS 65100 · exchange"),
-    "transit1":(1600,1148,"ext",  "10.0.0.15","115", "", "AS 65200 · transit"),
-    "mktdata":(1692,868, "feed",  "172.16.1.19","119","", "SSM source"),
+    "asbr1":  (1432,545, "asbr",  "10.0.0.11","111", "900011", "ASBR · BGP-LU"),
+    "asbr2":  (1432,700, "asbr",  "10.0.0.12","112", "900012", "ASBR · BGP-LU"),
+    "edge2":  (1432,850, "edge",  "10.0.0.13","113", "900013", "SR egress · EPE"),
+    "edge3":  (1432,1000, "edge",  "10.0.0.14","114", "900014", "B-feed switch"),
+    "mdrx":   (1636,925,"feed",  "172.16.2.21", "121","", "strategy server · A+B"),
+    "peer1":  (1150,925, "ext",   "10.0.0.15","115", "", "AS 65100 · EXCHANGE"),
+    "mktdata":(962,925, "feed",  "172.16.1.20","120","", "exchange feed publisher"),
+    "transit1":(1150,1105, "ext",  "10.0.0.16","116", "", "AS 65200 · transit"),
 }
 
 # (a, b, label, kind)
@@ -42,7 +43,6 @@ LINKS = [
     ("leaf3","spine1","","dc"), ("leaf3","spine2","","dc"),
     ("bl1","spine1","","bd"),   ("bl1","spine2","","bd"),
     ("h1","leaf1","","host"), ("h2","leaf2","","host"), ("h3","leaf3","","host"),
-    ("mdrx","bl1","172.16.2.0/24 · dedicated L3","md"),
     ("bl1","core1","10.1.0.32/30","xw"), ("bl1","core3","10.1.0.36/30","xw"),
     ("core1","core2","metric 10","wan"),
     ("core3","core1","metric 10","wan"),
@@ -50,10 +50,11 @@ LINKS = [
     ("core4","core3","metric 100","wanhi"),
     ("asbr1","core2","10.1.0.56/30","xw"), ("asbr1","core4","10.1.0.60/30","xw"),
     ("asbr1","asbr2","10.1.0.64/30 · inter-AS","ias"),
-    ("asbr2","edge2","10.1.0.68/30","wan"),
-    ("edge2","peer1","10.1.0.72/30","ext"),
+    ("asbr2","edge2","10.1.0.68/30","wan"), ("asbr2","edge3","10.1.0.80/30","wan"),
+    ("edge2","peer1","10.1.0.72/30 · A","ext"), ("edge3","peer1","10.1.0.84/30 · B","ext"),
     ("edge2","transit1","10.1.0.76/30","ext"),
-    ("mktdata","edge2","172.16.1.0/24 · dedicated L3","md"),
+    ("mktdata","peer1","172.16.1.0/24","md"),
+    ("mdrx","edge2","172.16.2.0/24","md"), ("mdrx","edge3","172.16.3.0/24","md"),
 ]
 
 # (a, b, kind, label)  kind: ibgp | ibgp_rr | ebgp | lu | gap | kill
@@ -65,8 +66,9 @@ BGP = [
     ("bl1","spine1","ibgp_rr",""), ("bl1","spine2","ibgp_rr",""),
     ("bl1","asbr1","wan","iBGP · RR + next-hop-self"),
     ("asbr1","asbr2","lu","eBGP + BGP-LU"),
-    ("asbr2","edge2","ibgp",""),
-    ("edge2","peer1","ebgp","EPE"), ("edge2","transit1","ebgp","EPE"),
+    ("asbr2","edge2","ibgp",""), ("asbr2","edge3","ibgp",""),
+    ("edge2","peer1","ebgp","EPE"), ("edge3","peer1","ebgp",""),
+    ("edge2","transit1","ebgp","EPE"),
 ]
 
 ROLE = {
@@ -170,9 +172,9 @@ zones = [
     f'<rect x="875" y="408" width="430" height="378" rx="14" class="z-wan"/>',
     f'<text x="895" y="762" class="zl" fill="var(--wan)">BGP-FREE SR CORE — IS-IS-SR only</text>',
     f'<text x="895" y="779" class="zl2" fill="var(--wan)">no BGP process on any core node</text>',
-    f'<rect x="1330" y="762" width="230" height="300" rx="14" class="z-as"/>',
-    f'<text x="1350" y="790" class="zl" fill="var(--as)">AS 65001</text>',
-    f'<text x="1350" y="810" class="zl2" fill="var(--as)">colo / exchange edge</text>',
+    f'<rect x="1322" y="630" width="398" height="500" rx="14" class="z-as"/>',
+    f'<text x="1342" y="1096" class="zl" fill="var(--as)">AS 65001 — YOUR COLO CAGE</text>',
+    f'<text x="1342" y="1116" class="zl2" fill="var(--as)">all multicast lives here and nowhere else</text>',
 ]
 
 SVG = "\n".join(zones + phys + plab + nodes)
@@ -239,7 +241,7 @@ b.ink{{color:var(--ink)}}
 </style>
 <div class="wrap">
 <h1>HRT estate — topology and BGP</h1>
-<p class="sub">Built from the live box, 25 Jul 2026 · S0 complete: WAN iBGP up, label forwarding verified · 20 nodes · EC2 netlab/containerlab · <code>netlab connect &lt;node&gt;</code> · admin/admin</p>
+<p class="sub">Built from the live box, 25 Jul 2026 · 21 nodes · A/B market data live in the cage · EC2 netlab/containerlab · <code>netlab connect &lt;node&gt;</code> · admin/admin</p>
 <div class="bar">
   <button id="b1" aria-pressed="true">Physical + IGP</button>
   <button id="b2" aria-pressed="false">BGP sessions</button>
@@ -296,10 +298,22 @@ post-convergence path and push a two-label stack rather than a single swap. Veri
 at the default 10 the traceroute ECMP'd round both sides of the ring; at 100 it collapses to the single
 path <code>asbr1 → core2 → core1 → bl1</code>. Equal metrics would prove nothing.
 <br><br>
-<b class="ink">Market data never touches the overlay.</b> <code>mktdata</code> at the colo edge and
-<code>mdrx</code> in the DC both sit on dedicated routed segments — PIM-SSM inter-AS across the SR core, no
-VXLAN, no head-end replication, and the A/B disjointness stays available. Not yet configured: PIM is at
-zero lines on all eight EOS nodes.
+<b class="ink">Market data is local to the cage, because that is where a trading firm puts it.</b> The exchange
+owns the source &#8212; <code>mktdata</code> sits behind <code>peer1</code> in AS 65100, and the feed arrives over
+two cross-connects: <b>A</b> on <code>peer1&#8594;edge2</code>, <b>B</b> on <code>peer1&#8594;edge3</code>.
+<code>mdrx</code> is dual-homed and joins one group per leg. Nothing outside AS 65001 runs PIM &#8212; not the
+core, not <code>bl1</code>, nothing in the DC. Raw exchange multicast is not backhauled to a research DC in
+real life: you colocate precisely so you do not carry it anywhere.
+<br><br>
+Verified running: 60/60 packets on both legs, <code>232.1.1.1</code> via <code>edge2</code> and
+<code>232.1.1.2</code> via <code>edge3</code>, source <code>172.16.1.20</code>.
+<br><br>
+<b class="ink">RPF reads the unicast route to the exchange</b>, and the mroute says so out loud:
+<code>RPF route: [U] 172.16.1.0/24 [200/0] via 10.1.0.74</code>. That is the fault handle &#8212; change which
+path the source prefix is learned over and the feed dies silently while the tree still looks healthy.
+Two EOS details worth keeping: <code>ssm range</code> takes an <i>ACL name</i>, not a prefix (the image
+defaults to <code>no ssm range</code>, i.e. 232.0.0.0/8 already), and <code>ip igmp version 3</code> is
+already the interface default on 4.36.
 </p>
 </div>
 <script>
