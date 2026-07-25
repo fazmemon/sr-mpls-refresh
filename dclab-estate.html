@@ -1,0 +1,288 @@
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes">
+<title>HRT estate — topology + BGP</title>
+<style>
+:root{
+  --bg:#f6f7f9; --card:#fff; --ink:#0f172a; --muted:#64748b;
+  --dc:#2563eb; --dc-fill:#eff6ff; --wan:#7c3aed; --wan-fill:#f5f3ff;
+  --wanhi:#c026d3; --peer:#059669; --peer-fill:#ecfdf5;
+  --bd:#dc2626; --bd-fill:#fef2f2; --as:#ea580c; --as-fill:#fff7ed;
+  --host:#475569; --host-fill:#f1f5f9; --md:#0891b2; --md-fill:#ecfeff;
+  --bgp:#0284c7; --bgpe:#059669; --bgplu:#7c3aed; --gap:#d97706; --kill:#dc2626;
+  --pill:#ffffff; --z-dc:#dbeafe44; --z-wan:#ede9fe44; --z-as:#ffedd544;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#0b1120; --card:#111827; --ink:#e5e7eb; --muted:#94a3b8;
+    --dc:#60a5fa; --dc-fill:#0b1e3b; --wan:#a78bfa; --wan-fill:#1e1633;
+    --wanhi:#e879f9; --peer:#34d399; --peer-fill:#062b20;
+    --bd:#f87171; --bd-fill:#3b0d0d; --as:#fb923c; --as-fill:#3b1d06;
+    --host:#94a3b8; --host-fill:#1e293b; --md:#22d3ee; --md-fill:#083344;
+    --bgp:#38bdf8; --bgpe:#34d399; --bgplu:#a78bfa; --gap:#fbbf24; --kill:#f87171;
+    --pill:#0f172a; --z-dc:#1e3a8a2e; --z-wan:#4c1d952e; --z-as:#7c2d122e; }
+}
+:root[data-theme=dark]{ --bg:#0b1120; --card:#111827; --ink:#e5e7eb; --muted:#94a3b8;
+  --dc:#60a5fa; --dc-fill:#0b1e3b; --wan:#a78bfa; --wan-fill:#1e1633; --wanhi:#e879f9;
+  --peer:#34d399; --peer-fill:#062b20; --bd:#f87171; --bd-fill:#3b0d0d;
+  --as:#fb923c; --as-fill:#3b1d06; --host:#94a3b8; --host-fill:#1e293b;
+  --md:#22d3ee; --md-fill:#083344; --bgp:#38bdf8; --bgpe:#34d399; --bgplu:#a78bfa;
+  --gap:#fbbf24; --kill:#f87171; --pill:#0f172a;
+  --z-dc:#1e3a8a2e; --z-wan:#4c1d952e; --z-as:#7c2d122e; }
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1500px;margin:0 auto;padding:14px}
+h1{font-size:19px;margin:4px 0 2px}
+.sub{color:var(--muted);font-size:13px;margin:0 0 10px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px}
+button{font:600 13px/1 inherit;padding:9px 14px;border-radius:999px;cursor:pointer;
+  border:1.5px solid #94a3b855;background:var(--card);color:var(--ink)}
+button[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.card{background:var(--card);border:1px solid #94a3b833;border-radius:16px;
+  padding:10px;overflow:auto}
+svg{width:100%;height:auto;min-width:900px;display:block}
+.z-dc{fill:var(--z-dc);stroke:var(--dc);stroke-width:1;stroke-dasharray:3 4}
+.z-wan{fill:var(--z-wan);stroke:var(--wan);stroke-width:1;stroke-dasharray:3 4}
+.z-as{fill:var(--z-as);stroke:var(--as);stroke-width:1;stroke-dasharray:3 4}
+.zl{font:700 14px sans-serif} .zl2{font:600 11.5px sans-serif;opacity:.85}
+.nn{font:700 15px sans-serif;fill:var(--ink)}
+.nl{font:600 11.5px ui-monospace,monospace;fill:var(--ink)}
+.ns{font:10.5px sans-serif;fill:var(--muted)}
+.pl{font:10px ui-monospace,monospace;fill:var(--ink)}
+.bl{font:700 11px sans-serif}
+#bgpl{display:none} body.showbgp #bgpl{display:block}
+body.bgponly #physl{opacity:.16}
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;font-size:12.5px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:20px;height:4px;border-radius:2px;display:inline-block}
+.note{color:var(--muted);font-size:12.5px;margin-top:10px;line-height:1.55}
+code{background:#94a3b822;padding:1px 5px;border-radius:4px;font-size:11.5px}
+b.ink{color:var(--ink)}
+</style>
+<div class="wrap">
+<h1>HRT estate — topology and BGP</h1>
+<p class="sub">Built from the live box, 25 Jul 2026 · 20 nodes · EC2 netlab/containerlab · <code>netlab connect &lt;node&gt;</code> · admin/admin</p>
+<div class="bar">
+  <button id="b1" aria-pressed="true">Physical + IGP</button>
+  <button id="b2" aria-pressed="false">BGP sessions</button>
+  <button id="b3" aria-pressed="false">Both</button>
+</div>
+<div class="card">
+<svg viewBox="0 0 1780 1275" xmlns="http://www.w3.org/2000/svg">
+<g id="physl">
+<rect x="90" y="112" width="700" height="390" rx="14" class="z-dc"/>
+<text x="112" y="140" class="zl" fill="var(--dc)">RESEARCH DC — AS 65000 · OSPF underlay · EVPN/VXLAN · spines = RRs</text>
+<rect x="875" y="408" width="430" height="378" rx="14" class="z-wan"/>
+<text x="895" y="762" class="zl" fill="var(--wan)">BGP-FREE SR CORE — IS-IS-SR only</text>
+<text x="895" y="779" class="zl2" fill="var(--wan)">no BGP process on any core node</text>
+<rect x="1330" y="762" width="230" height="300" rx="14" class="z-as"/>
+<text x="1350" y="790" class="zl" fill="var(--as)">AS 65001</text>
+<text x="1350" y="810" class="zl2" fill="var(--as)">colo / exchange edge</text>
+<line x1="214" y1="285" x2="276" y2="205" stroke="var(--dc)" stroke-width="2.2"/>
+<line x1="261" y1="285" x2="449" y2="205" stroke="var(--dc)" stroke-width="2.2"/>
+<line x1="339" y1="285" x2="311" y2="205" stroke="var(--dc)" stroke-width="2.2"/>
+<line x1="386" y1="285" x2="484" y2="205" stroke="var(--dc)" stroke-width="2.2"/>
+<line x1="465" y1="285" x2="345" y2="205" stroke="var(--dc)" stroke-width="2.2"/>
+<line x1="512" y1="285" x2="518" y2="205" stroke="var(--dc)" stroke-width="2.2"/>
+<line x1="616" y1="175" x2="371" y2="175" stroke="var(--bd)" stroke-width="2.2"/>
+<line x1="616" y1="175" x2="591" y2="175" stroke="var(--bd)" stroke-width="2.2"/>
+<line x1="190" y1="410" x2="190" y2="345" stroke="var(--host)" stroke-width="2.2"/>
+<line x1="350" y1="410" x2="350" y2="345" stroke="var(--host)" stroke-width="2.2"/>
+<line x1="510" y1="410" x2="510" y2="345" stroke="var(--host)" stroke-width="2.2"/>
+<line x1="700" y1="76" x2="700" y2="143" stroke="var(--md)" stroke-width="2.2" stroke-dasharray="8 5"/>
+<line x1="725" y1="207" x2="937" y2="478" stroke="var(--bd)" stroke-width="2.2"/>
+<line x1="715" y1="207" x2="946" y2="692" stroke="var(--bd)" stroke-width="2.2"/>
+<line x1="1031" y1="508" x2="1149" y2="508" stroke="var(--wan)" stroke-width="2.2"/>
+<line x1="960" y1="692" x2="960" y2="538" stroke="var(--wan)" stroke-width="2.2"/>
+<line x1="1220" y1="538" x2="1220" y2="692" stroke="var(--wan)" stroke-width="2.2"/>
+<line x1="1149" y1="722" x2="1031" y2="722" stroke="var(--wanhi)" stroke-width="3.0"/>
+<line x1="1374" y1="581" x2="1283" y2="538" stroke="var(--bd)" stroke-width="2.2"/>
+<line x1="1378" y1="643" x2="1280" y2="692" stroke="var(--bd)" stroke-width="2.2"/>
+<line x1="1440" y1="643" x2="1440" y2="821" stroke="var(--as)" stroke-width="3.0"/>
+<line x1="1440" y1="883" x2="1440" y2="961" stroke="var(--wan)" stroke-width="2.2"/>
+<line x1="1395" y1="1023" x2="1257" y2="1119" stroke="var(--peer)" stroke-width="2.2" stroke-dasharray="8 5"/>
+<line x1="1472" y1="1023" x2="1570" y2="1119" stroke="var(--peer)" stroke-width="2.2" stroke-dasharray="8 5"/>
+<line x1="1643" y1="892" x2="1503" y2="961" stroke="var(--md)" stroke-width="2.2" stroke-dasharray="8 5"/>
+<g><rect x="607" y="100" width="186" height="18" rx="9" fill="var(--pill)" stroke="var(--md)" stroke-width="0.9"/><text x="700" y="114" class="pl" text-anchor="middle">172.16.2.0/24 · dedicated L3</text></g>
+<g><rect x="788" y="334" width="86" height="18" rx="9" fill="var(--pill)" stroke="var(--bd)" stroke-width="0.9"/><text x="831" y="346" class="pl" text-anchor="middle">10.1.0.32/30</text></g>
+<g><rect x="787" y="440" width="86" height="18" rx="9" fill="var(--pill)" stroke="var(--bd)" stroke-width="0.9"/><text x="830" y="454" class="pl" text-anchor="middle">10.1.0.36/30</text></g>
+<g><rect x="1056" y="499" width="68" height="18" rx="9" fill="var(--pill)" stroke="var(--wan)" stroke-width="0.9"/><text x="1090" y="512" class="pl" text-anchor="middle">metric 10</text></g>
+<g><rect x="926" y="606" width="68" height="18" rx="9" fill="var(--pill)" stroke="var(--wan)" stroke-width="0.9"/><text x="960" y="619" class="pl" text-anchor="middle">metric 10</text></g>
+<g><rect x="1186" y="606" width="68" height="18" rx="9" fill="var(--pill)" stroke="var(--wan)" stroke-width="0.9"/><text x="1220" y="619" class="pl" text-anchor="middle">metric 10</text></g>
+<g><rect x="1053" y="713" width="74" height="18" rx="9" fill="var(--pill)" stroke="var(--wanhi)" stroke-width="0.9"/><text x="1090" y="726" class="pl" text-anchor="middle">metric 100</text></g>
+<g><rect x="1286" y="550" width="86" height="18" rx="9" fill="var(--pill)" stroke="var(--bd)" stroke-width="0.9"/><text x="1329" y="564" class="pl" text-anchor="middle">10.1.0.56/30</text></g>
+<g><rect x="1286" y="658" width="86" height="18" rx="9" fill="var(--pill)" stroke="var(--bd)" stroke-width="0.9"/><text x="1329" y="672" class="pl" text-anchor="middle">10.1.0.60/30</text></g>
+<g><rect x="1363" y="723" width="155" height="18" rx="9" fill="var(--pill)" stroke="var(--as)" stroke-width="0.9"/><text x="1440" y="736" class="pl" text-anchor="middle">10.1.0.64/30 · inter-AS</text></g>
+<g><rect x="1397" y="913" width="86" height="18" rx="9" fill="var(--pill)" stroke="var(--wan)" stroke-width="0.9"/><text x="1440" y="926" class="pl" text-anchor="middle">10.1.0.68/30</text></g>
+<g><rect x="1283" y="1062" width="86" height="18" rx="9" fill="var(--pill)" stroke="var(--peer)" stroke-width="0.9"/><text x="1326" y="1075" class="pl" text-anchor="middle">10.1.0.72/30</text></g>
+<g><rect x="1478" y="1062" width="86" height="18" rx="9" fill="var(--pill)" stroke="var(--peer)" stroke-width="0.9"/><text x="1521" y="1075" class="pl" text-anchor="middle">10.1.0.76/30</text></g>
+<g><rect x="1480" y="918" width="186" height="18" rx="9" fill="var(--pill)" stroke="var(--md)" stroke-width="0.9"/><text x="1573" y="930" class="pl" text-anchor="middle">172.16.1.0/24 · dedicated L3</text></g>
+<g><rect x="229" y="145" width="142" height="60" rx="9" fill="var(--dc-fill)" stroke="var(--dc)" stroke-width="2"/>
+<text x="300" y="165" text-anchor="middle" class="nn">spine1</text>
+<text x="300" y="180" text-anchor="middle" class="nl">lo 10.0.0.1</text>
+<text x="300" y="195" text-anchor="middle" class="ns">OSPF · EVPN-RR</text>
+</g>
+<g><rect x="449" y="145" width="142" height="60" rx="9" fill="var(--dc-fill)" stroke="var(--dc)" stroke-width="2"/>
+<text x="520" y="165" text-anchor="middle" class="nn">spine2</text>
+<text x="520" y="180" text-anchor="middle" class="nl">lo 10.0.0.2</text>
+<text x="520" y="195" text-anchor="middle" class="ns">OSPF · EVPN-RR</text>
+</g>
+<g><rect x="119" y="285" width="142" height="60" rx="9" fill="var(--dc-fill)" stroke="var(--dc)" stroke-width="2"/>
+<text x="190" y="305" text-anchor="middle" class="nn">leaf1</text>
+<text x="190" y="320" text-anchor="middle" class="nl">lo 10.0.0.3</text>
+<text x="190" y="335" text-anchor="middle" class="ns">VTEP</text>
+</g>
+<g><rect x="279" y="285" width="142" height="60" rx="9" fill="var(--dc-fill)" stroke="var(--dc)" stroke-width="2"/>
+<text x="350" y="305" text-anchor="middle" class="nn">leaf2</text>
+<text x="350" y="320" text-anchor="middle" class="nl">lo 10.0.0.4</text>
+<text x="350" y="335" text-anchor="middle" class="ns">VTEP</text>
+</g>
+<g><rect x="439" y="285" width="142" height="60" rx="9" fill="var(--dc-fill)" stroke="var(--dc)" stroke-width="2"/>
+<text x="510" y="305" text-anchor="middle" class="nn">leaf3</text>
+<text x="510" y="320" text-anchor="middle" class="nl">lo 10.0.0.5</text>
+<text x="510" y="335" text-anchor="middle" class="ns">VTEP</text>
+</g>
+<g><rect x="134" y="410" width="112" height="44" rx="9" fill="var(--host-fill)" stroke="var(--host)" stroke-width="2"/>
+<text x="190" y="428" text-anchor="middle" class="nn">h1</text>
+<text x="190" y="443" text-anchor="middle" class="ns">172.16.0.16</text>
+</g>
+<g><rect x="294" y="410" width="112" height="44" rx="9" fill="var(--host-fill)" stroke="var(--host)" stroke-width="2"/>
+<text x="350" y="428" text-anchor="middle" class="nn">h2</text>
+<text x="350" y="443" text-anchor="middle" class="ns">172.16.0.17</text>
+</g>
+<g><rect x="454" y="410" width="112" height="44" rx="9" fill="var(--host-fill)" stroke="var(--host)" stroke-width="2"/>
+<text x="510" y="428" text-anchor="middle" class="nn">h3</text>
+<text x="510" y="443" text-anchor="middle" class="ns">172.16.0.18</text>
+</g>
+<g><rect x="616" y="143" width="168" height="64" rx="9" fill="var(--bd-fill)" stroke="var(--bd)" stroke-width="2"/>
+<text x="700" y="165" text-anchor="middle" class="nn">bl1</text>
+<text x="700" y="180" text-anchor="middle" class="nl">lo 10.0.0.6</text>
+<text x="700" y="195" text-anchor="middle" class="ns">OSPF + IS-IS-SR · SID 900006</text>
+</g>
+<g><rect x="632" y="28" width="136" height="48" rx="9" fill="var(--md-fill)" stroke="var(--md)" stroke-width="2"/>
+<text x="700" y="48" text-anchor="middle" class="nn">mdrx</text>
+<text x="700" y="63" text-anchor="middle" class="ns">172.16.2.20</text>
+<text x="700" y="90" text-anchor="middle" class="ns">SSM receiver</text>
+</g>
+<g><rect x="889" y="478" width="142" height="60" rx="9" fill="var(--wan-fill)" stroke="var(--wan)" stroke-width="2"/>
+<text x="960" y="498" text-anchor="middle" class="nn">core1</text>
+<text x="960" y="513" text-anchor="middle" class="nl">lo 10.0.0.7</text>
+<text x="960" y="528" text-anchor="middle" class="ns">IS-IS-SR · SID 900007</text>
+</g>
+<g><rect x="1149" y="478" width="142" height="60" rx="9" fill="var(--wan-fill)" stroke="var(--wan)" stroke-width="2"/>
+<text x="1220" y="498" text-anchor="middle" class="nn">core2</text>
+<text x="1220" y="513" text-anchor="middle" class="nl">lo 10.0.0.8</text>
+<text x="1220" y="528" text-anchor="middle" class="ns">IS-IS-SR · SID 900008</text>
+</g>
+<g><rect x="889" y="692" width="142" height="60" rx="9" fill="var(--wan-fill)" stroke="var(--wan)" stroke-width="2"/>
+<text x="960" y="712" text-anchor="middle" class="nn">core3</text>
+<text x="960" y="727" text-anchor="middle" class="nl">lo 10.0.0.9</text>
+<text x="960" y="742" text-anchor="middle" class="ns">IS-IS-SR · SID 900009</text>
+</g>
+<g><rect x="1149" y="692" width="142" height="60" rx="9" fill="var(--wan-fill)" stroke="var(--wan)" stroke-width="2"/>
+<text x="1220" y="712" text-anchor="middle" class="nn">core4</text>
+<text x="1220" y="727" text-anchor="middle" class="nl">lo 10.0.0.10</text>
+<text x="1220" y="742" text-anchor="middle" class="ns">IS-IS-SR · SID 900010</text>
+</g>
+<g><rect x="1360" y="581" width="160" height="62" rx="9" fill="var(--as-fill)" stroke="var(--as)" stroke-width="2"/>
+<text x="1440" y="602" text-anchor="middle" class="nn">asbr1</text>
+<text x="1440" y="617" text-anchor="middle" class="nl">lo 10.0.0.11</text>
+<text x="1440" y="632" text-anchor="middle" class="ns">ASBR · BGP-LU · SID 900011</text>
+</g>
+<g><rect x="1360" y="821" width="160" height="62" rx="9" fill="var(--as-fill)" stroke="var(--as)" stroke-width="2"/>
+<text x="1440" y="842" text-anchor="middle" class="nn">asbr2</text>
+<text x="1440" y="857" text-anchor="middle" class="nl">lo 10.0.0.12</text>
+<text x="1440" y="872" text-anchor="middle" class="ns">ASBR · BGP-LU · SID 900012</text>
+</g>
+<g><rect x="1360" y="961" width="160" height="62" rx="9" fill="var(--as-fill)" stroke="var(--as)" stroke-width="2"/>
+<text x="1440" y="982" text-anchor="middle" class="nn">edge2</text>
+<text x="1440" y="997" text-anchor="middle" class="nl">lo 10.0.0.13</text>
+<text x="1440" y="1012" text-anchor="middle" class="ns">SR egress · EPE · SID 900013</text>
+</g>
+<g><rect x="1131" y="1119" width="168" height="58" rx="9" fill="var(--peer-fill)" stroke="var(--peer)" stroke-width="2"/>
+<text x="1215" y="1138" text-anchor="middle" class="nn">peer1</text>
+<text x="1215" y="1153" text-anchor="middle" class="nl">lo 10.0.0.14</text>
+<text x="1215" y="1168" text-anchor="middle" class="ns">AS 65100 · exchange</text>
+</g>
+<g><rect x="1516" y="1119" width="168" height="58" rx="9" fill="var(--peer-fill)" stroke="var(--peer)" stroke-width="2"/>
+<text x="1600" y="1138" text-anchor="middle" class="nn">transit1</text>
+<text x="1600" y="1153" text-anchor="middle" class="nl">lo 10.0.0.15</text>
+<text x="1600" y="1168" text-anchor="middle" class="ns">AS 65200 · transit</text>
+</g>
+<g><rect x="1624" y="844" width="136" height="48" rx="9" fill="var(--md-fill)" stroke="var(--md)" stroke-width="2"/>
+<text x="1692" y="864" text-anchor="middle" class="nn">mktdata</text>
+<text x="1692" y="879" text-anchor="middle" class="ns">172.16.1.19</text>
+<text x="1692" y="906" text-anchor="middle" class="ns">SSM source</text>
+</g>
+</g>
+<g id="bgpl">
+<path d="M214,285 Q259,256 276,205" fill="none" stroke="var(--bgp)" stroke-width="1.7" opacity="1"/>
+<path d="M261,285 Q369,277 449,205" fill="none" stroke="var(--bgp)" stroke-width="1.7" opacity="1"/>
+<path d="M339,285 Q339,240 311,205" fill="none" stroke="var(--bgp)" stroke-width="1.7" opacity="1"/>
+<path d="M386,285 Q449,262 484,205" fill="none" stroke="var(--bgp)" stroke-width="1.7" opacity="1"/>
+<path d="M465,285 Q419,225 345,205" fill="none" stroke="var(--bgp)" stroke-width="1.7" opacity="1"/>
+<path d="M512,285 Q529,246 518,205" fill="none" stroke="var(--bgp)" stroke-width="1.7" opacity="1"/>
+<path d="M371,175 Q410,188 449,175" fill="none" stroke="var(--bgp)" stroke-width="1.7" opacity="1"/>
+<path d="M616,175 Q494,133 371,175" fill="none" stroke="var(--bgp)" stroke-width="1.7" opacity="1"/>
+<path d="M616,175 Q604,171 591,175" fill="none" stroke="var(--bgp)" stroke-width="1.7" opacity="1"/>
+<path d="M1360,581 Q900,303 371,202" fill="none" stroke="var(--kill)" stroke-width="2.2" stroke-dasharray="9 6" opacity="0.55"/>
+<path d="M1375,581 Q1020,307 583,205" fill="none" stroke="var(--kill)" stroke-width="2.2" stroke-dasharray="9 6" opacity="0.55"/>
+<path d="M754,207 Q1023,476 1388,581" fill="none" stroke="var(--gap)" stroke-width="3.0" stroke-dasharray="9 6" opacity="1"/>
+<path d="M1440,643 Q1410,732 1440,821" fill="none" stroke="var(--bgplu)" stroke-width="3.4" opacity="1"/>
+<path d="M1440,883 Q1427,922 1440,961" fill="none" stroke="var(--bgp)" stroke-width="1.7" opacity="1"/>
+<path d="M1395,1023 Q1310,1047 1257,1119" fill="none" stroke="var(--bgpe)" stroke-width="2.6" opacity="1"/>
+<path d="M1472,1023 Q1505,1088 1570,1119" fill="none" stroke="var(--bgpe)" stroke-width="2.6" opacity="1"/>
+<g><rect x="856" y="337" width="52" height="20" rx="10" fill="var(--pill)" stroke="var(--kill)" stroke-width="1.1"/><text x="883" y="351" class="bl" text-anchor="middle" fill="var(--kill)">Active</text></g>
+<g><rect x="973" y="340" width="52" height="20" rx="10" fill="var(--pill)" stroke="var(--kill)" stroke-width="1.1"/><text x="999" y="354" class="bl" text-anchor="middle" fill="var(--kill)">Active</text></g>
+<g><rect x="998" y="425" width="97" height="20" rx="10" fill="var(--pill)" stroke="var(--gap)" stroke-width="1.1"/><text x="1047" y="439" class="bl" text-anchor="middle" fill="var(--gap)">iBGP to build</text></g>
+<g><rect x="1376" y="722" width="97" height="20" rx="10" fill="var(--pill)" stroke="var(--bgplu)" stroke-width="1.1"/><text x="1425" y="736" class="bl" text-anchor="middle" fill="var(--bgplu)">eBGP + BGP-LU</text></g>
+<g><rect x="1301" y="1049" width="33" height="20" rx="10" fill="var(--pill)" stroke="var(--bgpe)" stroke-width="1.1"/><text x="1318" y="1063" class="bl" text-anchor="middle" fill="var(--bgpe)">EPE</text></g>
+<g><rect x="1496" y="1069" width="33" height="20" rx="10" fill="var(--pill)" stroke="var(--bgpe)" stroke-width="1.1"/><text x="1513" y="1083" class="bl" text-anchor="middle" fill="var(--bgpe)">EPE</text></g>
+</g>
+</svg>
+</div>
+<div class="legend">
+  <span><i class="sw" style="background:var(--dc)"></i>DC fabric</span>
+  <span><i class="sw" style="background:var(--bd)"></i>border / DC↔WAN</span>
+  <span><i class="sw" style="background:var(--wan)"></i>SR core (IS-IS-SR)</span>
+  <span><i class="sw" style="background:var(--wanhi)"></i>metric 100 link</span>
+  <span><i class="sw" style="background:var(--as)"></i>AS 65001 / inter-AS</span>
+  <span><i class="sw" style="background:var(--peer)"></i>external eBGP</span>
+  <span><i class="sw" style="background:var(--md)"></i>market data, dedicated L3</span>
+  <span><i class="sw" style="background:var(--gap)"></i>session to build</span>
+  <span><i class="sw" style="background:var(--kill)"></i>session to remove</span>
+</div>
+<p class="note">
+<b class="ink">Read the core as an absence.</b> <code>show running-config section bgp</code> returns nothing on
+core1–core4. In the BGP view they are the only nodes with no arc touching them — every session terminates
+on an edge, and the core exists purely to switch labels between BGP next-hops it resolves through IS-IS-SR.
+<br><br>
+<b class="ink">Two IGP domains, no redistribution.</b> The DC is OSPF; the WAN/DCI core and AS 65001 each run
+their own IS-IS-SR. <code>bl1</code> is the only node in two of them and it runs them side by side. Nothing
+leaks between them — reachability crosses on BGP with next-hop rewrite, and SR provides transport to
+whatever next-hop lands.
+<br><br>
+<b class="ink">The amber arc is the hole.</b> <code>bl1 ↔ asbr1</code> is the WAN domain's own iBGP and it
+does not exist yet. The two red arcs are netlab's leftover full-mesh reflex — <code>asbr1</code> pointed at
+the DC route-reflectors, stuck in <code>Active</code> because it runs IS-IS only and cannot resolve
+<code>10.0.0.1</code>/<code>.2</code>. Those come out; the amber one goes in.
+<br><br>
+<b class="ink">Ring metrics are deliberate.</b> core4↔core3 is 100 and the rest are 10, so for
+<code>bl1 → asbr1</code> the path is core1→core2 and the alternate neighbour core3 has no loop-free path —
+its own route back to core2 runs through core1. No LFA exists, so TI-LFA has to build a repair to the
+post-convergence path and push a two-label stack rather than a single swap. Equal metrics would give ECMP
+and prove nothing.
+<br><br>
+<b class="ink">Market data never touches the overlay.</b> <code>mktdata</code> at the colo edge and
+<code>mdrx</code> in the DC both sit on dedicated routed segments — PIM-SSM inter-AS across the SR core, no
+VXLAN, no head-end replication, and the A/B disjointness stays available. Not yet configured: PIM is at
+zero lines on all eight EOS nodes.
+</p>
+</div>
+<script>
+var b=document.body,B=[b1,b2,b3];
+function set(i){
+  b.classList.toggle('showbgp', i>0);
+  b.classList.toggle('bgponly', i===1);
+  B.forEach(function(x,j){x.setAttribute('aria-pressed', j===i);});
+}
+B.forEach(function(x,i){x.onclick=function(){set(i);};});
+</script>
