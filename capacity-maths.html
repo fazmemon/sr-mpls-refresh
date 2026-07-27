@@ -1,0 +1,129 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Capacity arithmetic — cheat note</title>
+<style>
+  :root{--bg:#0e1726;--panel:#152136;--ink:#eaf0fb;--muted:#9db0d0;--accent:#4da3ff;--accent2:#54e0c7;--warn:#ffcf6b;--line:#2b3a56;--ex:#0f2030;--red:#ff7b8a}
+  @media(prefers-color-scheme:light){:root{--bg:#fbfbf8;--panel:#fff;--ink:#1a1a1a;--muted:#555;--accent:#0b5cad;--accent2:#0a7a63;--warn:#8a5a00;--line:#ddd;--ex:#f2f7f5;--red:#b3261e}}
+  :root[data-theme="dark"]{--bg:#0e1726;--panel:#152136;--ink:#eaf0fb;--muted:#9db0d0;--accent:#4da3ff;--accent2:#54e0c7;--warn:#ffcf6b;--line:#2b3a56;--ex:#0f2030;--red:#ff7b8a}
+  :root[data-theme="light"]{--bg:#fbfbf8;--panel:#fff;--ink:#1a1a1a;--muted:#555;--accent:#0b5cad;--accent2:#0a7a63;--warn:#8a5a00;--line:#ddd;--ex:#f2f7f5;--red:#b3261e}
+  *{box-sizing:border-box}
+  body{margin:0 auto;max-width:880px;background:var(--bg);color:var(--ink);font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;padding:24px 18px 80px}
+  h1{font-size:27px;margin:.2em 0 .1em;color:var(--accent2);letter-spacing:-.4px}
+  .sub{color:var(--muted);margin:0 0 20px;font-size:15px}
+  h2{font-size:17px;color:var(--accent);margin:32px 0 8px;border-bottom:1px solid var(--line);padding-bottom:6px;text-transform:uppercase;letter-spacing:1.3px}
+  h3{font-size:15px;margin:20px 0 6px;color:var(--ink)}
+  p{margin:8px 0}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13.5px;background:var(--ex);padding:1px 5px;border-radius:4px}
+  .box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin:12px 0}
+  .key{background:var(--ex);border-left:3px solid var(--accent2);border-radius:0 8px 8px 0;padding:11px 15px;margin:12px 0}
+  .key b{color:var(--accent2)}
+  .warn{background:var(--ex);border-left:3px solid var(--warn);border-radius:0 8px 8px 0;padding:11px 15px;margin:12px 0}
+  .warn b{color:var(--warn)}
+  .eq{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:16px;text-align:center;background:var(--ex);border:1px solid var(--line);border-radius:8px;padding:14px;margin:12px 0;color:var(--accent2);font-weight:700}
+  .scroll{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;margin:10px 0;font-size:14px}
+  td,th{border:1px solid var(--line);padding:6px 11px;text-align:left}
+  th{color:var(--accent);background:var(--panel)}
+  td.n{text-align:right;font-family:ui-monospace,Menlo,monospace;color:var(--accent2);font-weight:700}
+  ul{margin:8px 0;padding-left:22px}
+  li{margin:5px 0}
+  .muted{color:var(--muted);font-size:14px}
+</style>
+
+<h1>Capacity arithmetic</h1>
+<p class="sub">The two bits of maths worth being able to do out loud — Clos fabric N&minus;1, and backbone N&minus;1. Both answer the same question: <i>how full can I run this before a single failure hurts?</i></p>
+
+<h2>1 · Clos fabric — the spine ceiling</h2>
+
+<p>A leaf spreads its uplinks across <b>S</b> spines. Lose <b>F</b> of them and the surviving spines must carry everything.</p>
+
+<div class="eq">max safe utilisation = (S &minus; F) / S</div>
+
+<div class="scroll">
+<table>
+  <tr><th>Spines</th><th>N&minus;1 ceiling</th><th>N&minus;2 ceiling</th></tr>
+  <tr><td class="n">4</td><td class="n">75%</td><td class="n">50%</td></tr>
+  <tr><td class="n">8</td><td class="n">87.5%</td><td class="n">75%</td></tr>
+  <tr><td class="n">16</td><td class="n">93.75%</td><td class="n">87.5%</td></tr>
+  <tr><td class="n">32</td><td class="n">96.9%</td><td class="n">93.75%</td></tr>
+</table>
+</div>
+
+<div class="key">
+<b>The design lever:</b> don't buy more redundancy on a narrow spine layer — <b>buy a wider one</b>. Redundancy gets cheaper as S grows, because each spine is a smaller fraction of the whole. Four fat spines makes every spine catastrophic; sixteen makes a spine loss a rounding error, for similar money.
+</div>
+
+<h3>Worked example — the one from scenario 4</h3>
+<p>4 spines, running at 80%, spine 3 dies.</p>
+<ul>
+  <li>Demand = 0.80 &times; 4 = <b>3.2 spine-units</b></li>
+  <li>Capacity = <b>3.0 spine-units</b></li>
+  <li>&rArr; <b>107% &mdash; oversubscribed by 7%</b>, and 80% was already above the 75% N&minus;1 line</li>
+</ul>
+
+<div class="warn">
+<b>Why 7% short costs far more than 7%:</b> all-reduce is <b>paced by its slowest participant</b>. Every GPU waits for the last one. So a 7% capacity shortfall on one path stalls the whole job, not 7% of it. Degradation in collective workloads is non-linear — that's the sentence to say out loud.
+</div>
+
+<p class="muted">Related: PFC firing means ECN/DCQCN didn't back senders off in time. PFC is a backstop, not a mechanism. And rail-optimised placement reduces spine dependence in the first place — intra-rail collectives never touch a spine.</p>
+
+<h2>2 · Backbone / WAN — N&minus;1 worst-case link utilisation</h2>
+
+<p>A mesh has no single ratio, because where the traffic lands after a failure depends on the topology. The standard method:</p>
+
+<div class="box">
+For <b>every single failure</b> (each link, each node), recompute routing and record the <b>highest resulting utilisation on any link</b>. The worst of those numbers is your <b>N&minus;1 max link utilisation</b>. Size so it stays under your target.
+</div>
+
+<p>That's one number for the whole network, it's computable from the topology and a traffic matrix, and it's what capacity planning tools actually produce. Quoting it beats quoting "N+1".</p>
+
+<h3>The special cases worth knowing cold</h3>
+<ul>
+  <li><b>Ring of any size:</b> a single cut sends traffic the long way, so the surviving path carries its own load plus the failed path's. Steady-state ceiling is <b>50%</b>.</li>
+  <li><b>Two parallel paths:</b> same thing — <b>50%</b>.</li>
+  <li><b>k parallel paths:</b> <code>(k&minus;1)/k</code>, same form as the Clos ceiling.</li>
+  <li><b>Partial mesh:</b> no shortcut. Compute it.</li>
+</ul>
+
+<div class="key">
+<b>Protection is not capacity.</b> TI-LFA guarantees a <i>loop-free path exists</i> within 50 ms. It says nothing about whether that path has room. A fabric can be 100% protected and still congest the instant it repairs. Two separate purchases, two separate arguments — people conflate them constantly.
+</div>
+
+<div class="key">
+<b>Diversity is not capacity either.</b> A second path stops you being cut off. It doesn't stop you being congested. Same conflation, different flavour.
+</div>
+
+<h3>Size to repair time, not to a formula</h3>
+<p>The exposure to a second failure is <b>probability &times; duration</b>. A 4-hour terrestrial repair and an 11-week subsea repair are the same failure with ~450&times; the exposure window.</p>
+<div class="key">
+<b>And a long repair makes the problem cheaper, not dearer.</b> Eleven weeks is long enough to <i>procure</i>. So you don't buy standing capacity for the second failure — you buy the <b>option</b>: a burstable contract, a pre-negotiated wavelength with a committed turn-up SLA, an IRU. Fast failures need pre-built capacity; slow ones can be answered commercially. Capital cost becomes contingent cost.
+</div>
+<p class="muted">And an 11-week degraded mode is not an incident, it's the operating state for a quarter — so it gets designed: standing QoS policy, scheduling changes, and for research workloads, move the compute to the data rather than the data to the compute.</p>
+
+<h2>3 · Elephant flows break all of this</h2>
+
+<p>Every number above assumes traffic divides. It doesn't, when there are only a few enormous flows.</p>
+<ul>
+  <li><b>One flow cannot be spread by per-flow ECMP.</b> One hash, one link, by design. A single transfer on a 4&times;10G bundle gets 10G, and no amount of capacity changes that.</li>
+  <li>Fixes are <b>parallel streams</b>, <b>adaptive routing / flowlet switching</b>, or <b>packet spraying</b> with the receiver handling reorder.</li>
+  <li><b>Incast is a ratio, not a rate.</b> Ten senders at 10G onto one port is 10:1; upgrading that port to 25G leaves 4:1. Faster links shorten the overrun, they don't remove it. What decides it is <b>burst size in bytes versus buffer depth</b> — a silicon question, not a link-speed one.</li>
+  <li>And a 25G port can be allocated a <i>shallower</i> share of a shared buffer pool than the 10G port it replaced. You can upgrade the link and make the drops worse.</li>
+</ul>
+
+<h2>4 · Averages lie</h2>
+<ul>
+  <li>40% over five minutes can contain 100% for 200&nbsp;&micro;s. A 10G egress buffer fills in microseconds.</li>
+  <li>"Zero drops" may be the wrong counter — interface drops often exclude <b>output queue</b> discards.</li>
+  <li>The proof is <b>buffer occupancy</b>, not utilisation: most ASICs expose a max queue-depth watermark since last read. A watermark near the limit on a port averaging 40% is unambiguous.</li>
+  <li>Poll sub-second via streaming telemetry, not 5-minute SNMP.</li>
+</ul>
+
+<h2>5 · One-line versions</h2>
+<div class="box">
+<p><b>Clos:</b> "With four spines, 75% is the N&minus;1 line. We were at 80%, so losing one put us at 107%."</p>
+<p><b>Backbone:</b> "I'd size to N&minus;1 worst-case link utilisation across every single failure, not to a redundancy formula."</p>
+<p><b>Ring:</b> "A ring is 50%. A cut sends traffic the long way and the survivor carries both loads."</p>
+<p><b>Protection:</b> "TI-LFA guarantees a path exists in 50 ms. It doesn't guarantee the path has room."</p>
+<p><b>Repair time:</b> "Exposure is probability times duration, and eleven weeks is long enough to buy your way out — so I'd hold an option, not idle capacity."</p>
+<p><b>Elephants:</b> "One flow is one hash is one link. Capacity doesn't fix that; parallelism or spraying does."</p>
+</div>
