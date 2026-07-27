@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Host &amp; pcap cheatsheet</title>
+<style>
+  :root{--bg:#0e1726;--panel:#141f33;--ink:#eaf0fb;--muted:#9db0d0;--accent:#4da3ff;
+        --accent2:#54e0c7;--warn:#ffcf6b;--line:#2b3a56;--red:#ff7b8a;--code:#9cdcfe}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .wrap{max-width:1000px;margin:0 auto;padding:20px 18px 60px}
+  h1{font-size:24px;margin:8px 0 4px;letter-spacing:-.4px}
+  .sub{color:var(--muted);font-size:13.5px;margin:0 0 22px}
+  h2{font-size:17px;margin:30px 0 8px;color:var(--accent);letter-spacing:-.2px;
+     border-bottom:1px solid var(--line);padding-bottom:6px}
+  h3{font-size:14px;margin:18px 0 6px;color:var(--accent2);text-transform:uppercase;letter-spacing:1.2px}
+  table{width:100%;border-collapse:collapse;margin:6px 0 14px}
+  td{padding:6px 8px;vertical-align:top;border-bottom:1px solid #23314c}
+  td:first-child{width:46%;white-space:nowrap}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+       font-size:12.8px;color:var(--code);background:#0b1420;padding:2px 6px;border-radius:4px;
+       display:inline-block;max-width:100%;overflow-x:auto}
+  .d{color:var(--muted);font-size:13.5px}
+  .d b{color:var(--ink);font-weight:600}
+  .note{background:#12241d;border-left:3px solid var(--accent2);padding:9px 13px;
+        margin:10px 0;font-size:13.5px;border-radius:0 6px 6px 0}
+  .trap{background:#2a1620;border-left:3px solid var(--red);padding:9px 13px;
+        margin:10px 0;font-size:13.5px;border-radius:0 6px 6px 0}
+  .trap b{color:#ff9aa6}
+  .note b{color:var(--accent2)}
+  .ladder{counter-reset:step;margin:10px 0 16px;padding:0;list-style:none}
+  .ladder li{position:relative;padding:8px 0 8px 38px;border-bottom:1px solid #23314c}
+  .ladder li:before{counter-increment:step;content:counter(step);position:absolute;left:0;top:8px;
+    width:24px;height:24px;border-radius:6px;background:var(--accent);color:#06101f;
+    font:700 13px/24px sans-serif;text-align:center}
+  @media(max-width:700px){td:first-child{width:auto;white-space:normal}
+    table,tbody,tr,td{display:block}td{border:none;padding:3px 0}
+    tr{border-bottom:1px solid #23314c;padding:8px 0;display:block}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Host &amp; pcap cheatsheet</h1>
+<p class="sub">Receive-path diagnosis and packet analysis. Ordered by where you'd actually look, not alphabetically.</p>
+
+<h2>The receive-path ladder</h2>
+<p class="d">Packets vanish at one of five stages. Walk them in order — each one rules out the layer below it. "No drops on the interface" only clears stage 2.</p>
+<ol class="ladder">
+  <li><b>Wire</b> — did it arrive? capture at the NIC</li>
+  <li><b>NIC</b> — ring buffer, offloads · <code>ethtool -S</code></li>
+  <li><b>Kernel / NAPI</b> — backlog, budget · <code>/proc/net/softnet_stat</code></li>
+  <li><b>Protocol</b> — checksum, malformed · <code>nstat</code></li>
+  <li><b>Socket</b> — app not draining · <code>ss -uapmn</code></li>
+</ol>
+
+<h2>1 · Interface level</h2>
+<table>
+<tr><td><code>ip -s link show ens5</code></td><td class="d">RX/TX errors, dropped, overrun. First glance only.</td></tr>
+<tr><td><code>ip -br addr</code></td><td class="d">One-line-per-interface summary.</td></tr>
+<tr><td><code>ethtool ens5</code></td><td class="d">Speed, duplex, link. Confirms negotiation.</td></tr>
+<tr><td><code>ethtool -i ens5</code></td><td class="d">Driver and firmware version.</td></tr>
+</table>
+
+<h2>2 · NIC counters</h2>
+<table>
+<tr><td><code>ethtool -S ens5</code></td><td class="d">Everything the driver exposes. Pipe through <code>grep -v ': 0$'</code> to cut the noise.</td></tr>
+<tr><td><code>ethtool -S ens5 | grep -iE 'drop|err|miss|discard|fifo'</code></td><td class="d">The lines that matter.</td></tr>
+<tr><td><code>ethtool -g ens5</code></td><td class="d">Ring buffer size — current vs maximum.</td></tr>
+<tr><td><code>ethtool -G ens5 rx 4096</code></td><td class="d">Raise the RX ring. First fix for bursty loss.</td></tr>
+<tr><td><code>ethtool -c ens5</code></td><td class="d">Interrupt coalescing. Higher = fewer interrupts, more latency.</td></tr>
+<tr><td><code>ethtool -k ens5</code></td><td class="d">Offloads. GRO/LRO coalesce packets and <b>distort captures</b>.</td></tr>
+<tr><td><code>ethtool -l ens5</code></td><td class="d">Queue count — combined/rx/tx.</td></tr>
+<tr><td><code>ethtool -x ens5</code></td><td class="d">RSS indirection table and hash key.</td></tr>
+</table>
+<p class="trap"><b>Names to know:</b> <code>rx_missed_errors</code> and <code>rx_no_buffer_count</code> mean the NIC had a packet and nowhere to put it — the host wasn't draining fast enough. That's a host problem wearing a NIC counter's clothes.</p>
+
+<h2>3 · Kernel receive path</h2>
+<table>
+<tr><td><code>cat /proc/net/softnet_stat</code></td><td class="d">One row per CPU, <b>hex</b>, cumulative. Col 1 processed, col 2 <b>dropped</b>, col 3 <b>time_squeeze</b>.</td></tr>
+<tr><td><code>watch -d -n1 cat /proc/net/softnet_stat</code></td><td class="d">Diff it under load — absolute values are meaningless.</td></tr>
+<tr><td><code>sysctl net.core.netdev_budget</code></td><td class="d">Packets per NAPI poll. Raise if <code>time_squeeze</code> climbs.</td></tr>
+<tr><td><code>sysctl net.core.netdev_max_backlog</code></td><td class="d">Queue depth per CPU. Raise if col 2 climbs.</td></tr>
+</table>
+<p class="note"><b>Even spread across rows in col 1</b> is your RSS health check. One hot row means a polarised hash or a single active queue.</p>
+
+<h2>4 · Protocol counters</h2>
+<table>
+<tr><td><code>nstat -az</code></td><td class="d">All counters, absolute. Without <code>-a</code> it shows deltas since last run — often what you want.</td></tr>
+<tr><td><code>nstat -az | grep -iE 'rcvbuf|inerr|drop|prune|collapse'</code></td><td class="d">The interesting subset.</td></tr>
+<tr><td><code>netstat -su</code></td><td class="d">UDP summary — <b>receive buffer errors</b>, packet receive errors.</td></tr>
+<tr><td><code>netstat -st</code></td><td class="d">TCP — retransmits, out-of-order, listen drops.</td></tr>
+<tr><td><code>cat /proc/net/snmp</code></td><td class="d">Raw source for the above.</td></tr>
+</table>
+<p class="trap"><b><code>UdpRcvbufErrors</code></b> is the market-data gap counter. It means the socket buffer overflowed — the network delivered, the application didn't collect. Nothing upstream is at fault.</p>
+
+<h2>5 · Socket level</h2>
+<table>
+<tr><td><code>ss -uapmn</code></td><td class="d">UDP, all, process, memory, numeric.</td></tr>
+<tr><td><code>ss -tapmn</code></td><td class="d">Same for TCP.</td></tr>
+<tr><td><code>ss -tin</code></td><td class="d">TCP internals — cwnd, rtt, retrans, pacing rate.</td></tr>
+</table>
+<p class="d">The <code>skmem:(r,rb,t,tb,f,w,o,bl,d)</code> block: <b>r</b> = bytes queued now, <b>rb</b> = buffer size, <b>d</b> = drops on this socket. <code>r</code> riding near <code>rb</code> means the app is losing the race.</p>
+<table>
+<tr><td><code>sysctl net.core.rmem_max</code></td><td class="d">Ceiling for <code>SO_RCVBUF</code>. Apps asking for more are <b>silently capped</b>.</td></tr>
+<tr><td><code>sysctl net.core.rmem_default</code></td><td class="d">Default, usually 212992 (~208 KB).</td></tr>
+<tr><td><code>sysctl net.ipv4.tcp_rmem</code></td><td class="d">min / default / max for TCP autotuning.</td></tr>
+</table>
+
+<h2>6 · Interrupts, affinity, NUMA</h2>
+<table>
+<tr><td><code>grep ens5 /proc/interrupts</code></td><td class="d">One line per queue, counts per CPU. <b>Two non-zero CPUs on a row = the IRQ has moved.</b></td></tr>
+<tr><td><code>cat /proc/irq/&lt;N&gt;/smp_affinity_list</code></td><td class="d">Which CPUs that IRQ may land on.</td></tr>
+<tr><td><code>echo 3 &gt; /proc/irq/&lt;N&gt;/smp_affinity_list</code></td><td class="d">Pin it. Stop <code>irqbalance</code> first or it'll be undone.</td></tr>
+<tr><td><code>systemctl stop irqbalance</code></td><td class="d">Required before any manual pinning is stable.</td></tr>
+<tr><td><code>cat /sys/class/net/ens5/device/numa_node</code></td><td class="d"><code>-1</code> = unknown, typical in a VM. Real value only on metal.</td></tr>
+<tr><td><code>lscpu | grep -i numa</code></td><td class="d">Node count and CPU ranges.</td></tr>
+<tr><td><code>numactl --hardware</code></td><td class="d">Full topology and inter-node distances.</td></tr>
+<tr><td><code>taskset -c 4 ./app</code></td><td class="d">Pin the process to a core.</td></tr>
+<tr><td><code>chrt -f 80 ./app</code></td><td class="d">Real-time FIFO scheduling.</td></tr>
+</table>
+
+<h2>7 · Live observation</h2>
+<table>
+<tr><td><code>sar -n DEV 1</code></td><td class="d">Per-second interface throughput.</td></tr>
+<tr><td><code>mpstat -P ALL 1</code></td><td class="d">Per-CPU, including <code>%soft</code> — softirq load, i.e. network processing.</td></tr>
+<tr><td><code>pidstat -w -p &lt;pid&gt; 1</code></td><td class="d">Voluntary vs involuntary <b>context switches</b>.</td></tr>
+<tr><td><code>perf top -e cycles</code></td><td class="d">Where CPU time is going, live.</td></tr>
+<tr><td><code>perf stat -e context-switches,cpu-migrations ./app</code></td><td class="d">Migrations are latency poison.</td></tr>
+<tr><td><code>turbostat</code></td><td class="d">C-states and actual clock. Deep C-states add wake-up latency.</td></tr>
+</table>
+
+<h2>8 · tcpdump — capture</h2>
+<table>
+<tr><td><code>tcpdump -i ens5 -nn -e</code></td><td class="d"><code>-nn</code> no name/port resolution, <code>-e</code> show L2 header.</td></tr>
+<tr><td><code>tcpdump -i ens5 -w cap.pcap -s0</code></td><td class="d">Full packets to file. <code>-s0</code> = no snaplen truncation.</td></tr>
+<tr><td><code>tcpdump -i ens5 -w cap-%H%M.pcap -G 60 -W 10</code></td><td class="d">Ring buffer: 60s files, keep 10.</td></tr>
+<tr><td><code>tcpdump -r cap.pcap -nn</code></td><td class="d">Read back.</td></tr>
+<tr><td><code>tcpdump -i ens5 -nn --time-stamp-precision=nano</code></td><td class="d">Nanosecond timestamps.</td></tr>
+<tr><td><code>tcpdump -i ens5 -nn -c 100 -q</code></td><td class="d">100 packets, quiet output.</td></tr>
+</table>
+
+<h3>Filters</h3>
+<table>
+<tr><td><code>host 10.1.1.1</code> · <code>net 10.1.0.0/16</code></td><td class="d">Address and subnet.</td></tr>
+<tr><td><code>port 4789</code></td><td class="d">VXLAN.</td></tr>
+<tr><td><code>udp and dst net 224.0.0.0/4</code></td><td class="d">All multicast.</td></tr>
+<tr><td><code>igmp</code></td><td class="d">Membership reports and queries.</td></tr>
+<tr><td><code>vlan 1000</code></td><td class="d">Tagged frames. Position matters — filters after it apply inside the tag.</td></tr>
+<tr><td><code>mpls</code></td><td class="d">Labelled traffic.</td></tr>
+<tr><td><code>'tcp[tcpflags] &amp; (tcp-syn|tcp-fin) != 0'</code></td><td class="d">Connection setup and teardown only.</td></tr>
+<tr><td><code>'tcp[tcpflags] &amp; tcp-rst != 0'</code></td><td class="d">Resets.</td></tr>
+<tr><td><code>'ip[6:2] &amp; 0x1fff = 0'</code></td><td class="d">First fragment only.</td></tr>
+<tr><td><code>less 100</code> · <code>greater 1400</code></td><td class="d">By packet size.</td></tr>
+</table>
+<p class="trap"><b>Offloads distort captures.</b> With GRO/LRO on, tcpdump sees one huge segment that never existed on the wire. Turn them off before capturing for MTU or reordering work: <code>ethtool -K ens5 gro off lro off tso off gso off</code></p>
+
+<h2>9 · tshark — analysis</h2>
+<table>
+<tr><td><code>tshark -r cap.pcap -q -z io,stat,1</code></td><td class="d">Throughput per second.</td></tr>
+<tr><td><code>tshark -r cap.pcap -q -z conv,tcp</code></td><td class="d">Conversation table, sorted by bytes. Finds the elephant.</td></tr>
+<tr><td><code>tshark -r cap.pcap -q -z expert</code></td><td class="d">Wireshark's own warnings — retransmits, out-of-order, resets.</td></tr>
+<tr><td><code>tshark -r cap.pcap -Y 'tcp.analysis.retransmission'</code></td><td class="d">Retransmits only.</td></tr>
+<tr><td><code>tshark -r cap.pcap -Y 'tcp.analysis.out_of_order'</code></td><td class="d"><b>Reordering</b> — the one that looks like loss and isn't.</td></tr>
+<tr><td><code>tshark -r cap.pcap -Y 'tcp.analysis.zero_window'</code></td><td class="d">Receiver told the sender to stop. App-side stall.</td></tr>
+<tr><td><code>tshark -r cap.pcap -T fields -e frame.time_epoch -e ip.src -e udp.dstport</code></td><td class="d">Fields to columns, for feeding awk or a spreadsheet.</td></tr>
+<tr><td><code>tshark -r cap.pcap -Y 'ip.ttl &lt; 5'</code></td><td class="d">Loop hunting.</td></tr>
+<tr><td><code>tshark -r cap.pcap -d udp.port==4789,vxlan -Y vxlan</code></td><td class="d">Force the VXLAN dissector on a non-standard port.</td></tr>
+<tr><td><code>editcap -c 10000 big.pcap split.pcap</code></td><td class="d">Split an unmanageably large capture.</td></tr>
+<tr><td><code>mergecap -w all.pcap a.pcap b.pcap</code></td><td class="d">Merge captures from two points, timestamp-ordered.</td></tr>
+</table>
+
+<h2>10 · Market data in a capture</h2>
+<p class="d">UDP has no sequence number. Gaps can <b>only</b> be proven from the exchange protocol's own field in the payload — MoldUDP64 sequence, CME MDP <code>MsgSeqNum</code>. Without the right dissector you cannot see a gap at all.</p>
+<table>
+<tr><td><code>tshark -r feed.pcap -Y 'moldudp64'</code></td><td class="d">Nasdaq-family framing.</td></tr>
+<tr><td><code>tshark -r feed.pcap -T fields -e moldudp64.sequence</code></td><td class="d">Sequence to stdout — diff it to find the gap.</td></tr>
+<tr><td><code>tshark -r feed.pcap -q -z io,stat,0.001</code></td><td class="d">Millisecond bins. Microburst hunting.</td></tr>
+<tr><td><code>tshark -r feed.pcap -Y 'igmp'</code></td><td class="d">Did the receiver actually join, and when.</td></tr>
+</table>
+<p class="note"><b>The decisive question:</b> capture <i>at the receiving NIC</i>. A gap present in that capture was lost upstream — network. A gap the application reports but the capture doesn't show was lost between NIC and app — go back to <code>softnet_stat</code> and <code>UdpRcvbufErrors</code>.</p>
+
+<h2>11 · Wireshark GUI, quickly</h2>
+<table>
+<tr><td>Statistics ▸ Conversations</td><td class="d">Who's talking, how much.</td></tr>
+<tr><td>Statistics ▸ I/O Graph</td><td class="d">Set interval to 1ms to see bursts an average hides.</td></tr>
+<tr><td>Statistics ▸ TCP Stream Graphs ▸ Time Sequence</td><td class="d">Stalls, retransmits and window limits, visually.</td></tr>
+<tr><td>Statistics ▸ Flow Graph</td><td class="d">Ladder diagram of an exchange.</td></tr>
+<tr><td>View ▸ Time Display ▸ Since Previous Displayed</td><td class="d">Turns absolute time into inter-packet gaps.</td></tr>
+<tr><td>Right-click ▸ Apply as Column</td><td class="d">Any field — including the feed's sequence number.</td></tr>
+</table>
+
+</div>
+</body>
+</html>
