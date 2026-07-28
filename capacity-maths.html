@@ -35,9 +35,32 @@
 
 <h2>1 · Clos fabric — the spine ceiling</h2>
 
-<p>A leaf spreads its uplinks across <b>S</b> spines. Lose <b>F</b> of them and the surviving spines must carry everything.</p>
+<p>A leaf spreads its uplinks across <b>S</b> spines. Lose <b>F</b> of them and the survivors carry everything.</p>
 
-<div class="eq">max safe utilisation = (S &minus; F) / S</div>
+<div class="warn">
+<b>Two formulas, two different questions. Don't mix them.</b><br>
+<b>S</b> = number of spines. <b>F</b> = number of spines you must survive losing — <b>a count, not a percentage</b>. <b>U</b> = current utilisation.
+</div>
+
+<h3>Q1 &mdash; how full can I safely run?</h3>
+<div class="eq">U<sub>max</sub> = (S &minus; F) / S</div>
+<p class="muted">Depends only on spine counts. Your current utilisation does not appear.</p>
+
+<h3>Q2 &mdash; where do I land after a failure?</h3>
+<div class="eq">U<sub>after</sub> = U<sub>before</sub> &times; S / (S &minus; F)</div>
+<p class="muted">Above 100% means oversubscribed &mdash; demand exceeds surviving capacity.</p>
+
+<div class="scroll">
+<table>
+  <tr><th>Same 80% load, lose 1 spine</th><th>Arithmetic</th><th>Lands at</th></tr>
+  <tr><td>4 spines</td><td>0.80 &times; 4/3</td><td class="n">107%</td></tr>
+  <tr><td>8 spines</td><td>0.80 &times; 8/7</td><td class="n">91.4%</td></tr>
+  <tr><td>16 spines</td><td>0.80 &times; 16/15</td><td class="n">85.3%</td></tr>
+</table>
+</div>
+<p class="muted">Same load, same single failure, three different outcomes &mdash; purely from how wide the spine layer is. Cross-check against Q1: 80% is <i>above</i> the 75% ceiling for 4 spines (so it breaks) and <i>below</i> the 87.5% ceiling for 8 (so it doesn't).</p>
+
+<h3>The ceiling table (Q1)</h3>
 
 <div class="scroll">
 <table>
@@ -53,13 +76,15 @@
 <b>The design lever:</b> don't buy more redundancy on a narrow spine layer — <b>buy a wider one</b>. Redundancy gets cheaper as S grows, because each spine is a smaller fraction of the whole. Four fat spines makes every spine catastrophic; sixteen makes a spine loss a rounding error, for similar money.
 </div>
 
-<h3>Worked example — the one from scenario 4</h3>
-<p>4 spines, running at 80%, spine 3 dies.</p>
+<h3>Worked example — scenario 4, the long way</h3>
+<p>4 spines, running at 80%, spine 3 dies. Thinking in "spine-units" is the version to do out loud, because it needs no formula:</p>
 <ul>
-  <li>Demand = 0.80 &times; 4 = <b>3.2 spine-units</b></li>
-  <li>Capacity = <b>3.0 spine-units</b></li>
-  <li>&rArr; <b>107% &mdash; oversubscribed by 7%</b>, and 80% was already above the 75% N&minus;1 line</li>
+  <li>Each spine = 1 unit of capacity. Four spines = <b>4 units</b>.</li>
+  <li>Running at 80% &rArr; demand = 0.80 &times; 4 = <b>3.2 units</b>.</li>
+  <li>Lose one spine &rArr; capacity = <b>3.0 units</b>.</li>
+  <li>3.2 into 3.0 = <b>107%</b>. Oversubscribed by 7%, with nowhere for it to go.</li>
 </ul>
+<p class="muted">Same answer as U<sub>after</sub> = 0.80 &times; 4/3. And Q1 already warned you: the ceiling for 4 spines is 75%, so 80% was over the line before anything failed.</p>
 
 <div class="warn">
 <b>Why 7% short costs far more than 7%:</b> all-reduce is <b>paced by its slowest participant</b>. Every GPU waits for the last one. So a 7% capacity shortfall on one path stalls the whole job, not 7% of it. Degradation in collective workloads is non-linear — that's the sentence to say out loud.
@@ -120,7 +145,9 @@ For <b>every single failure</b> (each link, each node), recompute routing and re
 
 <h2>5 · One-line versions</h2>
 <div class="box">
-<p><b>Clos:</b> "With four spines, 75% is the N&minus;1 line. We were at 80%, so losing one put us at 107%."</p>
+<p><b>Clos ceiling:</b> "With four spines, 75% is the N&minus;1 line." &nbsp;<span class="muted">(S&minus;F)/S</span></p>
+<p><b>Clos after a failure:</b> "We were at 80%, so losing one of four put us at 107%." &nbsp;<span class="muted">U &times; S/(S&minus;F)</span></p>
+<p><b>Width:</b> "Same 80% on eight spines lands at 91%, on sixteen at 85%. Wider spine layer, cheaper redundancy."</p>
 <p><b>Backbone:</b> "I'd size to N&minus;1 worst-case link utilisation across every single failure, not to a redundancy formula."</p>
 <p><b>Ring:</b> "A ring is 50%. A cut sends traffic the long way and the survivor carries both loads."</p>
 <p><b>Protection:</b> "TI-LFA guarantees a path exists in 50 ms. It doesn't guarantee the path has room."</p>
