@@ -1,104 +1,44 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Nscale ramp — the roadmap</title>
+<title>Nscale ramp</title>
 <style>
-  :root{--bg:#0e1726;--panel:#152136;--ink:#eaf0fb;--muted:#9db0d0;--accent:#4da3ff;--accent2:#54e0c7;--warn:#ffcf6b;--line:#2b3a56;--ex:#0f2030;--red:#ff7b8a}
+  :root{--bg:#0e1726;--panel:#152136;--ink:#eaf0fb;--muted:#9db0d0;--accent:#4da3ff;--accent2:#54e0c7;--warn:#ffcf6b;--line:#2b3a56}
   *{box-sizing:border-box}
-  body{margin:0 auto;max-width:860px;background:var(--bg);color:var(--ink);font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;padding:28px 18px 80px}
+  body{margin:0 auto;max-width:760px;background:var(--bg);color:var(--ink);font:17px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;padding:28px 18px 80px}
   h1{font-size:28px;margin:.2em 0 .1em;color:var(--accent2);letter-spacing:-.5px}
-  .sub{color:var(--muted);margin:0 0 16px}
-  .dates{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 18px}
-  .date{background:var(--panel);border:1px solid var(--warn);border-radius:10px;padding:8px 14px;font-size:14px}
-  .date b{color:var(--warn)}
-  .rule{background:#12241d;border:2px solid var(--accent2);border-radius:12px;padding:12px 18px;margin:0 0 22px;font-size:15px}
-  .rule b{color:var(--accent2)}
-  .step{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin:12px 0}
-  .step h2{margin:0 0 6px;font-size:17px;color:var(--accent)}
-  .step h2 .when{color:var(--warn);font-size:13px;font-weight:600;margin-left:8px}
-  .step p{margin:6px 0;font-size:15px}
-  .read{color:var(--accent2);font-size:14px;margin-top:6px}
-  .done{color:var(--muted);font-size:13.5px;margin-top:6px;border-top:1px dashed var(--line);padding-top:6px}
-  .done b{color:var(--ink)}
-  .thread{background:var(--ex);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:12px 16px;margin:20px 0;font-size:15px}
-  .thread b{color:var(--accent)}
-  .foot{color:var(--muted);font-size:14px;margin-top:24px;border-top:1px solid var(--line);padding-top:12px}
+  .sub{color:var(--muted);margin:0 0 22px}
+  .step{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin:14px 0}
+  .step h2{margin:0 0 8px;font-size:18px;color:var(--accent)}
+  .step h2 .tag{color:var(--warn);font-size:13px;font-weight:600;margin-left:8px}
+  .step p{margin:6px 0;font-size:15.5px}
+  .daily{background:#12241d;border:1px solid var(--accent2);border-radius:12px;padding:14px 20px;margin:20px 0;font-size:15.5px}
+  .daily b{color:var(--accent2)}
   a{color:var(--accent2);text-decoration:none;font-weight:600}
-  a:hover{text-decoration:underline}
-  .hot{color:var(--warn)}
 </style>
 
-<h1>Nscale ramp — the roadmap</h1>
-<p class="sub">Start 17 August · Senior Staff Network Engineer, AI Infrastructure · across the WAN and the DCs — DC AI infra first, then MPLS-SR.</p>
+<h1>Nscale ramp</h1>
+<p class="sub">Senior Staff Network Engineer, AI Infrastructure · starts 17 Aug · DC AI infra first, then MPLS-SR.</p>
 
-<div class="dates">
-  <div class="date"><b>Now → Sun 16 Aug</b> — Spain, full-time. Veranda = lab · beach = Kindle</div>
-  <div class="date"><b>Mon 17 Aug</b> — job starts. Nights + weekends from here</div>
-  <div class="date"><b>Sat 5 Sep</b> — out of the apartment. Resolve before the 17th</div>
-</div>
-
-<div class="rule">
-  <b>The order, in one line:</b> the lab leads and the books pace it — the same topic on the keyboard and on the beach in the same week, the multiple-authors mechanism with the box as one of the authors. DC fabric before deep WAN-SR, because that is the order the job arrives in. And the rebuild script is step zero, because config pushed from git <b>is</b> the model-driven workflow — S4 arriving at S0.
+<div class="step">
+  <h2>1 · Dutt — <i>Cloud Native Data Center Networking</i> <span class="tag">in progress</span></h2>
+  <p>The DC spine: Clos, the eBGP underlay, EVPN-VXLAN, and the automation model — the front-end fabric of an AI cloud. Cover to cover.</p>
 </div>
 
 <div class="step">
-  <h2>0 · The box and the rebuild script <span class="when">this weekend</span></h2>
-  <p>Order the <b>second Hetzner dedicated-vCPU box</b> — not the moonshine box, and not inside AWS: the cloud leg only means something if the tunnel genuinely leaves the provider, which is also exactly Nscale's position — a cloud clients connect <i>into</i> from elsewhere. 31&nbsp;GB is too tight for ~23 nodes; take the tier above (verify current tiers and hourly billing at order time — prices moved June 2026).</p>
-  <p>Pull the SR&nbsp;Linux container image and <span class="hot">prove ECN marks appear under a <b>tc</b>-limited link before anything else is built on that assumption</span> — half of S5 stands on it. If the container dataplane won't mark, the congestion experiments move onto the Linux hosts' own qdiscs and every fabric stage stands regardless.</p>
-  <p>Write the rebuild skeleton: topology up → per-node configs pushed from git → verify (adjacencies, routes, label path). Hand-config died three times in the HRT lab; it doesn't get a fourth.</p>
-  <p class="done"><b>Done when:</b> one command brings up the topology and verifies it, so a nightly stop costs nothing.</p>
+  <h2>2 · Filsfils — <i>Segment Routing</i> Part I <span class="tag">in progress</span></h2>
+  <p>SR foundations from its inventor: prefix and adjacency SIDs, the IGP extensions, TI-LFA. This is the ground the WAN phase of the job stands on.</p>
 </div>
 
 <div class="step">
-  <h2>1 · S0 — underlays + the SR core <span class="when">w/c 3 Aug</span></h2>
-  <p>Both regions' underlays, the 3-node core, TI-LFA on, label path traced end to end. The core carries <b>both SR-MPLS and SRv6</b> so the comparison later is measured, not asserted.</p>
-  <p class="read"><b>Reading that paces it:</b> finish Dutt · Filsfils Part I (both in progress).</p>
-  <p class="done"><b>Done when:</b> the traced label path and a TI-LFA failover live in the rebuild script, not in hand-config.</p>
+  <h2>3 · Filsfils — <i>Segment Routing</i> Part II</h2>
+  <p>The traffic-engineering half: SR policies, Flex-Algo, the controller story. Follows Part I — this is the job's phase two, read in the order the job arrives.</p>
 </div>
 
 <div class="step">
-  <h2>2 · S1 — EVPN/VXLAN front-end <span class="when">same week</span></h2>
-  <p>Tenant VRFs, symmetric IRB, storage VNI, region B thin. The <a href="https://learn.srlinux.dev">learn.srlinux.dev</a> L2 EVPN tutorial <b>is</b> this stage — reading and building are the same activity. The SR&nbsp;Linux docs (Segment Routing · EVPN · VPN Services) and karneliuk.com sit alongside — the entire published world for the NOS.</p>
-  <p class="read"><b>Reading that paces it:</b> Chatterjee, <i>Deploying Juniper Data Centers with EVPN VXLAN</i>, starts on the beach — a Juniper author describing the protocol is the second author on the topic the Nokia box is teaching.</p>
-  <p class="done"><b>Done when:</b> tenant-to-tenant routes across regions through the fabric, all five route types read on the box, configs in git.</p>
+  <h2>4 · AWS — the interconnect syllabus</h2>
+  <p>Purpose: connecting the GPU cloud to the other clouds. Spine = the AWS Advanced Networking specialty syllabus — Direct Connect, Transit Gateway, hybrid routing, inter-region — then the same shapes on Azure (ExpressRoute) and GCP (Cloud Interconnect). A syllabus to work through, not a cert commitment.</p>
 </div>
 
-<div class="step">
-  <h2>3 · S2 — back-end rails, lossless <span class="when">w/c 10 Aug</span></h2>
-  <p>Two rails + back-end spine, 1:1, GPU hosts dual-homed to both fabrics, RoCEv2 lossless config. The <b>tc rate-limits go in here</b> — veth forwards at memory speed, so without them nothing congests and the lossless config is theatre.</p>
-  <p class="done"><b>Done when:</b> ECN marks observed under real load on a limited link — same-rail one hop, cross-rail via the spine, measured.</p>
+<div class="daily">
+  <b>Daily, under everything · Linux by doing.</b> A few <a href="https://overthewire.org/wargames/bandit/">OverTheWire Bandit</a> levels a day, <i>The Linux Command Line</i> alongside as the reference. Never blocks the reading; never skipped.
 </div>
-
-<div class="step">
-  <h2>4 · S3 — Kubernetes over the back-end <span class="when">same week</span></h2>
-  <p>k8s on the GPU hosts, topology-aware placement — the workload the fabric exists for, scheduled with knowledge of the rails.</p>
-  <p class="done"><b>Done when:</b> a placement decision visibly follows the rail topology.</p>
-</div>
-
-<div class="step">
-  <h2>5 · The move <span class="when">before the 17th</span></h2>
-  <p>Sort the 5 September exit now — week three of a new job is the worst week to be moving. This outranks any lab stage in that window.</p>
-</div>
-
-<div class="step">
-  <h2>6 · S4 — source of truth → Ansible → drift <span class="when">from 17 Aug, nights + weekends</span></h2>
-  <p>YAML intent in git → Ansible render and push (<b>replace, not merge</b> — the idempotency lesson) → drift diff. NetBox last, once the loop is understood. This formalises what the rebuild script started at step 0.</p>
-  <p class="read"><b>Reading that paces it:</b> Chatterjee, <i>Mastering Advanced Juniper Data Centers</i> — multicast, inter-VRF (directly the multi-tenant job), Apstra as concepts (intent, blueprint, drift), and the six interop chapters — interop being the one place an author must describe the protocol rather than the product.</p>
-</div>
-
-<div class="step">
-  <h2>7 · S5 — the experiments</h2>
-  <p>Incast + ECN tuning · tenant PFC interference (tenant A's congestion pausing tenant B, then per-priority isolation) · collective emulation · inter-region bulk over the core. On the SR side: <b>SR-MPLS vs SRv6 measured on the same core</b> — this is where the job's phase two lands.</p>
-  <p class="read"><b>Reading that paces it:</b> Filsfils Part II.</p>
-</div>
-
-<div class="step">
-  <h2>8 · The cloud leg — a client connecting in</h2>
-  <p>Real AWS VPC + Transit Gateway + Site-to-Site VPN terminating on <b>bl-a on the Hetzner box</b> — a genuinely inter-provider tunnel: real internet path, real IPsec MTU, eBGP over the tunnel. The exact shape of a corporate client landing on Nscale. The vendor interconnect docs — Direct Connect, ExpressRoute, Cloud Interconnect — ride this step; the differences between the three are where the understanding lives.</p>
-  <p class="done"><b>Done when:</b> a region-A tenant reaches an instance in the VPC and the route tables on both ends say why.</p>
-</div>
-
-<div class="thread">
-  <b>The daily thread — Linux, by doing.</b> A few OverTheWire Bandit levels every day, <i>The Linux Command Line</i> on the Kindle alongside, <i>How Linux Works</i> after as the system-model refresher. Runs under everything above; never blocks a stage.
-</div>
-
-<p class="foot">Standing: the reading never stops after the 17th, and it stays pointed at the current industry — the 40s mistake doesn't repeat. A 20-node estate now costs pennies; currency no longer depends on what the job supplies.</p>
