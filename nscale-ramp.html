@@ -1,0 +1,150 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nscale ramp-up programme</title>
+<style>
+  :root{--bg:#0e1726;--panel:#152136;--ink:#eaf0fb;--muted:#9db0d0;--accent:#4da3ff;--accent2:#54e0c7;--warn:#ffcf6b;--line:#2b3a56;--ex:#0f2030;--red:#ff7b8a}
+  @media(prefers-color-scheme:light){:root{--bg:#fbfbf8;--panel:#fff;--ink:#1a1a1a;--muted:#555;--accent:#0b5cad;--accent2:#0a7a63;--warn:#8a5a00;--line:#ddd;--ex:#f2f7f5;--red:#b3261e}}
+  :root[data-theme="dark"]{--bg:#0e1726;--panel:#152136;--ink:#eaf0fb;--muted:#9db0d0;--accent:#4da3ff;--accent2:#54e0c7;--warn:#ffcf6b;--line:#2b3a56;--ex:#0f2030;--red:#ff7b8a}
+  :root[data-theme="light"]{--bg:#fbfbf8;--panel:#fff;--ink:#1a1a1a;--muted:#555;--accent:#0b5cad;--accent2:#0a7a63;--warn:#8a5a00;--line:#ddd;--ex:#f2f7f5;--red:#b3261e}
+  *{box-sizing:border-box}
+  body{margin:0 auto;max-width:900px;background:var(--bg);color:var(--ink);font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;padding:24px 18px 80px}
+  h1{font-size:28px;margin:.2em 0 .1em;color:var(--accent2);letter-spacing:-.4px}
+  .sub{color:var(--muted);margin:0 0 18px;font-size:15px}
+  h2{font-size:17px;color:var(--accent);margin:34px 0 8px;border-bottom:1px solid var(--line);padding-bottom:6px;text-transform:uppercase;letter-spacing:1.3px}
+  h3{font-size:15.5px;margin:22px 0 6px;color:var(--ink)}
+  p{margin:8px 0}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13.5px;background:var(--ex);padding:1px 5px;border-radius:4px}
+  .key{background:var(--ex);border-left:3px solid var(--accent2);border-radius:0 8px 8px 0;padding:11px 15px;margin:12px 0}
+  .key b{color:var(--accent2)}
+  .warn{background:var(--ex);border-left:3px solid var(--warn);border-radius:0 8px 8px 0;padding:11px 15px;margin:12px 0}
+  .warn b{color:var(--warn)}
+  .book{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:10px 14px;margin:8px 0}
+  .book b{color:var(--accent2)}
+  .book .d{display:block;color:var(--muted);font-size:14px;margin-top:4px}
+  .tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:1px;padding:2px 8px;border-radius:999px;margin-left:8px;vertical-align:middle;background:#241f10;color:var(--warn);border:1px solid var(--warn)}
+  @media(prefers-color-scheme:light){.tag{background:#fff6e0}}
+  .scroll{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;margin:10px 0;font-size:14px}
+  td,th{border:1px solid var(--line);padding:7px 11px;text-align:left;vertical-align:top}
+  th{color:var(--accent);background:var(--panel)}
+  ul{margin:8px 0;padding-left:22px}
+  li{margin:5px 0}
+  .muted{color:var(--muted);font-size:14px}
+  a{color:var(--accent2);font-weight:600;text-decoration:none}
+  a:hover{text-decoration:underline}
+</style>
+
+<h1>Nscale ramp-up programme</h1>
+<p class="sub"><b>Start 17 August 2026</b> &middot; Senior Staff Network Engineer, AI Infrastructure, UK-remote &middot; scope confirmed by HM, principal engineer and HR: <b>across both the WAN and the DCs</b> — DC AI infra first, then MPLS-SR.</p>
+
+<div class="key">
+<b>The method — total dominance and mastery of the topic, then apply it.</b> Cover to cover. Multiple authors on the same topic; the redundancy between authors <i>is</i> the mechanism, not waste. This produced CCIE young, first FRR in Europe, the first 3G network, virtualisation at AMS-IX. It stopped around 40 and cost a decade of currency.<br><br>
+Consequence: <b>rank reading by what constitutes mastery of the topic, never by what the job requires.</b> No trimming to sufficiency.
+</div>
+
+<h2>1 · Studies</h2>
+
+<h3>Cloud / DC fabric</h3>
+<div class="book"><b>Cloud Native Data Center Networking</b> — Dinesh Dutt <span class="tag">IN PROGRESS</span>
+<span class="d">Linux-NOS worldview, automation-first — the closest match to the SR Linux operating model. Nothing on RoCE or rail (~2019).</span></div>
+<div class="book"><b>Deploying Juniper Data Centers with EVPN VXLAN</b> — Aninda Chatterjee</div>
+<div class="book"><b>Mastering Advanced Juniper Data Centers</b> — Chatterjee
+<span class="d">Advanced volume: <b>multicast, inter-VRF, Apstra</b>, plus <b>six interoperability chapters</b>.<br>
+&middot; <b>Interop</b> is the most transferable part of a Juniper book for a Nokia-bound reader — interop is the only place an author must describe the protocol rather than the product.<br>
+&middot; <b>Inter-VRF</b> is directly the job: multi-tenant cloud, controlled leaking to shared services and egress.<br>
+&middot; <b>Multicast</b> — the BUM-replication half (underlay multicast VNI vs ingress replication, serialisation skew).<br>
+&middot; <b>Apstra</b> — concepts (intent, blueprint, generated config, drift), not the product; they're a Nokia shop.</span></div>
+
+<h3>Segment Routing</h3>
+<div class="book"><b>Segment Routing Part I</b> — Filsfils, Michielsen, Talaulikar <span class="tag">IN PROGRESS</span></div>
+<div class="book"><b>Segment Routing Part II</b> — same authors</div>
+
+<h3>Customer interconnect — corporates connecting into the cloud</h3>
+<p class="muted">No book exists; the topic is vendor-specific and moves too fast to publish. Multiple-authors becomes multiple-vendors.</p>
+<div class="book"><b>AWS Advanced Networking Specialty (ANS-C01) study guide</b>
+<span class="d">Closest thing to a book. Direct Connect, virtual interfaces, LAGs, BGP peering with customers, Transit Gateway, hybrid DNS, MACsec.</span></div>
+<div class="book"><b>AWS Direct Connect · Azure ExpressRoute · GCP Cloud Interconnect</b> — all three guides
+<span class="d">The differences between them are where the understanding lives. Clients arrive from all three.</span></div>
+<div class="book"><b>The Internet Peering Playbook</b> — William B. Norton
+<span class="d">Provider side: cross-connects, colo mechanics, interconnect economics — Nscale's position in the relationship. Dated (early 2010s); mechanics hold, economics moved.</span></div>
+
+<h3>Design / requirements</h3>
+<div class="key"><b>Closed — CCDE.</b> Plus <i>The Art of Network Architecture</i> and <i>Computer Networking Problems and Solutions</i> already read. <i>Navigating Network Complexity</i> is the weakest of the three and repeatedly stalls — not worth forcing.</div>
+
+<h3>Linux</h3>
+<div class="book"><b>The Linux Command Line</b> — William Shotts <span class="tag">FREE PDF</span>
+<span class="d">Shell fluency. Would have covered the <code>ls &gt; b</code> redirection question.</span></div>
+<div class="book"><b>OverTheWire &ldquo;Bandit&rdquo;</b> — free shell wargame, ~30 levels
+<span class="d">Doing rather than reading. Suits the method better than either book.</span></div>
+<div class="book"><b>How Linux Works</b> — Brian Ward, 3rd ed
+<span class="d">Refresher on the system model already held from 20 years ago — boot, systemd, filesystems, networking, processes.</span></div>
+<div class="book"><b>Systems Performance</b>, 2nd ed — Brendan Gregg <span class="tag">LATER</span>
+<span class="d">The host-performance layer: receive path, drop counters, methodology, extended BPF. This is the HRT-flavoured material, not the route to proficiency.</span></div>
+
+<h3>SR Linux</h3>
+<div class="book"><b><a href="https://learn.srlinux.dev/tutorials/">learn.srlinux.dev</a></b>
+<span class="d">Interactive tutorials built on containerlab — reading and lab-building are the same activity. The <a href="https://learn.srlinux.dev/tutorials/l2evpn/intro/">L2 EVPN tutorial</a> is effectively lab stage S1.</span></div>
+<div class="book"><b>Nokia SR Linux docs</b> — Segment Routing, EVPN Guide, VPN Services
+<span class="d">CC to build as EPUB for Kindle.</span></div>
+<div class="book"><b><a href="https://karneliuk.com/">karneliuk.com</a></b>
+<span class="d">One of very few substantial independent sources on Nokia DC/EVPN.</span></div>
+<p class="muted">No book exists. That is the entire published world for a young NOS.</p>
+
+<h2>2 · Hands-on — the Nscale replica lab</h2>
+
+<div class="key"><b>SR Linux throughout, DC and WAN.</b> Containerlab, on EC2 <code>i-0e4680c8f360675ab</code> (eu-west-2). The laptop is only a terminal.<br><br>
+Why SR Linux in the WAN too: it does SR-MPLS broadly, and SRv6 on the 7730 SXR — Nokia's WAN-capable SR Linux platform. A greenfield AI-cloud WAN needs no BNG or subscriber management, so there's no obvious reason to reach for SR-OS.</div>
+
+<h3>Topology — asymmetric, ~15 devices + 8 hosts</h3>
+<div class="scroll">
+<table>
+<tr><th>Layer</th><th>Nodes</th></tr>
+<tr><td><b>Region A front-end</b></td><td>2 spines, 3 leaves — EVPN/VXLAN, symmetric IRB, tenant VRFs, storage VNI</td></tr>
+<tr><td><b>Region A back-end</b></td><td>2 rails + 1 back-end spine — rail-optimised, 1:1, RoCEv2 lossless</td></tr>
+<tr><td><b>SR core</b></td><td>3 nodes, TI-LFA; <b>both SR-MPLS and SRv6</b>, so the comparison is measured rather than asserted</td></tr>
+<tr><td><b>Region B (thin)</b></td><td>1 spine, 1 leaf, 1 border</td></tr>
+<tr><td><b>Borders</b></td><td><code>bl-a</code>, <code>bl-b</code></td></tr>
+<tr><td><b>Hosts</b></td><td>2 tenants, 3 GPU nodes dual-homed to both fabrics, 1 storage, 2 in region B</td></tr>
+<tr><td><b>AWS</b></td><td>real VPC + Transit Gateway + Site-to-Site VPN into <code>bl-a</code> — client onboarding, eBGP over tunnel, IPsec MTU</td></tr>
+</table>
+</div>
+<p class="muted">Region B is deliberately thin: it exists to make the backbone and inter-region transfer real, not to duplicate a GPU fabric.</p>
+
+<div class="warn"><b>The enabler: <code>tc</code> rate-limits on the links.</b> veth pairs forward at memory speed, so nothing congests and ECN never marks. Without this, half of S5 is theatre.</div>
+
+<h3>Stages</h3>
+<div class="scroll">
+<table>
+<tr><th>S0</th><td>Underlay both regions + SR core; label path traced end to end. <b>Scripted rebuild</b> — so a nightly stop costs one command, not an hour.</td></tr>
+<tr><th>S1</th><td>EVPN/VXLAN front-end, tenant VRFs, symmetric IRB</td></tr>
+<tr><th>S2</th><td>Back-end fabric, rail design, lossless config</td></tr>
+<tr><th>S3</th><td>Kubernetes over the back-end, topology-aware placement</td></tr>
+<tr><th>S4</th><td>YAML source of truth in git → Ansible → push → drift diff. NetBox at the end, once the loop is understood.</td></tr>
+<tr><th>S5</th><td>Experiments: incast + ECN tuning · tenant PFC interference (A's congestion pausing B, then per-priority isolation) · collective emulation · inter-region bulk transfer</td></tr>
+</table>
+</div>
+
+<h3>Open</h3>
+<ul>
+  <li>SR Linux container image — availability, and whether it does meaningful PFC/ECN</li>
+  <li>Instance sizing for ~23 nodes (the 21-node HRT estate filled a c6i.4xlarge)</li>
+  <li>Cost — ~$0.70/hr for a c6i.4xlarge (verify) ≈ $290 for 2.5 weeks running continuously; a nightly stop roughly halves it</li>
+</ul>
+
+<h2>3 · Schedule</h2>
+
+<h3>Now → 17 August — Spain is the ramp</h3>
+<p>Free until the 17th, laptop present. There is no separate return-and-build phase.</p>
+<ul>
+  <li><b>Veranda</b> — lab, moonshine</li>
+  <li><b>Beach and restaurants</b> — Kindle</li>
+  <li>Books cover to cover, his order, his pace</li>
+</ul>
+
+<h3>From 17 August — the working cadence</h3>
+<p>All three workstreams concurrent — Nscale, moonshine, AI products — nights and weekends. Objective: master the Nscale estate, outperform, progress. Cadence built nearer the time, once the shape of the actual job is known.</p>
+
+<div class="warn"><b>⚠ 5 September — hard dated constraint.</b> Out of the apartment on the 5th; two and a half weeks after starting. Week three of a new job is the worst time to be moving — resolve before the 17th, not after.</div>
+
+<h2>Standing objective</h2>
+<div class="key">Never repeat the 40s mistake. The reading habit never stops, and it stays pointed at the current industry rather than being redirected away from it. Labs are now cheap enough — a 21-node estate for pennies on EC2 — that currency is maintainable without the job supplying it.</div>
