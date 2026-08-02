@@ -62,6 +62,23 @@
   <p>The traffic-engineering half: SR policies, Flex-Algo, the controller story — read as the job's WAN phase comes into view.</p>
 </div>
 
+<h2>Track two — workload down: Ray to rail</h2>
+<div class="step">
+  <h3>Why it exists</h3>
+  <p>Nscale is buying Anyscale (announced 30 Jul, closes H2) — the fabric and the workload software become one company, and the unclaimed seat is the person who can walk "this Ray job is slow" down to a queue on a specific rail. Diagnostic literacy, not ML engineering.</p>
+</div>
+<div class="step">
+  <h3>Before day one <span class="tag">hours, inside the cadence — the books keep priority</span></h3>
+  <p><b>Parallelism → traffic:</b> data / tensor / pipeline / expert parallelism and FSDP, each as a wire signature — what flows, how often, what syncs. The organising fact: steps are bulk-synchronous, so the slowest flow sets step time — tail latency IS cluster throughput.</p>
+  <p><b>NCCL first half:</b> the collectives and their traffic shapes, ring vs tree and when it switches, and the reading that an "NCCL timeout" is nearly always a fabric event or a straggler wearing a software error.</p>
+  <p><b>The NVL72 boundary:</b> what stays inside the 72-GPU NVLink domain and what crosses onto the fabric.</p>
+  <p>Outcome: run the chain cold in week-one conversations — placement group stalls, so the collective hung, so look at that rail's queues.</p>
+</div>
+<div class="step">
+  <h3>First 90 days <span class="tag">the calendar cooperates</span></h3>
+  <p>NCCL diagnosis on real clusters and logs · InfiniBand vs RoCE under multi-tenant congestion, GB300 specifics as Texas ramps · Ray at operator level (placement groups, actors) as the Anyscale integration closes · Slurm vs Kubernetes on their actual stack · multi-tenant isolation on a shared lossless fabric — the product question for managed AI compute.</p>
+</div>
+
 <h2>Every day, throughout</h2>
 <div class="step">
   <p>A few <a href="https://overthewire.org/wargames/bandit/">Bandit</a> levels — Linux by doing. <i>The Linux Command Line</i> beside it as the reference. Small enough to never block; never skipped.</p>
