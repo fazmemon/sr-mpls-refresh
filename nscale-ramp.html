@@ -6,39 +6,65 @@
   *{box-sizing:border-box}
   body{margin:0 auto;max-width:760px;background:var(--bg);color:var(--ink);font:17px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;padding:28px 18px 80px}
   h1{font-size:28px;margin:.2em 0 .1em;color:var(--accent2);letter-spacing:-.5px}
-  .sub{color:var(--muted);margin:0 0 22px}
-  .step{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin:14px 0}
-  .step h2{margin:0 0 8px;font-size:18px;color:var(--accent)}
-  .step h2 .tag{color:var(--warn);font-size:13px;font-weight:600;margin-left:8px}
-  .step p{margin:6px 0;font-size:15.5px}
-  .daily{background:#12241d;border:1px solid var(--accent2);border-radius:12px;padding:14px 20px;margin:20px 0;font-size:15.5px}
-  .daily b{color:var(--accent2)}
+  .sub{color:var(--muted);margin:0 0 18px}
+  .cadence{background:#12241d;border:1px solid var(--accent2);border-radius:12px;padding:12px 18px;margin:0 0 20px;font-size:15.5px}
+  .cadence b{color:var(--accent2)}
+  h2{font-size:16px;color:var(--warn);margin:26px 0 6px;letter-spacing:.3px}
+  .step{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 20px;margin:10px 0}
+  .step h3{margin:0 0 6px;font-size:17px;color:var(--accent)}
+  .step h3 .tag{color:var(--warn);font-size:13px;font-weight:600;margin-left:8px}
+  .step p{margin:5px 0;font-size:15px}
+  .foot{color:var(--muted);font-size:14px;margin-top:26px;border-top:1px solid var(--line);padding-top:12px}
   a{color:var(--accent2);text-decoration:none;font-weight:600}
 </style>
 
 <h1>Nscale ramp</h1>
 <p class="sub">Senior Staff Network Engineer, AI Infrastructure · starts 17 Aug · DC AI infra first, then MPLS-SR.</p>
 
-<div class="step">
-  <h2>1 · Dutt — <i>Cloud Native Data Center Networking</i> <span class="tag">in progress</span></h2>
-  <p>The DC spine: Clos, the eBGP underlay, EVPN-VXLAN, and the automation model — the front-end fabric of an AI cloud. Cover to cover.</p>
+<div class="cadence">
+  <b>Cadence — the weather decides.</b> Every day is one of the three: <b>reading</b> (beach, Kindle) · <b>lab</b> (mornings, bad weather) · <b>Linux</b> (anywhere). No fixed schedule; the only rule is one of them happens.
 </div>
 
+<h2>Day zero</h2>
 <div class="step">
-  <h2>2 · Filsfils — <i>Segment Routing</i> Part I <span class="tag">in progress</span></h2>
-  <p>SR foundations from its inventor: prefix and adjacency SIDs, the IGP extensions, TI-LFA. This is the ground the WAN phase of the job stands on.</p>
+  <p>Buy the lab box — Hetzner CX43, ~€12/month. Kill the AWS bill — terminate the old lab instance and its disks. First <a href="https://overthewire.org/wargames/bandit/">Bandit</a> level over coffee.</p>
 </div>
 
+<h2>Before day one</h2>
 <div class="step">
-  <h2>3 · Filsfils — <i>Segment Routing</i> Part II</h2>
-  <p>The traffic-engineering half: SR policies, Flex-Algo, the controller story. Follows Part I — this is the job's phase two, read in the order the job arrives.</p>
+  <h3>Dutt — <i>Cloud Native Data Center Networking</i> <span class="tag">in progress — finish</span></h3>
+  <p>The DC spine: Clos, the eBGP underlay, EVPN-VXLAN, the automation model — the front-end fabric of an AI cloud.</p>
+</div>
+<div class="step">
+  <h3>Filsfils — <i>Segment Routing</i> Part I <span class="tag">in progress — finish</span></h3>
+  <p>SR foundations from its inventor: prefix and adjacency SIDs, the IGP extensions, TI-LFA — the ground the WAN phase stands on.</p>
+</div>
+<div class="step">
+  <h3>The lab, alongside</h3>
+  <p>SR Linux + containerlab on the Hetzner box, built through the <a href="https://learn.srlinux.dev">learn.srlinux.dev</a> tutorials — the EVPN fabric on Nscale's own NOS. The box teaches the same chapters Dutt is teaching, the same week: route types, IRB, multihoming, read live off the CLI.</p>
 </div>
 
+<h2>From the 17th — nights and weekends, in order</h2>
 <div class="step">
-  <h2>4 · AWS — the interconnect syllabus</h2>
-  <p>Purpose: connecting the GPU cloud to the other clouds. Spine = the AWS Advanced Networking specialty syllabus — Direct Connect, Transit Gateway, hybrid routing, inter-region — then the same shapes on Azure (ExpressRoute) and GCP (Cloud Interconnect). A syllabus to work through, not a cert commitment.</p>
+  <h3>1 · AWS — Sybex <i>Advanced Networking</i> study guide</h3>
+  <p>Direct Connect, Transit Gateway, hybrid BGP — timed to when client connectivity turns up in discovery. The lab leg rides it: a real VPN from the Hetzner box into a real VPC, eBGP over it, torn down same day.</p>
+</div>
+<div class="step">
+  <h3>2 · Azure — <i>Designing and Implementing Azure Networking</i> (AZ-700)</h3>
+  <p>ExpressRoute, Virtual WAN — the same shapes on their side. Lab leg: the Azure VPN termination.</p>
+</div>
+<div class="step">
+  <h3>3 · GCP — <i>Professional Cloud Network Engineer</i> guide</h3>
+  <p>Cloud Interconnect and the global VPC model. Lab leg: the GCP termination. Three clouds, one box, each one a real client-connecting-in rehearsal.</p>
+</div>
+<div class="step">
+  <h3>4 · Filsfils — <i>Segment Routing</i> Part II</h3>
+  <p>The traffic-engineering half: SR policies, Flex-Algo, the controller story — read as the job's WAN phase comes into view.</p>
 </div>
 
-<div class="daily">
-  <b>Daily, under everything · Linux by doing.</b> A few <a href="https://overthewire.org/wargames/bandit/">OverTheWire Bandit</a> levels a day, <i>The Linux Command Line</i> alongside as the reference. Never blocks the reading; never skipped.
+<h2>Every day, throughout</h2>
+<div class="step">
+  <p>A few <a href="https://overthewire.org/wargames/bandit/">Bandit</a> levels — Linux by doing. <i>The Linux Command Line</i> beside it as the reference. Small enough to never block; never skipped.</p>
 </div>
+
+<p class="foot">The Chatterjee Juniper EVPN pair is read later for completeness — deliberately off this ramp. Reading doesn't stop on the 17th; it just moves to nights, weekends and whatever the weather rules out.</p>
