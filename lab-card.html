@@ -14,24 +14,47 @@
   .note{color:var(--muted);font-size:13.5px;margin-top:14px}
 </style>
 
-<h1>Two-node underlay — parameters</h1>
+<h1>Region A — parameters</h1>
 
 <h2>Login</h2>
-<p><code>ssh lab</code> then <code>ssh admin@clab-first-srl1</code> (or <code>-srl2</code>) · password <code>NokiaSrl1!</code></p>
+<p><code>ssh lab</code> then <code>ssh admin@clab-region-a-leaf1</code> (or <code>-leaf2 -leaf3 -spine1 -spine2</code>) · password <code>NokiaSrl1!</code></p>
 
-<h2>Parameters</h2>
+<h2>Build sequence</h2>
+<p>1 interfaces + addressing → 2 eBGP underlay (all 5, verify mesh) → 3 iBGP EVPN overlay → 4 mac-vrf + VXLAN on leaves. <code>info flat</code> dumps a node's config as paste-ready <code>set</code> lines for copy-adapt.</p>
+
+<h2>Per-node: loopback, AS, fabric ports</h2>
 <table>
-  <tr><th></th><th>srl1</th><th>srl2</th></tr>
-  <tr><td>wire</td><td>ethernet-1/1</td><td>ethernet-1/1</td></tr>
-  <tr><td>link address</td><td>10.0.0.0/31</td><td>10.0.0.1/31</td></tr>
-  <tr><td>system0</td><td>1.1.1.1/32</td><td>2.2.2.2/32</td></tr>
-  <tr><td>router-id / AS</td><td>1.1.1.1 / 65001</td><td>2.2.2.2 / 65002</td></tr>
-  <tr><td>eBGP neighbour</td><td>10.0.0.1 · peer-as 65002</td><td>10.0.0.0 · peer-as 65001</td></tr>
-  <tr><td>import policy</td><td colspan="2">ACCEPT-ALL</td></tr>
-  <tr><td>export policy</td><td colspan="2">LOOPBACKS — prefix-set LOOPS holds 1.1.1.1/32 + 2.2.2.2/32, statement matches protocol local</td></tr>
+  <tr><th>node</th><th>system0 / router-id</th><th>AS</th><th>port · address · peer</th></tr>
+  <tr><td>spine1</td><td>10.0.1.1/32</td><td>65100</td><td>e1-1 · 10.0.0.0/31 · leaf1<br>e1-2 · 10.0.0.4/31 · leaf2<br>e1-3 · 10.0.0.8/31 · leaf3</td></tr>
+  <tr><td>spine2</td><td>10.0.1.2/32</td><td>65100</td><td>e1-1 · 10.0.0.2/31 · leaf1<br>e1-2 · 10.0.0.6/31 · leaf2<br>e1-3 · 10.0.0.10/31 · leaf3</td></tr>
+  <tr><td>leaf1</td><td>10.0.1.11/32</td><td>65101</td><td>e1-49 · 10.0.0.1/31 · spine1<br>e1-50 · 10.0.0.3/31 · spine2</td></tr>
+  <tr><td>leaf2</td><td>10.0.1.12/32</td><td>65102</td><td>e1-49 · 10.0.0.5/31 · spine1<br>e1-50 · 10.0.0.7/31 · spine2</td></tr>
+  <tr><td>leaf3</td><td>10.0.1.13/32</td><td>65103</td><td>e1-49 · 10.0.0.9/31 · spine1<br>e1-50 · 10.0.0.11/31 · spine2</td></tr>
+</table>
+<p class="note">Each /31: spine side even, leaf side odd. Underlay eBGP neighbour = the far side of each /31. Remember <code>subinterface 0 ipv4 admin-state enable</code> on every routed interface, system0 included.</p>
+
+<h2>Policies (underlay)</h2>
+<p>import <code>ACCEPT-ALL</code> · export <code>LOOPBACKS</code> — prefix-set <code>LOOPS</code> = <code>10.0.1.0/24 mask-length-range 32..32</code> (covers all five loopbacks in one entry), statement matches protocol local.</p>
+
+<h2>Overlay — iBGP EVPN, spines as route-reflectors</h2>
+<table>
+  <tr><th>what</th><th>value</th></tr>
+  <tr><td>overlay AS</td><td>65500 (local-as override on the overlay group, every node)</td></tr>
+  <tr><td>sessions</td><td>each leaf → spine loopbacks 10.0.1.1 + 10.0.1.2, sourced from system0</td></tr>
+  <tr><td>spines</td><td>route-reflector clients = the leaves; no VXLAN on spines</td></tr>
+  <tr><td>family</td><td>evpn only on this group · per-family ACCEPT-ALL import+export (the LOOPBACKS lesson)</td></tr>
 </table>
 
-<p class="note">Done looks like: session established both ways · each router learns the far loopback via bgp · loopback-to-loopback ping clean.</p>
+<h2>Services (leaves only)</h2>
+<table>
+  <tr><th>what</th><th>value</th></tr>
+  <tr><td>tunnel</td><td>vxlan1 vxlan-interface 1 · type bridged · VNI 100</td></tr>
+  <tr><td>mac-vrf</td><td>vrf1 · EVI 100 · RT target:65500:100 · explicit import/export-rt</td></tr>
+  <tr><td>access port</td><td>e1-1 untagged → vrf1 (each leaf)</td></tr>
+  <tr><td>hosts</td><td>h1 172.16.100.1 · h2 .2 · h3 .3 (/24, preset by clab)</td></tr>
+</table>
+
+<p class="note">Done looks like: underlay — full mesh established, every node bgp-learns all five loopbacks, loopback pings clean · overlay — leaves hold type-3 (and, with hosts pinging, type-2) routes via both spines · dataplane — h1↔h2↔h3 ping, <code>show tunnel vxlan-tunnel all</code> on a leaf shows the other two VTEPs with unicast destinations. Save with <code>save startup</code> — commit alone doesn't persist.</p>
 
 <h2>Bandit — resume + passwords</h2>
 <p><code>ssh bandit1@bandit.labs.overthewire.org -p 2220</code> · don't paste the login banner to CC</p>
