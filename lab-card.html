@@ -56,6 +56,28 @@
 
 <p class="note">Done looks like: underlay — full mesh established, every node bgp-learns all five loopbacks, loopback pings clean · overlay — leaves hold type-3 (and, with hosts pinging, type-2) routes via both spines · dataplane — h1↔h2↔h3 ping, <code>show tunnel vxlan-tunnel all</code> on a leaf shows the other two VTEPs with unicast destinations. Save with <code>save startup</code> — commit alone doesn't persist.</p>
 
+<h2>Working the box — show grammar</h2>
+<p>1 · <code>show</code> walks contexts; a <b>report keyword ends it</b> (<code>summary</code> / <code>detail</code> / <code>route</code> / <code>brief</code>). "usage: show" = you stopped at a context — it lists the report keywords to finish with.<br>
+2 · Lost? Append a garbage token — the parser lists every legal next word.<br>
+3 · Bare <code>ping</code> runs in the mgmt VRF — fabric pings need <code>ping network-instance default &lt;addr&gt;</code>.</p>
+
+<h2>Core show commands (this build)</h2>
+<p><code>show network-instance default protocols bgp neighbor</code> — sessions<br>
+<code>show network-instance default ipv4 route</code> — the RIB<br>
+<code>show network-instance default protocols bgp routes ipv4 summary</code> — BGP table<br>
+<code>show network-instance default protocols bgp routes evpn route-type 3 summary</code> — EVPN IMET<br>
+<code>show interface brief</code> · <code>show interface ethernet-1/49</code> — <code>no-ip-config</code> = ipv4 admin-state off<br>
+<code>show tunnel vxlan-tunnel all</code> — VTEPs programmed</p>
+
+<h2>Multipath (leaves)</h2>
+<p><code>set / network-instance default protocols bgp afi-safi ipv4-unicast multipath ebgp maximum-paths 2</code><br>
+Works without allow-multiple-as because both spines share AS 65100. Proof: remote leaf loopback shows two next-hops in the RIB.</p>
+
+<h2>The ritual (every known-good moment)</h2>
+<p>commit → verify → <code>save startup</code> → <code>tools system configuration generate-checkpoint</code><br>
+Then: <code>diff checkpoint 0</code> = changes since known-good · <code>tools system configuration checkpoint 0 revert</code> = walk back · <code>diff startup</code> = unsaved work<br>
+Address changes are delete+add — addresses accumulate, they don't replace.</p>
+
 <h2>Bandit — resume + passwords</h2>
 <p><code>ssh bandit2@bandit.labs.overthewire.org -p 2220</code> · don't paste the login banner to CC</p>
 <table>
