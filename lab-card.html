@@ -1,6 +1,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Lab card — region A</title>
+<title>Lab card — Nscale estate</title>
 <style>
   :root{--bg:#0e1726;--panel:#152136;--ink:#eaf0fb;--muted:#9db0d0;--accent:#4da3ff;--accent2:#54e0c7;--warn:#ffcf6b;--line:#2b3a56}
   *{box-sizing:border-box}
@@ -12,12 +12,30 @@
   th{color:var(--accent);background:var(--panel)}
   code{background:var(--panel);border:1px solid var(--line);padding:1px 6px;border-radius:4px;color:var(--warn);font-size:.92em}
   .note{color:var(--muted);font-size:13.5px;margin-top:14px}
+  pre{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px;overflow-x:auto;font-size:12.5px;line-height:1.35;color:var(--ink)}
 </style>
 
-<h1>Region A — parameters</h1>
+<h1>Nscale estate — lab card</h1>
+
+<h2>The estate — one file, one deploy</h2>
+<p>Whole footprint = <code>~/lab/estate/estate.clab.yml</code> (17 nodes). Rebuild after any reboot: <code>ssh lab</code> then <code>~/lab/estate/rebuild.sh</code>. DC self-configures (startup-config); core restored by the script.</p>
+<pre>
+  REGION A  —  VXLAN/EVPN (Nokia SR Linux)        SR CORE — IS-IS-SR (FRR)      REGION B (thin)
+                                                                                VXLAN/EVPN
+   h1     h2     h3   &lt;- tenant hosts                 core1 ==== core2            rb-h1
+    |      |      |                                     \\   \  /   //             |
+  leaf1  leaf2  leaf3   (e1-49->spine1, e1-50->spine2)   \\  core3  //           rb-leaf1
+     \    |    /                                          \\   |   //              |
+     spine1  spine2                                        bl-a bl-b            rb-spine1
+        \    /  e1-4->bl-a                                (eth3->core1/2)           |
+         bl-a  bl-b  ===== SR-MPLS / SRv6 =====================================   rb-bl
+        border-leaves        DCI stitch:  EVPN-VXLAN  &lt;-VRF->  VPNv4-over-SR      (eth3->core3)
+</pre>
+<p class="note"><b>DC</b> = BGP-EVPN/VXLAN, never runs SR. <b>Core</b> = IS-IS-SR (SR-MPLS + SRv6 on one IGP). <b>Borders (bl-a/bl-b)</b> = the seam: terminate the tenant VXLAN into VRF t1, re-originate into VPNv4-over-SR toward the core. The VRF RIB is the pivot — decap to IP, re-encap into SR. Not a tunnel splice.</p>
 
 <h2>Login</h2>
-<p><code>ssh lab</code> then <code>ssh admin@clab-region-a-leaf1</code> (or <code>-leaf2 -leaf3 -spine1 -spine2</code>) · password <code>NokiaSrl1!</code></p>
+<p><b>DC (SR Linux, appliance):</b> <code>ssh lab</code> then <code>ssh admin@clab-estate-leaf1</code> (<code>-leaf2 -leaf3 -spine1 -spine2</code>) · pw <code>NokiaSrl1!</code><br>
+<b>Core/borders (FRR, container):</b> <code>docker exec -it clab-estate-core1 vtysh</code> (<code>-core2 -core3 -bl-a -bl-b -rb-bl</code>). No sshd on FRR — <code>docker exec</code> is the way in.</p>
 
 <h2>Build sequence</h2>
 <p>1 interfaces + addressing → 2 eBGP underlay (all 5, verify mesh) → 3 iBGP EVPN overlay → 4 mac-vrf + VXLAN on leaves. <code>info flat</code> dumps a node's config as paste-ready <code>set</code> lines for copy-adapt.</p>
@@ -87,4 +105,32 @@ Address changes are delete+add — addresses accumulate, they don't replace.</p>
   <tr><td>bandit2</td><td><code>PK8fYLZg2hnHSz83plBL1iEPKdD3QToB</code></td></tr>
 </table>
 <p class="note">Current level: 2 — hunting level 3's password. New passwords: tell CC, it banks them here + in memory.</p>
+
+<h2>SR core — parameters (FRR, IS-IS area 49.0002, L2-only)</h2>
+<table>
+  <tr><th>node</th><th>loopback</th><th>prefix-SID (label)</th><th>SRv6 locator</th><th>links</th></tr>
+  <tr><td>core1</td><td>10.0.2.1/32</td><td>idx 1 → 16001</td><td>5f00:0:c1::/48</td><td>eth1·10.2.0.0/31·core2 · eth2·10.2.0.5/31·core3 · eth3·bl-a</td></tr>
+  <tr><td>core2</td><td>10.0.2.2/32</td><td>idx 2 → 16002</td><td>5f00:0:c2::/48</td><td>eth1·10.2.0.1/31·core1 · eth2·10.2.0.2/31·core3 · eth3·bl-b</td></tr>
+  <tr><td>core3</td><td>10.0.2.3/32</td><td>idx 3 → 16003</td><td>5f00:0:c3::/48</td><td>eth1·10.2.0.3/31·core2 · eth2·10.2.0.4/31·core1 · eth3·rb-bl</td></tr>
+</table>
+<p class="note">SRGB 16000-23999 (same everywhere) → label = 16000 + index. Adjacency-SIDs auto-allocated from SRLB 15000-15999. CLI is Cisco IOS: <code>router isis 1</code> / <code>net 49.0002.0000.0000.000N.00</code> / <code>segment-routing on</code> / <code>segment-routing srv6 / locator loc1</code>. Direct-apply, <code>write memory</code>.</p>
+
+<h2>SR playground — poke the core like you poked the DC</h2>
+<p>DC you explored via <code>bridge-table mac-table</code> (Type-2/3). SR you explore via the label table + the SID TLVs. On any core node (<code>docker exec -it clab-estate-core1 vtysh</code>):</p>
+<p><code>show isis segment-routing node</code> — every node's SRGB/SRLB/algo (SR "who's who")<br>
+<code>show mpls table</code> — the label FIB: 16001-3 = prefix-SIDs, 15xxx = adj-SIDs, <code>implicit-null</code> = 1-hop (PHP)<br>
+<code>show ip route 10.0.2.2/32</code> — the prefix-SID label imposed toward a remote loopback<br>
+<code>show isis database detail core2</code> — see the <b>Prefix-SID / SRv6 Locator sub-TLVs inside the LSP</b> (this is where SR lives in the IGP)<br>
+<code>show segment-routing srv6 locator</code> · <code>show ipv6 route 5f00:0:c2::/48</code> — the SRv6 side (locator learned via IS-IS)</p>
+<p class="note"><b>The fun one — watch a swap label appear:</b> triangle = every loopback 1 hop (all implicit-null). Break a link: on the host <code>docker exec clab-estate-core1 ip link set eth1 down</code>. Now core1→core2 goes the long way via core3 (2 hops) → <code>show mpls table</code> on core1 shows a REAL swap label (16002 in → 16002 out), not implicit-null. Bring it back: <code>ip link set eth1 up</code>. That's TI-LFA territory — the reroute.</p>
+
+<h2>bl-a build (plane) — core side is proven; CC coaches</h2>
+<p>Border-leaf bl-a: loopback <b>10.0.3.1</b>, IS-IS-SR area 49.0002 toward core1 (bl-a:eth3→core1:eth3), MP-BGP VPNv4 to bl-b, tenant VRF t1. Sequence CC will walk you through:</p>
+<p>1 · Linux: <code>ip link add t1 type vrf table 100; ip link set t1 up</code> + <code>sysctl net.mpls.platform_labels=1048575</code> + <code>net.mpls.conf.eth3.input=1</code><br>
+2 · FRR: IS-IS-SR toward core1 (net/is-type/segment-routing on/SRGB/prefix-sid)<br>
+3 · FRR: <code>router bgp 65000</code> VPNv4 to bl-b over loopbacks · <code>vrf t1</code> with <code>rd/rt vpn</code> + <code>import/export vpn</code> + <code>label vpn export auto</code><br>
+4 · <i>Stage 2 (CC benches first):</i> EVPN-VXLAN VTEP joining the DC overlay → tenant VNI into VRF t1.</p>
+
+<h2>If connectivity sucks (offline backup)</h2>
+<p class="note">No lab = read <b>Filsfils Part I</b> (where you are) — TI-LFA is the live chapter; or the paper exercise: hand-trace the label/encap stack for <code>h1 → rb-h1</code> (VXLAN in region A → decap at bl-a → VPN+SR labels across core → recap at rb-bl → VXLAN in region B). Name every push/swap/pop. That's the whole estate in one trace.</p>
 </meta>
