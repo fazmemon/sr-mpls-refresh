@@ -11,7 +11,7 @@
 </style>
 <div class="wrap">
 <h1>CC operating-system kit</h1>
-<p class="sub">Instructions for the installing Claude Code session: materialise every file below, verbatim, substituting <b>$WORKROOT</b> with the chosen workspace root (ask the user; default <code>~/work</code>). Then wire the hooks into <code>~/.claude/settings.json</code> as shown in the final section, <code>git init</code> the workspace, and make the first commit. After installing, read CLAUDE.md and confirm each mechanism to the user in one line each.</p>
+<p class="sub">Instructions for the installing Claude Code session: materialise every file below, verbatim, first asking the user for the workspace root, then setting the <b>WORKROOT=</b> line at the top of BOTH hook scripts to that absolute path (that line is the single source of truth) and using the same absolute path in the settings.json commands. Then wire the hooks into <code>~/.claude/settings.json</code> as shown in the final section, <code>git init</code> the workspace, and make the first commit. After installing, read CLAUDE.md and confirm each mechanism to the user in one line each.</p>
 
 <h2>1 · $WORKROOT/CLAUDE.md — the operating manual</h2>
 <pre>
@@ -25,7 +25,7 @@ Do NOT duplicate them here. If a rule needs changing, change it in the hook file
 - **Commit after every change** — show the hash as proof.
 - **Record user decisions** in `board/decisions.md` immediately.
 - **Never ask the user to do anything CC can execute with tools.** Run it yourself.
-- **Cost model (metered API billing):** default model = Sonnet. Escalate to Opus only for judgment-heavy work (design, hard diagnosis, expert artifacts) and say so when you do. NEVER use Fable (2x Opus per token). Haiku for bulk mechanical jobs. No unattended loops without an explicit cap — uncapped token use is what got AI banned here once already.
+- **Cost model (metered API billing):** the primary dial is EFFORT, not model-switching — run routine work at medium/low effort, reserve high/xhigh for genuinely hard problems, and state when you raise it. Model ladder: Sonnet default; Opus for judgment-heavy work (design, hard diagnosis, expert artifacts); Haiku for bulk mechanical; NEVER Fable (2x Opus per token). No unattended loops without an explicit cap — uncapped token use is what got AI banned here once already.
 - [Add domain-specific instructions here as they are ruled.]
 
 ## Board System
@@ -104,7 +104,7 @@ RULES
 <pre>
 #!/bin/bash
 # SessionStart — sentinel for the stop hook + board injection
-WORKROOT="$HOME/work"   # &lt;-- set to the real workspace root
+WORKROOT="/ABSOLUTE/PATH/SET/ME"   # single source of truth — installer sets this
 BOARD="$WORKROOT/board"
 touch /tmp/cc_session_start
 echo "Session started."
@@ -118,10 +118,10 @@ echo "=== END BOARD ==="
 <pre>
 #!/bin/bash
 # Stop — uncommitted-changes check + handover guard
-WORKROOT="$HOME/work"   # &lt;-- set to the real workspace root
+WORKROOT="/ABSOLUTE/PATH/SET/ME"   # single source of truth — installer sets this
 BOARD="$WORKROOT/board"
 echo "=== SESSION END CHECK ==="
-cd "$WORKROOT"
+cd "$WORKROOT" || { echo "ERROR: WORKROOT $WORKROOT missing - aborting checks"; exit 1; }
 CHANGES=$(git status --porcelain 2&gt;/dev/null | grep -v '^??' | head -5)
 [ -n "$CHANGES" ] && { echo "WARNING: Uncommitted changes:"; echo "$CHANGES"; } || echo "workspace: clean."
 mkdir -p "$BOARD/handovers/archive"
