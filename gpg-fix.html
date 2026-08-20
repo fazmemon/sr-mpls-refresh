@@ -1,0 +1,49 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GPG Reset</title>
+<style>
+  :root{--bg:#f4f6f8;--panel:#fff;--ink:#111826;--muted:#5a6b7e;--accent:#0d8f86;--line:#d7dee6}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,sans-serif;line-height:1.5;padding:24px}
+  .wrap{max-width:760px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 4px}
+  p.sub{color:var(--muted);margin:0 0 22px;font-size:14px}
+  .step{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+  .step h2{font-size:14px;margin:0 0 8px;color:var(--accent)}
+  pre{background:#0f1720;color:#e6edf3;padding:12px 14px;border-radius:8px;overflow-x:auto;font-size:13px;margin:8px 0;user-select:all}
+  .note{font-size:13px;color:var(--muted);margin:6px 0 0}
+  b{color:var(--ink)}
+</style>
+<div class="wrap">
+<h1>GPG signing — clean reset</h1>
+<p class="sub">Copy each block into Terminal in order. Click a block to select all of it.</p>
+
+<div class="step"><h2>0 · Before anything</h2>
+<p class="note">In 1Password: create an entry <b>"Nscale GPG key"</b> with a generated password. That's the passphrase for step 2.</p></div>
+
+<div class="step"><h2>1 · Wipe the broken GPG state (safe — keyring holds only the dud key)</h2>
+<pre>gpgconf --kill gpg-agent
+rm -rf ~/.gnupg
+gpg -K
+echo "pinentry-program $(brew --prefix)/bin/pinentry-mac" > ~/.gnupg/gpg-agent.conf</pre>
+<p class="note">The <b>gpg -K</b> prints nothing — that's correct, it just recreates the folder.</p></div>
+
+<div class="step"><h2>2 · Make the new key</h2>
+<pre>gpg --full-generate-key</pre>
+<p class="note">Answers: <b>ECC (sign and encrypt)</b> → <b>Curve 25519</b> → expiry <b>1y</b> → your name → <b>work email exactly as on GitHub</b> → passphrase from 1Password (type it carefully in the dialog).</p></div>
+
+<div class="step"><h2>3 · Copy the public key for GitHub</h2>
+<pre>gpg --armor --export | pbcopy</pre>
+<p class="note">Prints nothing — the key block is now on the clipboard. GitHub → Settings → SSH and GPG keys → <b>delete the old GPG key</b> → New GPG key → ⌘V → save. Title: "Nscale MacBook".</p></div>
+
+<div class="step"><h2>4 · Point git at the new key + sign everything</h2>
+<pre>git config --global user.signingkey $(gpg -K --keyid-format=long | awk '/^sec/{split($2,a,"/"); print a[2]; exit}')
+git config --global commit.gpgsign true
+echo 'export GPG_TTY=$(tty)' >> ~/.zshrc
+export GPG_TTY=$(tty)</pre></div>
+
+<div class="step"><h2>5 · Prove it</h2>
+<pre>cd ~/sign-test 2>/dev/null || { mkdir ~/sign-test && cd ~/sign-test && git init; }
+git commit --allow-empty -m "signing test"
+git log --show-signature -1</pre>
+<p class="note">Passphrase dialog appears → tick <b>Save in Keychain</b> → output shows <b>"Good signature"</b>. Done — go contribute.</p></div>
+</div>
