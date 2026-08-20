@@ -1,0 +1,195 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CC System Kit</title>
+<style>
+  body{margin:0;background:#f4f6f8;color:#111826;font-family:system-ui,sans-serif;line-height:1.5;padding:24px}
+  .wrap{max-width:900px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 4px} h2{font-size:15px;color:#0d8f86;margin:26px 0 6px}
+  p.sub{color:#5a6b7e;font-size:14px;margin:0 0 18px}
+  pre{background:#0f1720;color:#e6edf3;padding:12px 14px;border-radius:8px;overflow-x:auto;font-size:12.5px}
+  .note{font-size:13px;color:#5a6b7e}
+</style>
+<div class="wrap">
+<h1>CC operating-system kit</h1>
+<p class="sub">Instructions for the installing Claude Code session: materialise every file below, verbatim, substituting <b>$WORKROOT</b> with the chosen workspace root (ask the user; default <code>~/work</code>). Then wire the hooks into <code>~/.claude/settings.json</code> as shown in the final section, <code>git init</code> the workspace, and make the first commit. After installing, read CLAUDE.md and confirm each mechanism to the user in one line each.</p>
+
+<h2>1 · $WORKROOT/CLAUDE.md — the operating manual</h2>
+<pre>
+# Workspace — CC Operating Manual
+
+## Behaviour Rules
+16 rules (0-15) injected every message by the UserPromptSubmit hook (`board/hooks/user_prompt.sh`).
+Do NOT duplicate them here. If a rule needs changing, change it in the hook file.
+
+## Domain Instructions
+- **Commit after every change** — show the hash as proof.
+- **Record user decisions** in `board/decisions.md` immediately.
+- **Never ask the user to do anything CC can execute with tools.** Run it yourself.
+- [Add domain-specific instructions here as they are ruled.]
+
+## Board System
+Location: `board/`
+| File | Purpose |
+|------|---------|
+| BOARD.md | Living status dashboard — injected at session start |
+| decisions.md | User decisions log — append-only, dated |
+| handovers/archive/ | Session handover docs (write here directly) — NOT auto-loaded |
+| hooks/ | Hook scripts (SessionStart, UserPromptSubmit, Stop) |
+
+## Memory System
+Location: `~/.claude/projects/&lt;project-dir&gt;/memory/`
+- **L1 (always loaded):** MEMORY.md — identity, active streams, key files, instructions. One line per entry; detail lives in linked topic files.
+- **L2 (on demand):** per-workstream files + feedback files. Read the stream's L2 before working it.
+- **L3 (reference):** handovers in `board/handovers/archive/` — read the NEWEST ONE ONLY at session start; never walk the chain.
+- Feedback memories record HOW the user works (corrections + confirmed approaches, with the why). New durable feedback → its own file + a MEMORY.md pointer.
+
+## Handover Requirements
+Before ending ANY session:
+1. Push facts into live state FIRST: BOARD.md, decisions.md, the relevant L2 memory file.
+2. Write the handover to `board/handovers/archive/YYYY-MM-DD-HH-MM.md` (timestamp from `date`, never computed):
+   current step at the TOP · objective · state verified this session · context-intake manifest with line counts ·
+   verification commands · proof-of-read fact from the final section of the longest must-read · owed + done.
+3. Handovers are leads, not facts — the next session verifies ≥3 facts against code/files before asserting.
+
+## Session start (how the next CC gets in context)
+1. BOARD.md is injected by the SessionStart hook — it is a map, not context.
+2. Read the NEWEST file in board/handovers/archive/ IN FULL. One file only.
+3. Read the L2 files for the active workstream.
+4. Verify ≥3 live facts before asserting anything.
+</pre>
+
+<h2>2 · $WORKROOT/board/hooks/user_prompt.sh — the rules, injected every message</h2>
+<pre>
+#!/bin/bash
+cat &lt;&lt;'RULES'
+=== RULES (injected every message) ===
+
+--- CARDINAL (Tier 1) ---
+0. Fabrication: don't present results you didn't produce this session, claim unverified things as verified, or invent output.
+1. Scope / authority: don't go out of scope, make unauthorized changes, override user decisions, or push past refusals.
+2. Breach mechanism: when user says stop or failure mode — read all rules, list what you breached, state how you'll avoid repeating. Self-correct and continue. If genuinely blocked, ask the user.
+3. Production alignment: align on approach before modifying production code. Once aligned, execute autonomously without asking per-step permission.
+
+--- WORKING (Tier 2) ---
+4. Diagnose before acting. No trial-and-error on a live system. One intervention per problem, justified by evidence.
+5. Show what you did and let the user verify — one item at a time, not batched. Don't declare success — only the user closes out a task. Don't dump raw output.
+6. Prior handovers, memories, and session notes are leads, not facts. Verify before asserting.
+7. When you have a technical objection, state it once with evidence. If the user proceeds anyway, execute.
+
+--- COLLABORATION (Tier 2) ---
+8. Show understanding through changed action, not by repeating what the user said. Parroting is not acknowledgment.
+9. Believe the user about cross-session patterns — they have the cross-session view you lack.
+
+--- STARTUP ---
+10. First action every session: read BOARD.md. Then work on the user's task, or if none specified, make a brief grounded proposal and wait. Do not ask what to do. If a referenced item is not recoverable from context, ask one clarification — don't guess.
+
+--- DISCIPLINE (Tier 2) ---
+11. Read the target file before editing it.
+12. Read all relevant documents, code, and comments for the working project before acting. Context loading is not optional.
+13. Finish current work before moving on.
+14. Run an adversarial review (completion + fabrication check) at step transitions before progressing.
+15. board/hooks/, .claude/settings*.json: propose change, get explicit yes, then edit. One at a time. No autonomous edits.
+
+--- RECOVERY ---
+Tier 2 violation: state what happened in one sentence, correct course, keep working.
+Tier 1 breach (first): read all rules, list which ones you broke, state how you'll avoid repeating, self-correct, keep working.
+Tier 1 (second) or repeated lower-tier: offer to resign, say how you'll self-correct, propose next step. Keep working unless the user accepts.
+
+=== END RULES ===
+RULES
+</pre>
+
+<h2>3 · $WORKROOT/board/hooks/session_start.sh</h2>
+<pre>
+#!/bin/bash
+# SessionStart — sentinel for the stop hook + board injection
+WORKROOT="$HOME/work"   # &lt;-- set to the real workspace root
+BOARD="$WORKROOT/board"
+touch /tmp/cc_session_start
+echo "Session started."
+echo ""
+echo "=== BOARD (a map, not context — do the session-start reading in CLAUDE.md) ==="
+cat "$BOARD/BOARD.md"
+echo "=== END BOARD ==="
+</pre>
+
+<h2>4 · $WORKROOT/board/hooks/session_stop.sh</h2>
+<pre>
+#!/bin/bash
+# Stop — uncommitted-changes check + handover guard
+WORKROOT="$HOME/work"   # &lt;-- set to the real workspace root
+BOARD="$WORKROOT/board"
+echo "=== SESSION END CHECK ==="
+cd "$WORKROOT"
+CHANGES=$(git status --porcelain 2&gt;/dev/null | grep -v '^??' | head -5)
+[ -n "$CHANGES" ] && { echo "WARNING: Uncommitted changes:"; echo "$CHANGES"; } || echo "workspace: clean."
+mkdir -p "$BOARD/handovers/archive"
+for f in "$BOARD/handovers"/*.md; do
+    [ -e "$f" ] || continue
+    mv "$f" "$BOARD/handovers/archive/"
+    echo "Moved top-level handover into archive/: $(basename "$f")"
+done
+if [ -f /tmp/cc_session_start ]; then
+    LATEST=$(find "$BOARD/handovers" -name '*.md' -newer /tmp/cc_session_start 2&gt;/dev/null | head -1)
+    [ -z "$LATEST" ] && echo "WARNING: No handover written this session. Write one to $BOARD/handovers/archive/ before leaving." \
+                     || echo "Handover found: $LATEST"
+fi
+echo ""
+echo "=== HANDOVER GUIDANCE ==="
+echo "1. List each must-read file WITH its line count (partial reads become visible)."
+echo "2. State WHERE WE ARE as a hierarchy: objective -&gt; current step -&gt; open items."
+echo "3. Check every 'what next CC does' line against the RULES — never instruct a breach."
+echo "4. Factual and short. No failure-narrative, no parroting prior handovers."
+echo "5. PROOF-OF-READ: name one fact from the FINAL section of the longest must-read;"
+echo "   the next CC must restate it before acting."
+</pre>
+
+<h2>5 · $WORKROOT/board/BOARD.md + decisions.md — skeletons</h2>
+<pre>
+# BOARD.md
+# Board — Status Dashboard
+## Streams
+| Stream | Status | Next |
+|--------|--------|------|
+| (first stream) | 🟢 | (next action) |
+
+# decisions.md
+# Decisions Log
+&lt;!-- Append-only. Every user ruling, dated, with enough context to stand alone. --&gt;
+</pre>
+
+<h2>6 · Memory L1 skeleton — ~/.claude/projects/&lt;project-dir&gt;/memory/MEMORY.md</h2>
+<pre>
+# Memory Index
+One line per entry. The detail lives in the linked file — open it before acting on that topic.
+
+## Identity
+- (user, role, how they work — build from observation, confirm before recording)
+
+## Active Work
+- (one line per stream, linking L2 files as they are created)
+
+## Instructions
+- If no stream specified at session start, read board/BOARD.md and propose what to work on. Do not ask what to do.
+- Behaviour rules live in the hook — do not duplicate in memory files.
+
+## L2 — Workstream Files
+## L2 — Feedback
+&lt;!-- feedback files record corrections + confirmed approaches, each with Why and How-to-apply --&gt;
+</pre>
+
+<h2>7 · Hook wiring — merge into ~/.claude/settings.json</h2>
+<pre>
+{
+  "hooks": {
+    "SessionStart": [ { "hooks": [ { "type": "command", "command": "bash $WORKROOT/board/hooks/session_start.sh" } ] } ],
+    "UserPromptSubmit": [ { "hooks": [ { "type": "command", "command": "bash $WORKROOT/board/hooks/user_prompt.sh" } ] } ],
+    "Stop": [ { "hooks": [ { "type": "command", "command": "bash $WORKROOT/board/hooks/session_stop.sh" } ] } ]
+  }
+}
+</pre>
+<p class="note">Expand $WORKROOT to the absolute path (hooks don't resolve variables). Rule 15 applies from the moment the rules hook is live: further hook/settings edits need the user's explicit yes. Installer: chmod +x the three hook scripts, git init, commit "system kit installed", then confirm each mechanism to the user.</p>
+
+<h2>Phase 2 (add later, by ruling, one at a time)</h2>
+<p class="note">Keyword auto-injection of L2 pointers (UserPromptSubmit) · L2-read gate blocking edits before context is read (PreToolUse) · read-failure gate blocking edits to files whose read failed (anti-fabrication) · contradiction warning on memory edits · staleness scanner for [verified: date] tags. Port these from the home system once the core loop is proven at work.</p>
+</div>
