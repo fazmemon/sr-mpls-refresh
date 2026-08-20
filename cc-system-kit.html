@@ -25,6 +25,7 @@ Do NOT duplicate them here. If a rule needs changing, change it in the hook file
 - **Commit after every change** — show the hash as proof.
 - **Record user decisions** in `board/decisions.md` immediately.
 - **Never ask the user to do anything CC can execute with tools.** Run it yourself.
+- **Cost model (metered API billing):** default model = Sonnet. Escalate to Opus only for judgment-heavy work (design, hard diagnosis, expert artifacts) and say so when you do. NEVER use Fable (2x Opus per token). Haiku for bulk mechanical jobs. No unattended loops without an explicit cap — uncapped token use is what got AI banned here once already.
 - [Add domain-specific instructions here as they are ruled.]
 
 ## Board System
@@ -181,6 +182,7 @@ One line per entry. The detail lives in the linked file — open it before actin
 <h2>7 · Hook wiring — merge into ~/.claude/settings.json</h2>
 <pre>
 {
+  "model": "sonnet",
   "hooks": {
     "SessionStart": [ { "hooks": [ { "type": "command", "command": "bash $WORKROOT/board/hooks/session_start.sh" } ] } ],
     "UserPromptSubmit": [ { "hooks": [ { "type": "command", "command": "bash $WORKROOT/board/hooks/user_prompt.sh" } ] } ],
@@ -188,7 +190,7 @@ One line per entry. The detail lives in the linked file — open it before actin
   }
 }
 </pre>
-<p class="note">Expand $WORKROOT to the absolute path (hooks don't resolve variables). Rule 15 applies from the moment the rules hook is live: further hook/settings edits need the user's explicit yes. Installer: chmod +x the three hook scripts, git init, commit "system kit installed", then confirm each mechanism to the user.</p>
+<p class="note">The "model" line sets Sonnet as the session default (metered billing — Opus by deliberate /model escalation only, never Fable). Expand $WORKROOT to the absolute path (hooks don't resolve variables). Rule 15 applies from the moment the rules hook is live: further hook/settings edits need the user's explicit yes. Installer: chmod +x the three hook scripts, git init, commit "system kit installed", then confirm each mechanism to the user.</p>
 
 <h2>Phase 2 (add later, by ruling, one at a time)</h2>
 <p class="note">Keyword auto-injection of L2 pointers (UserPromptSubmit) · L2-read gate blocking edits before context is read (PreToolUse) · read-failure gate blocking edits to files whose read failed (anti-fabrication) · contradiction warning on memory edits · staleness scanner for [verified: date] tags. Port these from the home system once the core loop is proven at work.</p>
