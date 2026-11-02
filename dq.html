@@ -338,48 +338,545 @@
   </div>
 </section>
 
-<!-- ============ CHAPTER 2 (TO BUILD) ============ -->
+<!-- ============ CHAPTER 2 TITLE ============ -->
 <section>
   <p class="kicker">Chapter 2</p>
   <h2>What ΔQ is</h2>
-  <ul class="outline">
-    <li>Quality is the absence of attenuation. Every element only ever loses and delays.</li>
-    <li>One improper distribution: delay on the curve, loss as the mass that never arrives.</li>
-    <li>Conserved: it only ever grows along a path; at a queue, scheduling can only distribute it.</li>
-    <li>Composes: the path's ΔQ is the convolution of its hops. Budgets follow.</li>
-    <li>G, S and V: the design, the link rate, the contention. Only V is yours to schedule.</li>
-    <li>Two degrees of freedom per queue: fix the load and you trade loss for delay.</li>
-    <li>A requirement is a stepped curve with a failure allowance; slack is the gap to what you deliver.</li>
-  </ul>
-  <p class="todo">to build next</p>
+  <p class="lead">One measure, built from what can be observed. Four properties carry the whole method.</p>
+  <div class="tiles">
+    <div class="tile"><div class="lbl">Property 1</div><div class="val" style="font-size:1.05em">Quality can only be lost</div><div class="sub">Every element attenuates. Nothing adds quality back.</div></div>
+    <div class="tile"><div class="lbl">Property 2</div><div class="val" style="font-size:1.05em">Delay and loss are one distribution</div><div class="sub">Loss is the part of the curve that never arrives.</div></div>
+    <div class="tile"><div class="lbl">Property 3</div><div class="val" style="font-size:1.05em">It is conserved</div><div class="sub">Along a path it only grows. At a queue it can only be shared out.</div></div>
+    <div class="tile"><div class="lbl">Property 4</div><div class="val" style="font-size:1.05em">It composes</div><div class="sub">The path is the sum of its hops. So a requirement becomes a budget.</div></div>
+  </div>
 </section>
 
-<!-- ============ CHAPTER 3 (TO BUILD) ============ -->
+<!-- ============ 2.1 ============ -->
+<section>
+  <p class="kicker">2 · 1</p>
+  <h2>Quality is the absence of attenuation</h2>
+  <p class="lead">You can no more add quality to a network than add silence to a noisy room. The ideal network delivers instantly and perfectly. Every real element falls short, by some delay and some chance of loss.</p>
+  <div class="flow" style="grid-template-columns:1fr auto 1fr auto 1fr auto 1.2fr">
+    <div class="tile" style="text-align:center"><div class="lbl">element 1</div><div class="val" style="font-size:1.1em">+ ΔQ₁</div><div class="sub">delay and loss it adds</div></div>
+    <div class="arrow">⊕</div>
+    <div class="tile" style="text-align:center"><div class="lbl">element 2</div><div class="val" style="font-size:1.1em">+ ΔQ₂</div><div class="sub">delay and loss it adds</div></div>
+    <div class="arrow">⊕</div>
+    <div class="tile" style="text-align:center"><div class="lbl">element 3</div><div class="val" style="font-size:1.1em">+ ΔQ₃</div><div class="sub">delay and loss it adds</div></div>
+    <div class="arrow">=</div>
+    <div class="tile hl" style="text-align:center"><div class="lbl">the path</div><div class="val" style="font-size:1.1em">ΣΔQ</div><div class="sub">what the application experiences; it must stay inside a bound ⌈ΔQ⌉</div></div>
+  </div>
+  <ul class="notes" style="margin-top:18px">
+    <li>"Delivering quality of service" means one thing: keeping the end-to-end attenuation <b>suitably bounded</b>.</li>
+    <li>Two kinds: <b>immutable</b> attenuation fixed by physics and design, and <b>mutable</b> attenuation from sharing, which can be managed and traded.</li>
+    <li>Every requirement reduces to the same form: <i>within this attenuation from A to B, deliver me this rate</i>.</li>
+  </ul>
+  <p class="src">Davies, Ofcom 2009, slides 7–8 and 18 · PNSol workshop p.47</p>
+</section>
+
+<!-- ============ 2.2 ============ -->
+<section>
+  <p class="kicker">2 · 2</p>
+  <h2>Delay and loss are one distribution</h2>
+  <div class="grid">
+    <div class="card chart">
+      <div class="ct">ΔQ as a curve: the chance a packet has arrived by time t</div>
+      <div id="p-irv" data-plot="irv"></div>
+      <div class="schematic">Illustrative distribution. The shape is the point: the curve never reaches 1, and the gap is the loss.</div>
+    </div>
+    <div>
+      <ul class="notes">
+        <li>A distribution built from a sample of packets, or the odds for the next one. Both views are the same object.</li>
+        <li>It is an <b>improper</b> random variable: its total probability is less than one. The missing mass is the probability of <b>never arriving</b>, which is how loss is carried without a second metric.</li>
+        <li>"Packets are not people." It is the <b>odds</b> that matter, not the fate of any one packet. The system is memoryless; it does not owe a flow anything for the last drop.</li>
+        <li>Everything in the definition is <b>observable</b>, which is what lets it be measured, contracted and standardised.</li>
+      </ul>
+      <p class="src">PNSol workshop pp.48–49 · TR-452.1 §2.3 and §7.2 · Davies &amp; Thompson, IETF 2021, §3</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2.3 ============ -->
+<section>
+  <p class="kicker">2 · 3</p>
+  <h2>The game of chance at every queue</h2>
+  <p class="lead">A packet arriving at a finite queue finds it in one of three states. That is the whole game, played once per hop.</p>
+  <div class="steps" style="grid-template-columns:repeat(3,1fr)">
+    <div class="step"><div class="n">EMPTY</div><div class="t">Served at once</div><div class="d">Additional attenuation close to zero. The packet lands on the lower boundary of the delay plot.</div></div>
+    <div class="step"><div class="n">IN BETWEEN</div><div class="t">Waits behind the others</div><div class="d">Delay depends on how many are ahead. This is the variable, contention part.</div></div>
+    <div class="step"><div class="n">FULL</div><div class="t">Lost</div><div class="d">Infinite delay, as far as the endpoints can tell. Loss is a value judgement they make on a packet that took too long.</div></div>
+  </div>
+  <ul class="notes">
+    <li>The network's state is unknown at the moment a packet is submitted. Hence a game of chance, with odds that shift with load.</li>
+    <li>Networks are <b>trees of multiplexers</b>. Given routing, the elements a flow crosses are fixed; only the <b>other flows sharing those elements</b> change its odds. The complexity is bounded.</li>
+    <li>Loss is not a fault to fear. It is a necessary part of stability and consistent performance, and a lever to be used deliberately.</li>
+  </ul>
+  <p class="src">PNSol workshop pp.3, 49–50 · TR-452.1 §7.1.2</p>
+</section>
+
+<!-- ============ 2.4 ============ -->
+<section>
+  <p class="kicker">2 · 4</p>
+  <h2>ΔQ is conserved</h2>
+  <p class="lead">"Probably the most important point of the day." Delay cannot be undone and a lost packet stays lost. Along a path the attenuation only accumulates. At a scheduling point, the total is fixed and can only be shared out.</p>
+  <div class="grid" style="grid-template-columns:1fr 1fr">
+    <div class="card">
+      <div class="ct" style="margin:0 0 8px">The thought experiment</div>
+      <ul class="notes" style="margin:0">
+        <li>Take a fixed set of packets holding a fixed amount of data. The time to send them all is the same <b>whatever order</b> you send them in. Total delay is conserved.</li>
+        <li>You can reduce total delay by <b>deliberately losing</b> some packets. That trades delay for loss. The attenuation is conserved.</li>
+        <li>So <b>no scheduling algorithm "does work"</b>. It apportions impairment. Its worth is judged by outcomes across the flows, never at the queue.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="ct" style="margin:0 0 8px">Three things people sell as fixes, which are trades</div>
+      <ul class="notes" style="margin:0">
+        <li><b>De-jittering</b> buffers the early and drops the late: more delay and more loss. Done at every hop of a VoIP path it is "really daft, but endemic".</li>
+        <li><b>Circuit emulation over IP</b> needs 5 to 7.5 ms of buffer each way for TDM-grade loss: 10 to 15 ms round trip, "moving the radio access network to the mid-Atlantic ridge".</li>
+        <li><b>Forward error correction</b> buys lower loss with capacity. A trade, chosen for the outcome, not a free lunch.</li>
+      </ul>
+    </div>
+  </div>
+  <p class="src">PNSol workshop pp.4–5, 51–52 · Davies, Ofcom 2009, slide 13</p>
+</section>
+
+<!-- ============ 2.5 ============ -->
+<section>
+  <p class="kicker">2 · 5</p>
+  <h2>It composes along the path</h2>
+  <div class="grid">
+    <div class="card chart">
+      <div class="ct">Two hops, each with its own delay distribution, and the path they make together</div>
+      <div id="p-conv" data-plot="conv"></div>
+      <div class="schematic">Illustrative hop distributions; the path curve is their actual convolution, computed on the page.</div>
+    </div>
+    <div>
+      <ul class="notes">
+        <li>For independent hops the path's ΔQ is the <b>convolution</b> of the hops' ΔQs. Written ΔQ<sub>A→Z</sub> = ΔQ<sub>A→B</sub> ⊕ ΔQ<sub>B→C</sub> ⊕ … The loss multiplies through the same operation.</li>
+        <li>Composition is <b>stronger than abstraction</b>: it lets a requirement at the top be split into budgets at every hop and for every supplier, and it works the other way, from measured hops to a predicted path.</li>
+        <li>This is the property bandwidth lacks, and the reason a bandwidth SLA breaks down across a supply chain.</li>
+      </ul>
+      <p class="src">TR-452.1 §7.2.1, equation (3) · IETF 2021 §3.3 · PNSol workshop pp.7, 54, 93</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2.6 ============ -->
+<section>
+  <p class="kicker">2 · 6</p>
+  <h2>Three parts: G, S and V</h2>
+  <div class="grid">
+    <div class="card chart">
+      <div class="ct">One-way delay against packet size. Sorted by size, the structure appears.</div>
+      <div id="p-gsv" data-plot="gsv"></div>
+      <div class="schematic">Points simulated from the published ADSL figures (G 16.9 ms, S 13.3 µs per octet, V mean 1.7 ms). The line is the fit through the minima.</div>
+    </div>
+    <div>
+      <ul class="notes">
+        <li><b>G, geographic.</b> The intercept: a zero-length packet's transit. Speed of light, lookups, media access. Set by <b>design</b>.</li>
+        <li><b>S, serialisation.</b> The slope: time per byte. Set by <b>link rate</b>. Every "faster" link in history has been a smaller S.</li>
+        <li><b>V, variable contention.</b> The scatter above the line: time spent behind other traffic. Set by <b>scheduling</b>. The only one you manage.</li>
+        <li>"Jitter" conflates S and V, so it manages the wrong thing. Even an absolutely prioritised packet still sees some V.</li>
+      </ul>
+      <p class="src">PNSol workshop pp.78–87, 133 · TR-452.1 §5.2.1 · PNSol, "Advanced measurement" deck, slides 11–13, 22</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2.7 ============ -->
+<section>
+  <p class="kicker">2 · 7</p>
+  <h2>Which part dominates has changed. We are in the V era.</h2>
+  <div class="grid" style="grid-template-columns:1.35fr 1fr">
+    <div class="card">
+      <table style="font-size:.6em; width:100%; border-collapse:collapse;">
+        <tr style="color:var(--muted); text-align:left"><th style="padding:6px 8px">A message over 100 km</th><th style="padding:6px 8px">G, s</th><th style="padding:6px 8px">S, s per byte</th><th style="padding:6px 8px">V, s</th><th style="padding:6px 8px">dominated by</th></tr>
+        <tr><td style="padding:6px 8px">Rider</td><td>~2×10⁵</td><td>~0.6</td><td>~1,000</td><td><b>G</b></td></tr>
+        <tr><td style="padding:6px 8px">Telegraph</td><td>~300</td><td>~0.06</td><td>~300</td><td><b>G</b></td></tr>
+        <tr><td style="padding:6px 8px">TDM (an E1)</td><td>1.4×10⁻⁷</td><td>5.3×10⁻⁶</td><td>0</td><td><b>S</b></td></tr>
+        <tr><td style="padding:6px 8px">Dial-up</td><td>1.4×10⁻⁷</td><td>1.4×10⁻⁴</td><td>~5</td><td><b>S</b></td></tr>
+        <tr style="background:var(--page)"><td style="padding:6px 8px">Broadband</td><td>2.3×10⁻²</td><td>2.4×10⁻⁵</td><td>1.6×10⁻³</td><td><b style="color:var(--accent)">V</b></td></tr>
+        <tr style="background:var(--page)"><td style="padding:6px 8px">3G</td><td>0.14</td><td>3.7×10⁻⁵</td><td>0.2</td><td><b style="color:var(--accent)">V</b></td></tr>
+      </table>
+    </div>
+    <div>
+      <ul class="notes">
+        <li>Before the telegraph, distance ruled. Then for a century every improvement was a smaller <b>S</b>: a 32 kbaud modem was twice as good as 16.</li>
+        <li>Now G has started to <b>rise</b> with more complex architectures, and V has come to <b>dominate S</b>. An 8 Mbit/s line may be far less than twice as good as a 4 Mbit/s one.</li>
+        <li>Amdahl's argument: as S shrinks, G and V are what is left. Buying link rate has diminishing returns; managing V does not.</li>
+      </ul>
+      <p class="src">PNSol workshop p.90 (their assumptions stated there) and p.86</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2.8 ============ -->
+<section>
+  <p class="kicker">2 · 8</p>
+  <h2>Two degrees of freedom, so loss and delay are traded</h2>
+  <div class="grid" style="grid-template-columns:1fr 1.2fr">
+    <div>
+      <div class="card">
+        <div class="ct" style="margin:0 0 8px">Every finite queue</div>
+        <ul class="notes" style="margin:0">
+          <li>Three quantities: <b>offered load, loss, delay</b>. Fix two and the third is fixed. Fix one and you fix a relationship between the other two.</li>
+          <li>At fixed load, less loss means more delay. At fixed loss, more load means more delay. You never get to choose all three.</li>
+          <li>Providers who "manage" nothing get an arbitrary, unmanaged relationship between loss and delay as load creeps up, then buy capacity. The cycle repeats.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ct" style="margin:0 0 10px">The trading space: a flow gets a cell, not a number</div>
+      <div class="quad" style="grid-template-columns:repeat(3,1fr); gap:8px">
+        <div class="q" style="min-height:0; padding:10px 12px; background:var(--page)"><div class="lbl">A1</div><div class="why">low loss, low delay: cherished and urgent</div></div>
+        <div class="q" style="min-height:0; padding:10px 12px; background:var(--page)"><div class="lbl">A2</div><div class="why">low loss, more delay</div></div>
+        <div class="q" style="min-height:0; padding:10px 12px; background:var(--page)"><div class="lbl">A3</div><div class="why">low loss, most delay: bulk, cherished</div></div>
+        <div class="q" style="min-height:0; padding:10px 12px; background:var(--page)"><div class="lbl">B1</div><div class="why">some loss, low delay: real-time voice</div></div>
+        <div class="q surprise" style="min-height:0; padding:10px 12px"><div class="lbl">B2</div><div class="why">the middle: standard</div></div>
+        <div class="q" style="min-height:0; padding:10px 12px; background:var(--page)"><div class="lbl">B3</div><div class="why">some loss, more delay</div></div>
+        <div class="q" style="min-height:0; padding:10px 12px; background:var(--page)"><div class="lbl">C1</div><div class="why">more loss, low delay: urgent, expendable</div></div>
+        <div class="q" style="min-height:0; padding:10px 12px; background:var(--page)"><div class="lbl">C2</div><div class="why">more loss, more delay</div></div>
+        <div class="q" style="min-height:0; padding:10px 12px; background:var(--page)"><div class="lbl">C3</div><div class="why">economy: absorbs what the others shed</div></div>
+      </div>
+      <div class="schematic" style="margin:8px 0 0">Rows: increasing probability of loss. Columns: increasing worst-case delay. Two axes of treatment: how cherished, how urgent.</div>
+    </div>
+  </div>
+  <p class="src">Davies, Ofcom 2009, slides 24–27 · PNSol workshop p.114 · Reeve 2003, §8.1 (cherish and urgency)</p>
+</section>
+
+<!-- ============ 2.9 ============ -->
+<section>
+  <p class="kicker">2 · 9</p>
+  <h2>A requirement is a curve, and slack is a distance</h2>
+  <div class="grid">
+    <div class="card chart">
+      <div class="ct">An outcome requirement and a delivered result on the same axes</div>
+      <div id="p-req" data-plot="req"></div>
+      <div class="schematic">Requirement as published (50 % within 3 s, 95 % within 10 s, 99.5 % within 15 s). Delivered curve illustrative, drawn to the description.</div>
+    </div>
+    <div>
+      <ul class="notes">
+        <li>A requirement is a <b>boundary</b>, not a target: how rare the bad outcomes must be, with the failure allowance written in. Here 0.5 % may never complete.</li>
+        <li>Delivered curve always <b>left of and above</b> the requirement means it was met. The horizontal gap is <b>operational slack</b>, an early warning and a measure of how much can still be sold.</li>
+        <li>Statistics here means the instantaneous, predictive kind you can check in a small sample. Not "lies, damned lies".</li>
+      </ul>
+      <p class="src">PNSol workshop pp.34, 73–76 · Davies, Ofcom 2009, slide 15 · IETF 2021 §3 (slack and hazard)</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CHAPTER 3 TITLE ============ -->
 <section>
   <p class="kicker">Chapter 3</p>
   <h2>How to set up</h2>
-  <ul class="outline">
-    <li>Measurement: observation points, the same packets at two or more places, each direction.</li>
-    <li>A valid test stream: five or more sizes across a 10:1 range, randomly spaced, a few thousand samples.</li>
-    <li>Plot delay against size: intercept G, slope S, scatter V. Then V by time and by segment.</li>
-    <li>The standard: TR-452.1. Carried over STAMP/TWAMP. Clocks need not be synchronised across domains.</li>
-    <li>Configuration: scheduling derived from the contracts through an element; the cherish/urgency grid; an economy class so the fabric can run hot; pre-contention at ingress.</li>
-  </ul>
-  <p class="todo">to build next</p>
+  <p class="lead">Measurement first: it is cheap, standardised, and it tells you which lever. Then configuration, which follows from the contracts.</p>
+  <div class="tiles">
+    <div class="tile"><div class="lbl">Where</div><div class="val" style="font-size:1.05em">Observation points at the boundaries</div><div class="sub">The same packets, seen at two or more places, each direction.</div></div>
+    <div class="tile"><div class="lbl">What</div><div class="val" style="font-size:1.05em">A low-rate stream of varied sizes</div><div class="sub">So delay sorts by size and G, S, V fall out.</div></div>
+    <div class="tile"><div class="lbl">How</div><div class="val" style="font-size:1.05em">Six processing steps, one standard</div><div class="sub">TR-452.1 says what a valid measurement is.</div></div>
+    <div class="tile"><div class="lbl">Then</div><div class="val" style="font-size:1.05em">Configure to the contracts</div><div class="sub">Scheduling derived from the QTAs through each element.</div></div>
+  </div>
 </section>
 
-<!-- ============ CHAPTER 4 (TO BUILD) ============ -->
+<!-- ============ 3.1 ============ -->
+<section>
+  <p class="kicker">3 · 1</p>
+  <h2>Where to measure: at the boundaries, and halve to localise</h2>
+  <div class="flow" style="grid-template-columns:repeat(6,1fr); gap:8px">
+    <div class="tile" style="text-align:center; padding:10px"><div class="lbl">A</div><div class="sub">client</div></div>
+    <div class="tile hl" style="text-align:center; padding:10px"><div class="lbl">B</div><div class="sub">access edge</div></div>
+    <div class="tile" style="text-align:center; padding:10px"><div class="lbl">C</div><div class="sub">aggregation</div></div>
+    <div class="tile hl" style="text-align:center; padding:10px"><div class="lbl">D</div><div class="sub">core edge</div></div>
+    <div class="tile" style="text-align:center; padding:10px"><div class="lbl">E</div><div class="sub">service boundary</div></div>
+    <div class="tile" style="text-align:center; padding:10px"><div class="lbl">F</div><div class="sub">server</div></div>
+  </div>
+  <div class="grid" style="margin-top:16px; grid-template-columns:1fr 1fr">
+    <div class="card">
+      <div class="ct" style="margin:0 0 8px">Why the boundaries</div>
+      <ul class="notes" style="margin:0">
+        <li>Because ΔQ is conserved, a path measured "good enough" end to end means <b>no sub-path</b> introduced excessive attenuation.</li>
+        <li>If it is not good enough, one extra observation point says <b>which half</b>. Each added point halves the search: localisation scales as log₂ of the path.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="ct" style="margin:0 0 8px">What the probes record</div>
+      <ul class="notes" style="margin:0">
+        <li>Four timed events per hop: reception starts and ends, transmission starts and ends. Three of the four suffice if the interface rate and packet size are known.</li>
+        <li>Enough to identify each packet: stream id, size, a short sequence number or a hash. Never the payload.</li>
+        <li>The root cause is often <b>not in the management domain</b> where the impairment showed. Measurement across boundaries is what makes that visible.</li>
+      </ul>
+    </div>
+  </div>
+  <p class="src">PNSol workshop pp.67, 137 · TR-452.1 §5.1, requirements R-1 to R-7 · IETF 2021 §5</p>
+</section>
+
+<!-- ============ 3.2 ============ -->
+<section>
+  <p class="kicker">3 · 2</p>
+  <h2>What a measurement can and cannot tell you</h2>
+  <div class="quad">
+    <div class="q"><div class="lbl">one point · average</div><div class="big">Utilisation, offered load</div><div class="why">What every counter gives today. Limited predictive power; large deviation theory says it is a poor predictor of hazards.</div></div>
+    <div class="q"><div class="lbl">one point · distribution</div><div class="big">Arrival patterns</div><div class="why">Temporal power. Can assure that what was offered stays within an agreed pattern.</div></div>
+    <div class="q"><div class="lbl">several points · average</div><div class="big">Mean delay and loss between points</div><div class="why">Some spatial power. Still a poor predictor of what breaks.</div></div>
+    <div class="q surprise"><div class="lbl">several points · distribution</div><div class="big">ΔQ</div><div class="why">Temporal and spatial power. "All that can be known about a system by observation." Convolves and deconvolves, so budgets follow.</div></div>
+  </div>
+  <ul class="notes" style="margin-top:14px">
+    <li>Single-point measures can only speak to <b>capacity</b>. Multi-point measures speak to <b>schedulability</b> as well.</li>
+    <li>Round-trip measures conflate the two directions and the far end's compute. Each direction needs its own curve; a round trip can then be synthesised.</li>
+  </ul>
+  <p class="src">PNSol workshop pp.68–69 · PNSol, "Advanced measurement" deck, slides 7–9</p>
+</section>
+
+<!-- ============ 3.3 ============ -->
+<section>
+  <p class="kicker">3 · 3</p>
+  <h2>A valid test stream, per the standard</h2>
+  <div class="tiles" style="grid-template-columns:repeat(4,1fr)">
+    <div class="tile"><div class="lbl">packet sizes</div><div class="val">5 or more</div><div class="sub">largest at least 10× the smallest, roughly equal counts per size</div></div>
+    <div class="tile"><div class="lbl">spacing</div><div class="val">random</div><div class="sub">negative-exponential gaps, so samples see time averages (PASTA)</div></div>
+    <div class="tile"><div class="lbl">rate</div><div class="val">16–64 kbit/s</div><div class="sub">a few minutes, a few times an hour; it must not disturb what it measures</div></div>
+    <div class="tile"><div class="lbl">samples</div><div class="val">1,000–4,000</div><div class="sub">per run, enough to bound the loss and see the structure</div></div>
+    <div class="tile"><div class="lbl">timestamps</div><div class="val">10 µs</div><div class="sub">resolution; 100 ppm long-term accuracy; clocks need not be synchronised across domains</div></div>
+    <div class="tile"><div class="lbl">directions</div><div class="val">both</div><div class="sub">a reflector returns packets unchanged in size; each direction is its own curve</div></div>
+    <div class="tile"><div class="lbl">control</div><div class="val">capped</div><div class="sub">generator and reflector start/stop, rate and time limited, authenticated</div></div>
+    <div class="tile"><div class="lbl">carrier</div><div class="val">STAMP / TWAMP</div><div class="sub">minor extensions of the active measurement protocols already deployed</div></div>
+  </div>
+  <ul class="notes" style="margin-top:14px">
+    <li>A fixed-size ping stream gives a <b>blob</b>, not a line. The spread of sizes is what makes G and S separable.</li>
+    <li>Passive observation of live traffic works the same way, given sizes vary and the same packets are seen at each point.</li>
+  </ul>
+  <p class="src">Broadband Forum TR-452.1 (Sept 2020), §5.2–5.4, requirements R-13 to R-34 · IETF 2021 §4.1</p>
+</section>
+
+<!-- ============ 3.4 ============ -->
+<section>
+  <p class="kicker">3 · 4</p>
+  <h2>From timestamps to G, S and V in six steps</h2>
+  <div class="steps" style="grid-template-columns:repeat(3,1fr)">
+    <div class="step"><div class="n">1</div><div class="t">Match the packets</div><div class="d">The same packet at each observation point, each direction. Infer loss from the ones that never match.</div></div>
+    <div class="step"><div class="n">2</div><div class="t">Correct the clocks</div><div class="d">Systematic offset between points. The sum of G both ways is stationary whatever the skew; the analysis uses that.</div></div>
+    <div class="step"><div class="n">3</div><div class="t">Sort by size</div><div class="d">For each size, the minimum delay is the one that saw empty queues everywhere.</div></div>
+    <div class="step"><div class="n">4</div><div class="t">Fit a line through the minima</div><div class="d">Linear regression. Holds even when S is stepped by cell or frame quantisation.</div></div>
+    <div class="step"><div class="n">5</div><div class="t">Read G and S</div><div class="d">Intercept is G. Slope is S. Together, the structural delay of the path.</div></div>
+    <div class="step"><div class="n">6</div><div class="t">What remains is V</div><div class="d">Subtract the line. V's distribution, by time and by segment, is where contention shows.</div></div>
+  </div>
+  <ul class="notes">
+    <li>Two assumptions: larger packets take at least as long on average, and some packets of each size see negligible contention. Both hold in practice.</li>
+    <li>Then V against time says <b>when</b>, and V per segment says <b>where</b>. In fixed networks G and S are stable, so a continuous measurement compresses to almost nothing.</li>
+  </ul>
+  <p class="src">IETF 2021 §4 · TR-452.1 §5.2 and §5.4</p>
+</section>
+
+<!-- ============ 3.5 ============ -->
+<section>
+  <p class="kicker">3 · 5</p>
+  <h2>Configuring to the contracts</h2>
+  <p class="lead">Once the QTAs through an element are known, the scheduling it needs can be computed. Contracts compose horizontally along the path and vertically at a multiplexing point, so this scales.</p>
+  <div class="grid" style="grid-template-columns:1fr 1fr">
+    <div class="card">
+      <div class="ct" style="margin:0 0 8px">The levers</div>
+      <ul class="notes" style="margin:0">
+        <li><b>Classes by cherish and urgency.</b> A flow's cell in the trading grid is its treatment: which loss it may take, which delay.</li>
+        <li><b>An economy class.</b> To run an element hot, something must absorb the attenuation that the standard and superior classes shed. Give it a deliberately weak contract so its attenuation never triggers an upgrade. Time-shiftable work belongs there.</li>
+        <li><b>Pre-contention at ingress.</b> Know the contention points and shape before them, so the queues that matter never fill. This is how the first quality-assured ISP made sign-language video work over 256 kbit/s DSL.</li>
+        <li><b>Capacity, last.</b> Only once the structure says G or S is the limit.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="ct" style="margin:0 0 8px">What to know before you touch a scheduler</div>
+      <ul class="notes" style="margin:0">
+        <li>The structural budget, G and S, of the existing path. That is how much attenuation is <b>left over</b> for multiplexing.</li>
+        <li>That V's stability depends on the <b>number</b> of flows, not only their rate.</li>
+        <li>That a priority class's gain is paid by the rest, with worse variance. Conservation.</li>
+        <li>That the rate of reconfiguration is low and the computation is cheap. Faster reconfiguration without feedback on the same timescale only arms new hazards.</li>
+      </ul>
+    </div>
+  </div>
+  <p class="src">PNSol workshop pp.36, 111–115 · Geddes, "How Wales got the first Internet fast lane" (2015)</p>
+</section>
+
+<!-- ============ 3.6 ============ -->
+<section>
+  <p class="kicker">3 · 6</p>
+  <h2>A worked contract: three toll-quality voice lines over one DSL line</h2>
+  <div class="grid" style="grid-template-columns:1.2fr 1fr">
+    <div class="card">
+      <table style="font-size:.58em; width:100%; border-collapse:collapse;">
+        <tr style="color:var(--muted); text-align:left"><th style="padding:6px 8px">uplink sync, kbit/s</th><th style="padding:6px 8px">calls</th><th style="padding:6px 8px">largest packet</th><th style="padding:6px 8px">verdict</th></tr>
+        <tr><td style="padding:6px 8px">288</td><td>3</td><td>1500</td><td>not feasible: 324 kbit/s offered exceeds the link</td></tr>
+        <tr><td style="padding:6px 8px">288</td><td>2</td><td>1500</td><td>a full-size data packet takes 33.8 ms to send: too long</td></tr>
+        <tr><td style="padding:6px 8px">288</td><td>2</td><td>902</td><td>13.9 ms: half the voice packets at risk</td></tr>
+        <tr style="background:var(--page)"><td style="padding:6px 8px">288</td><td>1</td><td>902</td><td><b>works</b>, 1.3 ms residual</td></tr>
+        <tr style="background:var(--page)"><td style="padding:6px 8px">576</td><td>3</td><td>1500</td><td><b>works</b>, under 5 % of voice packets at hazard</td></tr>
+        <tr><td style="padding:6px 8px">864</td><td>3</td><td>1500</td><td>works, 21 ms residual</td></tr>
+      </table>
+      <div class="schematic" style="margin:8px 0 0">Published analysis; assumes a saturated uplink. Demand side: 3 × G.711 streams, 200-octet packets at 50 Hz. Supply side: ΔQ ≤ 70 ms, jitter ≤ 45 ms, 98.5 % of packets.</div>
+    </div>
+    <div>
+      <ul class="notes">
+        <li>One stream offers 108 kbit/s, under half the slowest link. <b>Capacity is never the problem here. Schedulability is.</b></li>
+        <li>The contract is written in <b>offered load and delivered attenuation</b>, then refined into packets, cells and bursts for the technology underneath. Bandwidth is not mentioned, and the moment you think in it you lose the schedulability constraint.</li>
+        <li>"It won't be that full" is an obligation: if the link cannot be full for the quality to hold, it can never be used for anything else. That is the economics of schedulability.</li>
+      </ul>
+      <p class="src">PNSol workshop pp.100–101</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CHAPTER 4 TITLE ============ -->
 <section>
   <p class="kicker">Chapter 4</p>
   <h2>How we use it</h2>
-  <ul class="outline">
-    <li>The contract: a bound on offered load in, a bound on delivered ΔQ out, each direction, to a stated fidelity.</li>
-    <li>Budgets devolved along the path and across suppliers.</li>
-    <li>Assurance as planning: measure how far overbooking has armed the hazards before they mature.</li>
-    <li>Feasibility of a design before it is built.</li>
-    <li>What it means for a fabric: written where the fabric is.</li>
+  <p class="lead">A contract you can measure, budgets you can hand down, assurance you can do before the build, and a way to run hot without guessing.</p>
+  <div class="tiles">
+    <div class="tile"><div class="lbl">Contract</div><div class="val" style="font-size:1.05em">The QTA</div><div class="sub">Offered load in, delivered ΔQ out, each direction, to a stated fidelity.</div></div>
+    <div class="tile"><div class="lbl">Budget</div><div class="val" style="font-size:1.05em">Devolved along the path</div><div class="sub">And across suppliers, because it composes.</div></div>
+    <div class="tile"><div class="lbl">Assurance</div><div class="val" style="font-size:1.05em">Before the build</div><div class="sub">Measure how far the hazards are armed, not how often they matured.</div></div>
+    <div class="tile"><div class="lbl">Economics</div><div class="val" style="font-size:1.05em">Run hot, on purpose</div><div class="sub">With an economy class and a quantified risk.</div></div>
+  </div>
+</section>
+
+<!-- ============ 4.1 ============ -->
+<section>
+  <p class="kicker">4 · 1</p>
+  <h2>The contract: a Quantitative Timeliness Agreement</h2>
+  <div class="flow" style="grid-template-columns:1fr auto 1.2fr auto 1fr">
+    <div class="tile" style="text-align:center"><div class="lbl">demand side</div><div class="val" style="font-size:1em">offered load ≤ agreed</div><div class="sub">applications as load generators: rate, burst, on/off behaviour, elasticity</div></div>
+    <div class="arrow">→</div>
+    <div class="tile hl" style="text-align:center"><div class="lbl">the agreement</div><div class="val" style="font-size:1em">if the load is within bounds, the delivered ΔQ is at least this good</div><div class="sub">to a stated fidelity: "for any second of operation, with probability 99.x %"</div></div>
+    <div class="arrow">→</div>
+    <div class="tile" style="text-align:center"><div class="lbl">supply side</div><div class="val" style="font-size:1em">ΔQ ≤ agreed</div><div class="sub">a curve, each direction, with the failure allowance in it</div></div>
+  </div>
+  <ul class="notes" style="margin-top:16px">
+    <li>No outcome can be promised without a constraint on demand. The constraint need not be onerous, but it must exist. Today's IP contracts promise open-ended quality for unbounded load: "a particular section of purgatory".</li>
+    <li>The contract also says what happens <b>beyond</b> it: does the flow prefer more delay or more loss when it exceeds its load; does the supply have a burst mode, for how long; what the alarm or penalty is when the curve is breached; and when the contract may be suspended, as in load shedding or a civil emergency.</li>
+    <li>It is quantitative, measurable, and in principle enforceable: the same rigour a legal process needs, and the basis for detecting quality fraud.</li>
   </ul>
-  <p class="todo">to build next</p>
+  <p class="src">PNSol workshop pp.97–103 · Geddes, "Five key lessons from Future Combat Systems" (2015)</p>
+</section>
+
+<!-- ============ 4.2 ============ -->
+<section>
+  <p class="kicker">4 · 2</p>
+  <h2>Budgets along the path and across suppliers</h2>
+  <div class="flow" style="grid-template-columns:1fr auto 1fr auto 1fr auto 1fr">
+    <div class="tile" style="text-align:center"><div class="lbl">campus / access</div><div class="val" style="font-size:1em">⌈ΔQ⌉₁</div><div class="sub">one owner, one budget</div></div>
+    <div class="arrow">⊕</div>
+    <div class="tile" style="text-align:center"><div class="lbl">backbone or supplier</div><div class="val" style="font-size:1em">⌈ΔQ⌉₂</div><div class="sub">contracted at the boundary</div></div>
+    <div class="arrow">⊕</div>
+    <div class="tile" style="text-align:center"><div class="lbl">far access</div><div class="val" style="font-size:1em">⌈ΔQ⌉₃</div><div class="sub">another owner</div></div>
+    <div class="arrow">≤</div>
+    <div class="tile hl" style="text-align:center"><div class="lbl">the outcome needs</div><div class="val" style="font-size:1em">⌈ΔQ⌉ end to end</div><div class="sub">from the application's contour</div></div>
+  </div>
+  <ul class="notes" style="margin-top:16px">
+    <li><b>Horizontal.</b> Suppliers at the same layer: access provider plus core provider, or one silo's RAN beside another's core. Each gets a budget; if each stays inside, the whole does. No more "two FTSE 100 companies talking past each other".</li>
+    <li><b>Vertical.</b> Application outcome above, packet transport below. Aggregate many flows' requirements upward; extract one flow's share downward. Aggregation holds as long as the sharing is unbiased, which is the case for the randomness nature selected for.</li>
+    <li>The same calculus runs in reverse: from measured hops to a predicted path, before anything is built or re-routed.</li>
+  </ul>
+  <p class="src">Davies, Ofcom 2009, slides 8, 18–21 · PNSol workshop pp.7, 93, 131 · TR-452.1 §5.5</p>
+</section>
+
+<!-- ============ 4.3 ============ -->
+<section>
+  <p class="kicker">4 · 3</p>
+  <h2>From aspiration to assurance, and assurance done beforehand</h2>
+  <div class="steps">
+    <div class="step"><div class="n">ASPIRATION</div><div class="t">What users want</div><div class="d">Measurable, may be too high or infeasible at the price. Negotiable. Not contractable as it stands.</div></div>
+    <div class="step"><div class="n">REQUIREMENT</div><div class="t">Statistical bounds per flow</div><div class="d">Loss and delay, instantaneous. Measurable, so adherence can be assured.</div></div>
+    <div class="step"><div class="n">EXECUTION</div><div class="t">Supply meets demand</div><div class="d">At the shortest timescale. Model and predict the configuration; do not "put it together and see". Make things fail in the right order.</div></div>
+    <div class="step"><div class="n">ASSURANCE</div><div class="t">Did we deliver, at each stage?</div><div class="d">Today: open loop, post-mortem, complaint counts. Here: measure how far overbooking has armed the hazards before any matures.</div></div>
+  </div>
+  <ul class="notes">
+    <li>Assurance against a predictive model discriminates <b>when and what to upgrade</b>. "The cost savings are staggering."</li>
+    <li>Three integration levels for any system: build to work, build to test, build to operate in the field. The hazards that reach the field are the ones no one modelled; some only appear at scale, in space or in time.</li>
+  </ul>
+  <p class="src">PNSol workshop pp.33–38, 146</p>
+</section>
+
+<!-- ============ 4.4 ============ -->
+<section>
+  <p class="kicker">4 · 4</p>
+  <h2>Hazards: the language for talking about risk</h2>
+  <div class="flow" style="grid-template-columns:1fr auto 1fr auto 1fr auto 1fr">
+    <div class="tile" style="text-align:center"><div class="lbl">latent</div><div class="val" style="font-size:1em">could happen</div><div class="sub">not in current conditions</div></div>
+    <div class="arrow">→</div>
+    <div class="tile" style="text-align:center"><div class="lbl">armed</div><div class="val" style="font-size:1em">could happen now</div><div class="sub">delivered ΔQ outside the application's region</div></div>
+    <div class="arrow">→</div>
+    <div class="tile hl" style="text-align:center"><div class="lbl">matured</div><div class="val" style="font-size:1em">happened</div><div class="sub">a failed call, a stalled page, a timed-out RPC</div></div>
+    <div class="arrow">→</div>
+    <div class="tile" style="text-align:center"><div class="lbl">impact, risk</div><div class="val" style="font-size:1em">cost</div><div class="sub">direct loss, self-insurance, mitigation, the catastrophic case</div></div>
+  </div>
+  <ul class="notes" style="margin-top:16px">
+    <li>The contour on a QoE surface is a <b>boundary</b>. Inside it the outcome is delivered. Outside it the hazard is armed; whether it matures depends on how far outside, and on the other elements of the path.</li>
+    <li>Borrowed from safety-critical systems, where this language is normal. It replaces "the network will give you what the network will give you".</li>
+    <li>Supply has four properties: connectivity, continuity, capacity and <b>stationarity</b>. The last is the one forgotten, and the one that arms most hazards.</li>
+  </ul>
+  <p class="src">PNSol workshop p.92 · Geddes, "How hazards drive broadband economics" and "The remarkable story of Future Combat Systems" (2015)</p>
+</section>
+
+<!-- ============ 4.5 ============ -->
+<section>
+  <p class="kicker">4 · 5</p>
+  <h2>Running hot, on purpose</h2>
+  <div class="tiles" style="grid-template-columns:repeat(3,1fr)">
+    <div class="tile"><div class="lbl">merging demands at 100 % load</div><div class="val">30 buffers → 100 units of delay</div><div class="sub">two classes, strict priority, 90 % in the top class: the mean delay is unchanged (conservation) but the lower class sees over three times the buffer depth, with far worse variance</div></div>
+    <div class="tile"><div class="lbl">the economy class</div><div class="val">weak contract, by design</div><div class="sub">it absorbs what the others shed; its attenuation never triggers an upgrade; time-shiftable work lives there</div></div>
+    <div class="tile"><div class="lbl">the aggregation effect</div><div class="val">more flows, less overbooking</div><div class="sub">like Erlangs: a blocking ratio costs less headroom at high aggregate than low; whoever sells outcomes captures that, a bandwidth wholesaler cannot</div></div>
+  </div>
+  <ul class="notes" style="margin-top:14px">
+    <li>Elastic and inelastic flows need different treatment. <b>RPC and low-duty-cycle flows inside long-lived TCP sessions are inelastic</b>: TCP is being used for assured delivery there, not for rate adaptation.</li>
+    <li>Elastic flows need bounds in <b>both directions</b>; the acknowledgement path is where video fails. Large providers turned their TCP windows down for consistency across many users.</li>
+    <li>Burst arrivals see far higher loss than spaced ones, because a queue that just dropped is still full. Architectures that batch, offload engines and very fast cores, turn random loss into <b>burst loss</b>.</li>
+  </ul>
+  <p class="src">PNSol workshop pp.106, 108, 110, 112–113, 118, 125</p>
+</section>
+
+<!-- ============ 4.6 ============ -->
+<section>
+  <p class="kicker">4 · 6</p>
+  <h2>Feasibility before the build</h2>
+  <div class="grid" style="grid-template-columns:1fr 1fr">
+    <div class="card">
+      <div class="ct" style="margin:0 0 8px">Where the method came from</div>
+      <ul class="notes" style="margin:0">
+        <li>A safety-of-life programme: a battlefield network stood up in 48 hours, under attack, with a required order of failure ("voice is the last to go").</li>
+        <li>Systems engineers from aerospace could not get a performance case from network engineers who reasoned hop by hop in bandwidth. The calculus was built to give them one.</li>
+        <li>It showed some use cases <b>could not be met</b> on the infrastructure being built. The programme was later cancelled with a tenth of its budget spent.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="ct" style="margin:0 0 8px">What it looks like now</div>
+      <ul class="notes" style="margin:0">
+        <li>Outcome diagrams: the observable outcomes a system must deliver, with ΔQ bounds, independent of its internal structure. Performance bounds as distributions over all possible executions, <b>before</b> detailed design.</li>
+        <li>The same approach has been used for a globally distributed blockchain's block diffusion, avionics, and telecoms.</li>
+        <li>Two categories of project it catches early: <b>infeasible</b> (cannot deliver the quality at any price) and <b>uneconomic</b> (the revenue cannot cover the cost of the quality). "Tens of billions" sit in the second.</li>
+      </ul>
+    </div>
+  </div>
+  <p class="src">Geddes, FCS series (2015) · Haeri, Thompson, Davies et al., "Mind Your Outcomes", Computers 2022 · PNSol workshop p.89</p>
+</section>
+
+<!-- ============ 4.7 ============ -->
+<section>
+  <p class="kicker">4 · 7</p>
+  <h2>What it means for a fabric</h2>
+  <p class="lead">The generic version. The estate-specific pages are written where the estate is.</p>
+  <div class="tiles" style="grid-template-columns:repeat(3,1fr)">
+    <div class="tile"><div class="lbl">measure</div><div class="sub">One path, both directions, a varied-size stream over the active measurement protocol already deployed. The timestamps may already exist in the telemetry the silicon emits. One plot: delay against size.</div></div>
+    <div class="tile"><div class="lbl">find the tail</div><div class="sub">The curve past the 80th percentile, per segment, by time of day. Compare it with the requirement curve for the traffic that matters.</div></div>
+    <div class="tile"><div class="lbl">locate</div><div class="sub">Add a point, halve. Expect the cause to sit in a different domain from the symptom.</div></div>
+    <div class="tile"><div class="lbl">which lever</div><div class="sub">G: design and topology. S: link rate. V: scheduling. Most fabric tails are V.</div></div>
+    <div class="tile"><div class="lbl">contract and budget</div><div class="sub">Write the requirement as a curve with a failure allowance. Devolve it across the hops and the suppliers. A slice or a pipe with a strong SLA is a place to multiplex a contract into.</div></div>
+    <div class="tile"><div class="lbl">run hot</div><div class="sub">An economy class for the bulk. Both directions bounded for the elastic flows. Watch the burst-loss mechanisms. Buy capacity last, and only where the structure says so.</div></div>
+  </div>
+  <p class="src">This deck, chapters 1–4</p>
+</section>
+
+<!-- ============ CLOSE ============ -->
+<section class="center">
+  <p class="kicker">In one line</p>
+  <h2 style="font-size:1.7em; max-width:22em; margin:0 auto .4em">Measure the curve, find the tail, locate it, open the box.</h2>
+  <p class="lead" style="margin:0 auto">Capacity last.</p>
+  <p style="margin-top:2.4em; font-size:.6em; color:var(--muted);">Sources: PNSol &amp; Geddes, Fundamentals of Network Performance workshop (2013) · Davies, Ofcom (2009) · Reeve, Kent (2003) · Broadband Forum TR-452.1 (2020) · Davies, Thompson et al., IETF (2021) · RFC 9318 (2022) · Haeri et al., Computers (2022)</p>
 </section>
 
 </div>
@@ -467,6 +964,61 @@
   });
   Reveal.on('ready', e => renderPlotsIn(e.currentSlide));
   Reveal.on('slidechanged', e => renderPlotsIn(e.currentSlide));
+</script>
+<script>
+  // chapter 2 charts
+  const lnCDF = (t, mu, sig) => { const z = (Math.log(t) - mu) / (sig * Math.SQRT2); return 0.5 * (1 + erf(z)); };
+  function erf(x) { const s = Math.sign(x); x = Math.abs(x); const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911; const t = 1/(1+p*x); const y = 1-(((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x); return s*y; }
+  Object.assign(plots, {
+    irv(el) {
+      // illustrative improper CDF: lognormal delay, total mass 0.985 (1.5 % never arrive)
+      const t = [], y = [];
+      for (let i = 1; i <= 200; i++) { const x = i * 0.6; t.push(x); y.push(0.985 * lnCDF(x, Math.log(22), 0.45)); }
+      Plotly.newPlot(el, [
+        { x: t, y: y, type: 'scatter', mode: 'lines', name: 'ΔQ: P(arrived by t)', line: { color: C.blue, width: 2.5 }, fill: 'tozeroy', fillcolor: 'rgba(47,107,176,0.08)', hovertemplate: '%{y:.3f} by %{x:.0f} ms<extra></extra>' },
+        { x: [0, 120], y: [1, 1], type: 'scatter', mode: 'lines', name: 'everything arrived', line: { color: C.dim, width: 1.5 }, hoverinfo: 'skip' },
+        { x: [0, 120], y: [0.985, 0.985], type: 'scatter', mode: 'lines', name: 'the limit the curve reaches', line: { color: C.accent, width: 1.5, dash: 'dot' }, hoverinfo: 'skip' },
+      ], base(760, 330, { xaxis: ax({ title: { text: 'milliseconds', font: { color: C.muted } }, range: [0, 120] }), yaxis: ax({ title: { text: 'probability', font: { color: C.muted } }, range: [0, 1.05] }), hovermode: 'x unified',
+        annotations: [{ x: 95, y: 0.992, text: 'loss: the mass that never arrives', showarrow: false, font: { color: C.accent, size: 12 } }, { x: 50, y: 0.6, text: 'delay: how long the rest take', showarrow: false, font: { color: C.ink2, size: 12 } }] }), cfg);
+    },
+    conv(el) {
+      // two illustrative hop PDFs on a 0.5 ms grid, convolved numerically
+      const dt = 0.5, n = 160; const g = (m, s) => Array.from({ length: n }, (_, i) => { const x = i * dt; return x <= 0 ? 0 : Math.exp(-0.5 * Math.pow((Math.log(x) - Math.log(m)) / s, 2)) / (x * s * Math.sqrt(2 * Math.PI)); });
+      const norm = a => { const S = a.reduce((p, q) => p + q, 0) * dt; return a.map(v => v / S); };
+      const h1 = norm(g(6, 0.35)), h2 = norm(g(9, 0.5));
+      const path = norm(Array.from({ length: n }, (_, k) => { let s = 0; for (let i = 0; i <= k; i++) s += h1[i] * h2[k - i]; return s * dt; }));
+      const x = Array.from({ length: n }, (_, i) => i * dt);
+      Plotly.newPlot(el, [
+        { x, y: h1, type: 'scatter', mode: 'lines', name: 'hop A→B', line: { color: C.blue, width: 2 }, hovertemplate: '%{x:.1f} ms<extra>hop A→B</extra>' },
+        { x, y: h2, type: 'scatter', mode: 'lines', name: 'hop B→C', line: { color: C.green, width: 2 }, hovertemplate: '%{x:.1f} ms<extra>hop B→C</extra>' },
+        { x, y: path, type: 'scatter', mode: 'lines', name: 'path A→C = A→B ⊕ B→C', line: { color: C.accent, width: 2.5 }, fill: 'tozeroy', fillcolor: 'rgba(192,90,53,0.08)', hovertemplate: '%{x:.1f} ms<extra>path A→C</extra>' },
+      ], base(760, 330, { xaxis: ax({ title: { text: 'delay, milliseconds', font: { color: C.muted } }, range: [0, 50] }), yaxis: ax({ title: { text: 'density', font: { color: C.muted } }, showticklabels: false }), hovermode: 'x unified' }), cfg);
+    },
+    gsv(el) {
+      // simulated from the published ADSL round-trip figures: G 16.9 ms, S 13.3 us/octet, V mean 1.71 ms sd 0.74 ms (heavier tail added for illustration)
+      let s = 11; const rnd = () => { s = (s * 1103515245 + 12345) % 2147483648; return s / 2147483648; };
+      const sizes = [64, 128, 256, 384, 512, 768, 1024, 1280, 1500]; const xs = [], ys = [];
+      for (let i = 0; i < 540; i++) { const sz = sizes[i % sizes.length] + Math.round((rnd() - 0.5) * 20); let v = -Math.log(1 - rnd()) * 1.71; if (rnd() < 0.08) v += rnd() * 6; xs.push(sz); ys.push(16.9 + 0.0133 * sz + v); }
+      Plotly.newPlot(el, [
+        { x: xs, y: ys, type: 'scatter', mode: 'markers', name: 'packets', marker: { color: C.blue, size: 6, opacity: 0.55 }, hovertemplate: '%{y:.1f} ms, %{x} octets<extra></extra>' },
+        { x: [0, 1520], y: [16.9, 16.9 + 0.0133 * 1520], type: 'scatter', mode: 'lines', name: 'fit through the minima: G + S × size', line: { color: C.accent, width: 2.5 }, hoverinfo: 'skip' },
+      ], base(760, 330, { xaxis: ax({ title: { text: 'packet size, octets', font: { color: C.muted } }, range: [0, 1560] }), yaxis: ax({ title: { text: 'round-trip delay, ms', font: { color: C.muted } }, range: [14, 48] }),
+        annotations: [
+          { x: 30, y: 16.9, text: 'G ≈ 16.9 ms', showarrow: false, xanchor: 'left', yshift: -12, font: { color: C.ink2, size: 12 } },
+          { x: 1500, y: 16.9 + 0.0133 * 1500, text: 'slope S ≈ 13.3 µs per octet', showarrow: false, xanchor: 'right', yshift: -14, font: { color: C.ink2, size: 12 } },
+          { x: 700, y: 36, text: 'V: the scatter above the line', showarrow: false, font: { color: C.ink2, size: 12 } },
+        ] }), cfg);
+    },
+    req(el) {
+      const rx = [0, 3, 3, 10, 10, 15, 15, 20], ry = [0, 0, 0.5, 0.5, 0.95, 0.95, 0.995, 0.995];
+      const dx = [], dy = []; for (let i = 0; i <= 200; i++) { const x = i * 0.1; dx.push(x); dy.push(0.998 * lnCDF(Math.max(x, 0.01), Math.log(2.2), 0.55)); }
+      Plotly.newPlot(el, [
+        { x: rx, y: ry, type: 'scatter', mode: 'lines', name: 'requirement (boundary)', line: { color: C.accent, width: 2.5, shape: 'hv' }, hovertemplate: '%{y:.1%} within %{x} s<extra>requirement</extra>' },
+        { x: dx, y: dy, type: 'scatter', mode: 'lines', name: 'delivered', line: { color: C.blue, width: 2.5 }, hovertemplate: '%{y:.1%} within %{x:.1f} s<extra>delivered</extra>' },
+      ], base(760, 330, { xaxis: ax({ title: { text: 'seconds to complete', font: { color: C.muted } }, range: [0, 20] }), yaxis: ax({ title: { text: 'fraction of outcomes', font: { color: C.muted } }, range: [0, 1.04], tickformat: '.0%' }), hovermode: 'x unified',
+        annotations: [{ x: 6.2, y: 0.5, ax: -70, ay: 0, text: 'slack', showarrow: true, arrowhead: 0, arrowcolor: C.ink2, font: { color: C.ink2, size: 13 } }] }), cfg);
+    },
+  });
 </script>
 </body>
 </html>
