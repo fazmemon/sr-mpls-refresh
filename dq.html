@@ -105,7 +105,7 @@
   <p class="kicker">Contents</p>
   <h2>Four chapters</h2>
   <div class="steps">
-    <div class="step"><div class="n">CHAPTER 1</div><div class="t">Why today's reasoning fails</div><div class="d">Bandwidth, averages and utilisation do not say whether an application will work.</div></div>
+    <div class="step"><div class="n">CHAPTER 1</div><div class="t">The dashboard is green and the job is slow</div><div class="d">Why utilisation and bandwidth cannot say whether a job will finish on time.</div></div>
     <div class="step"><div class="n">CHAPTER 2</div><div class="t">What ΔQ is</div><div class="d">Loss and delay in one distribution, conserved, composable along the path.</div></div>
     <div class="step"><div class="n">CHAPTER 3</div><div class="t">How to set up</div><div class="d">Measure it cheaply, to a standard. Then configure to it.</div></div>
     <div class="step"><div class="n">CHAPTER 4</div><div class="t">How we use it</div><div class="d">Contracts, budgets, assurance before build. What it means for a fabric.</div></div>
@@ -116,47 +116,47 @@
 <!-- ============ CHAPTER 1 TITLE ============ -->
 <section>
   <p class="kicker">Chapter 1</p>
-  <h2>Why the way we reason today fails</h2>
-  <p class="lead">Four claims, one per page. Each has a number behind it.</p>
+  <h2>The dashboard is green and the job is slow</h2>
+  <p class="lead">Four things we all know from running a fabric, and the number behind each.</p>
   <div class="tiles">
-    <div class="tile"><div class="lbl">Claim 1</div><div class="val" style="font-size:1.05em">The application sees only loss and delay</div><div class="sub">Everything else is hidden by layering.</div></div>
-    <div class="tile"><div class="lbl">Claim 2</div><div class="val" style="font-size:1.05em">There is no quality in averages</div><div class="sub">The counters smooth away the events that break things.</div></div>
-    <div class="tile"><div class="lbl">Claim 3</div><div class="val" style="font-size:1.05em">Bandwidth does not compose</div><div class="sub">So it cannot be handed down as a budget.</div></div>
-    <div class="tile"><div class="lbl">Claim 4</div><div class="val" style="font-size:1.05em">The big estates already measure the tail</div><div class="sub">What they lack is a measure that composes.</div></div>
+    <div class="tile"><div class="lbl">1</div><div class="val" style="font-size:1.05em">A job only feels two things from the network</div><div class="sub">How late its packets are, and how many never come.</div></div>
+    <div class="tile"><div class="lbl">2</div><div class="val" style="font-size:1.05em">Link utilisation does not tell us if the job is fine</div><div class="sub">The counter averages away the moments that hurt.</div></div>
+    <div class="tile"><div class="lbl">3</div><div class="val" style="font-size:1.05em">"How much bandwidth do we need" has no answer on its own</div><div class="sub">The number depends on the quality delivered.</div></div>
+    <div class="tile"><div class="lbl">4</div><div class="val" style="font-size:1.05em">We already watch p99. What we cannot do is add it up.</div><div class="sub">A tail figure for one hop does not give the tail for the path.</div></div>
   </div>
 </section>
 
 <!-- ============ 1.1 ============ -->
 <section>
   <p class="kicker">1 · 1</p>
-  <h2>The application sees one thing: loss and delay</h2>
-  <p class="lead">Layering was the great achievement of network design. It leaves the application with a single thing to worry about.</p>
+  <h2>A job only feels two things from the network</h2>
+  <p class="lead">A collective across 512 GPUs, a storage read, a gRPC call. None of them can see a switch, a queue or an ECMP choice. They see their own packets arriving late, or not at all.</p>
   <div class="flow">
     <div class="card">
-      <div class="ct" style="margin:0 0 10px">What the network is made of</div>
+      <div class="ct" style="margin:0 0 10px">What is in the path</div>
       <div class="chips">
-        <span class="chip">fibre, copper, radio</span><span class="chip">routing, ECMP, reroutes</span><span class="chip">queues and schedulers</span><span class="chip">buffers</span><span class="chip">fragmentation</span><span class="chip">encapsulation</span><span class="chip">firewalls, NAT</span><span class="chip">failures</span><span class="chip">everyone else's traffic</span>
+        <span class="chip">leaf and spine</span><span class="chip">ECMP hashing</span><span class="chip">queues and buffers</span><span class="chip">PFC and ECN</span><span class="chip">link flaps and reroutes</span><span class="chip">optics</span><span class="chip">NIC offload</span><span class="chip">other tenants' traffic</span>
       </div>
     </div>
     <div class="arrow">→</div>
-    <div class="tile hl" style="text-align:center"><div class="lbl">what reaches the application</div><div class="val">loss + delay</div><div class="sub">of its own packets, in each direction</div></div>
+    <div class="tile hl" style="text-align:center"><div class="lbl">what the job gets</div><div class="val">late, or lost</div><div class="sub">for its own packets, each direction</div></div>
     <div class="arrow">→</div>
-    <div class="tile" style="text-align:center"><div class="lbl">outcome</div><div class="val" style="font-size:1.1em">works, or fails</div><div class="sub">a page loads in time, a call is clear</div></div>
+    <div class="tile" style="text-align:center"><div class="lbl">what we see</div><div class="val" style="font-size:1.1em">step time, p99, retries</div><div class="sub">the all-reduce waits for the slowest rank</div></div>
   </div>
   <ul class="notes" style="margin-top:18px">
-    <li>A connectivity failure, whatever the cause, is just <b>unbounded delay</b>.</li>
-    <li>"Insufficient bandwidth" really means <b>at this offered load, the loss and delay exceeded what the application can take</b>.</li>
+    <li>Every fault, whatever its cause, reaches the job as one of those two. A black-holed path is just <b>infinite delay</b>.</li>
+    <li>So "not enough bandwidth" means something precise: <b>at this load, the delay and loss got worse than the job can stand</b>. Delay and loss are the thing to measure. Bandwidth is one of the reasons they move.</li>
   </ul>
-  <p class="src">TR-452.1 §4.1–4.2 · PNSol workshop notes p.58</p>
+  <p class="src">TR-452.1 §4.1–4.2</p>
 </section>
 
 <!-- ============ 1.2 ============ -->
 <section>
   <p class="kicker">1 · 2</p>
-  <h2>Loss and delay together decide the outcome</h2>
+  <h2>Late and lost are the same thing to the job</h2>
   <div class="grid">
     <div class="card chart">
-      <div class="ct">Time to complete a 10 kB web transfer, by the transport's delay and loss</div>
+      <div class="ct">How long a small request takes, by the delay and loss on its path</div>
       <svg viewBox="0 0 760 330" width="760" height="330">
         <g stroke="#E6E0D4" stroke-width="1">
           <line x1="70" y1="30" x2="730" y2="30"/><line x1="70" y1="95" x2="730" y2="95"/><line x1="70" y1="160" x2="730" y2="160"/><line x1="70" y1="225" x2="730" y2="225"/>
@@ -168,47 +168,47 @@
         <path d="M160,290 C 360,288 540,245 730,190" fill="none" stroke="#B8B2A7" stroke-width="2" stroke-linecap="round"/>
         <path d="M330,290 C 500,288 640,262 730,240" fill="none" stroke="#C05A35" stroke-width="2.5" stroke-linecap="round"/>
         <g font-size="13" fill="#5A554D">
-          <text x="170" y="236">3 s</text><text x="300" y="258">4 s</text><text x="440" y="270">5 s</text><text x="600" y="268" fill="#C05A35" font-weight="600">6 s</text>
+          <text x="170" y="236">1×</text><text x="300" y="258">1.3×</text><text x="440" y="270">1.7×</text><text x="600" y="268" fill="#C05A35" font-weight="600">2×</text>
         </g>
         <g font-size="12" fill="#8A8378">
-          <text x="70" y="310">260 ms</text><text x="400" y="310" text-anchor="middle">one-way delay →</text><text x="730" y="310" text-anchor="end">400 ms</text>
+          <text x="70" y="310">lower</text><text x="400" y="310" text-anchor="middle">one-way delay →</text><text x="730" y="310" text-anchor="end">higher</text>
           <text x="60" y="294" text-anchor="end">0 %</text><text x="60" y="35" text-anchor="end">5 %</text>
-          <text x="30" y="165" text-anchor="middle" transform="rotate(-90 30 165)">one-way loss →</text>
+          <text x="30" y="165" text-anchor="middle" transform="rotate(-90 30 165)">loss →</text>
         </g>
       </svg>
-      <div class="schematic">Schematic of the published contour figure (median time to complete). Axes and contour values as published; curves drawn, not measured.</div>
+      <div class="schematic">Shape of the published figure for a 10 kB request over TCP: contours of equal completion time, from 3 s to 6 s across the range shown. Drawn, not measured.</div>
     </div>
     <div>
       <div class="tiles" style="grid-template-columns:1fr; margin-top:0">
-        <div class="tile"><div class="lbl">median, best to worst corner</div><div class="val">3.0 → 6.0 s</div><div class="sub">same 10 kB, same server, same capacity</div></div>
-        <div class="tile hl"><div class="lbl">95th percentile, same transfer</div><div class="val">5.5 → 21 s</div><div class="sub">which packets were lost now matters: the handshake most</div></div>
+        <div class="tile"><div class="lbl">same request, median</div><div class="val">2× slower</div><div class="sub">from the best corner to the worst, with capacity never the limit</div></div>
+        <div class="tile hl"><div class="lbl">same request, 95th percentile</div><div class="val">4× slower</div><div class="sub">and now it matters which packet was lost: the handshake costs most</div></div>
       </div>
       <ul class="notes" style="margin-top:14px">
-        <li>Capacity is never the limit here. Time to complete is <b>purely</b> a function of the transport's loss and delay and the protocol's behaviour.</li>
-        <li>A lost packet reaches the user as <b>more delay</b>. Loss and delay sit on the same contour.</li>
+        <li>A dropped packet does not show up as "a drop". It shows up as a <b>retransmit timeout</b>, which is delay. That is why loss and delay sit on one curve.</li>
+        <li>This is the incast story in one picture: nothing is "down", the link is not full, and the tail doubles.</li>
       </ul>
     </div>
   </div>
-  <p class="src">PNSol workshop pp.60–61 · TR-452.1 Figures 4 and 5</p>
+  <p class="src">TR-452.1 Figures 4 and 5; underlying analysis PNSol</p>
 </section>
 
 <!-- ============ 1.3 ============ -->
 <section>
   <p class="kicker">1 · 3</p>
-  <h2>There is no quality in averages</h2>
+  <h2>Link utilisation does not tell us if the job is fine</h2>
   <div class="grid">
     <div class="card chart">
-      <div class="ct">One minute on a link: what the packets see, and what the counter reports</div>
+      <div class="ct">One minute on a 100G link: what the packets see, and what the counter reports</div>
       <div id="p-bursts" data-plot="bursts"></div>
-      <div class="schematic">Illustration of the effect described in TR-452.1 §4.2.2. Synthetic trace; the bursts run about four times the reported average.</div>
+      <div class="schematic">Illustration, synthetic trace. The effect it shows is documented: sub-second bursts four times or more above the averaged peak.</div>
     </div>
     <div>
       <ul class="notes">
-        <li>Counters sampled every 1 to 15 minutes smooth away sub-second bursts that run <b>four times or more</b> above the averaged peak.</li>
-        <li>Ten minutes on a gigabit link holds as many events as <b>two years of traffic on a three-lane motorway</b>. The motorway averages "quiet" over two years and still gridlocks every evening.</li>
-        <li>For an average to mean anything on that link you would need it over <b>20 to 250 ms</b>. Nobody collects that.</li>
+        <li>Our counters are sampled every 30 s to 5 minutes. A microburst lasts microseconds. The buffer fills and drops inside a single sample, and the sample says <b>40 %</b>.</li>
+        <li>Scale of the gap: ten minutes on a gigabit link holds as many packets as <b>two years of cars on a three-lane motorway</b>. On 100G, multiply by a hundred. The motorway averages "quiet" and still jams every evening.</li>
+        <li>For an average to mean anything here you would need it over a few hundred microseconds. Nobody keeps that. The silicon can timestamp at that resolution; we do not read it.</li>
       </ul>
-      <p class="src">TR-452.1 §4.2.2 · PNSol workshop notes p.69</p>
+      <p class="src">TR-452.1 §4.2.2; scale comparison from PNSol's measurement course</p>
     </div>
   </div>
 </section>
@@ -216,22 +216,22 @@
 <!-- ============ 1.4 ============ -->
 <section>
   <p class="kicker">1 · 4</p>
-  <h2>Utilisation does not predict whether voice works</h2>
-  <p class="lead">A well-run public-sector network, 1,300 sites. Five days of link utilisation beside a direct voice-quality breach measure, 5 ms at 99.5 %.</p>
+  <h2>The two cases every operator has met</h2>
+  <p class="lead">Measured on a 1,300-site enterprise network over five days: link utilisation beside a direct voice-quality check on the same links. Swap "voice" for "collective" and it is our fabric.</p>
   <div class="grid" style="grid-template-columns:1.25fr 1fr">
     <div class="quad">
-      <div class="q surprise"><div class="lbl">80 % busy</div><div class="big">Voice perfect</div><div class="why">Evenly spaced packets. Voice fits in between.</div></div>
-      <div class="q"><div class="lbl">80 % busy</div><div class="big">Voice degraded</div><div class="why">What the rule of thumb expects.</div></div>
-      <div class="q"><div class="lbl">under 1 % busy</div><div class="big">Voice perfect</div><div class="why">What the rule of thumb expects.</div></div>
-      <div class="q surprise"><div class="lbl">under 1 % busy</div><div class="big">Voice degraded</div><div class="why">The traffic came in bursts. The link looked empty.</div></div>
+      <div class="q surprise"><div class="lbl">link at 80 %</div><div class="big">Service fine</div><div class="why">Traffic evenly spaced. The small latency-sensitive flow slips in between.</div></div>
+      <div class="q"><div class="lbl">link at 80 %</div><div class="big">Service degraded</div><div class="why">The case the rule of thumb expects.</div></div>
+      <div class="q"><div class="lbl">link under 1 %</div><div class="big">Service fine</div><div class="why">The case the rule of thumb expects.</div></div>
+      <div class="q surprise"><div class="lbl">link under 1 %</div><div class="big">Service degraded</div><div class="why">Traffic arrived in bursts. The link looked empty and the queue was full.</div></div>
     </div>
     <div>
       <ul class="notes">
-        <li>Both outlined cells happened on the same network in the same week. The first published comparison of utilisation with a direct quality measure.</li>
-        <li>An SLA written in averages passes while the service is dead: a <b>monthly-average loss target of 0.1 %</b> is met by a <b>40-minute outage once a month</b>.</li>
-        <li>Their verdict: <i>"the average metrics don't give you the data you need to manage cost and performance."</i> They ran the network hotter and deferred a £1M upgrade.</li>
+        <li>Both outlined cells happened on the same network in the same week. We have all seen the second one: a "quiet" link and a stalled job.</li>
+        <li>The same trap in an SLA: a <b>monthly average loss of 0.1 %</b> is met by one <b>40-minute outage a month</b>.</li>
+        <li>That operator stopped upgrading on utilisation, ran hotter, and deferred a £1M upgrade.</li>
       </ul>
-      <p class="src">PNSol decks: "no quality in averages" 35–37, "high-fidelity measures" 8–9 · KPSN interview, 2015</p>
+      <p class="src">PNSol measurement on Kent Public Service Network, 2015; first published comparison of utilisation with a direct quality measure</p>
     </div>
   </div>
 </section>
@@ -239,43 +239,43 @@
 <!-- ============ 1.5 ============ -->
 <section>
   <p class="kicker">1 · 5</p>
-  <h2>Bandwidth is an average, and it does not compose</h2>
+  <h2>"How much bandwidth do we need" has no answer on its own</h2>
   <div class="grid" style="grid-template-columns:1fr 1.35fr">
     <div>
       <div class="tiles" style="grid-template-columns:1fr; margin-top:0">
-        <div class="tile"><div class="lbl">not the same thing</div><div class="val" style="font-size:.95em">1 Mbit/s on an empty link <span style="color:var(--accent)">≠</span> the last 1 Mbit/s on a loaded one</div></div>
-        <div class="tile"><div class="lbl">not the same thing</div><div class="val" style="font-size:.95em">1/10 of a 100 Mbit/s port <span style="color:var(--accent)">≠</span> a 10 Mbit/s port</div></div>
-        <div class="tile"><div class="lbl">not the same thing</div><div class="val" style="font-size:.95em">two 100 M links in series <span style="color:var(--accent)">≠</span> one 100 M link</div></div>
+        <div class="tile"><div class="lbl">not the same</div><div class="val" style="font-size:.95em">1 Gbit/s on an idle 100G port <span style="color:var(--accent)">≠</span> 1 Gbit/s on a port at 80 %</div></div>
+        <div class="tile"><div class="lbl">not the same</div><div class="val" style="font-size:.95em">1/10 of a 100G port <span style="color:var(--accent)">≠</span> a 10G port</div><div class="sub">the serialisation time differs ten-fold</div></div>
+        <div class="tile"><div class="lbl">not the same</div><div class="val" style="font-size:.95em">two hops of 100G <span style="color:var(--accent)">≠</span> one hop of 100G</div><div class="sub">bandwidth does not add up along a path</div></div>
       </div>
     </div>
     <div class="card chart">
-      <div class="ct">The "bandwidth" a 10 kB transfer needs is set by the quality delivered to it</div>
+      <div class="ct">The "bandwidth" a 10 kB request needs, depending on how fast you want it back</div>
       <div id="p-bw" data-plot="bw"></div>
     </div>
   </div>
   <ul class="notes" style="margin-top:12px">
-    <li>Same data, same transfer. Want it in 3 s, you "need" 29 kbit/s; accept 8 s, 11 kbit/s. The requirement is a <b>consequence</b> of delivered quality, not a cause.</li>
-    <li>So a budget written in bandwidth cannot be handed down a supply chain. Each party adds its own margin instead.</li>
+    <li>Same request, same bytes. Want it back in 3 s and it "needs" 29 kbit/s. Accept 8 s and it needs 11. The bandwidth figure is an <b>output</b> of the quality delivered, not an input.</li>
+    <li>That is why a capacity plan written in Gbit/s cannot be handed from the fabric team to the DCI team to the provider. Each adds its own margin, because none of them can say what the others' figure means for the job.</li>
   </ul>
-  <p class="src">PNSol workshop p.62 (the HTTP spreadsheet) and pp.122–123 · TR-452.1 §4.2.2, §6.3</p>
+  <p class="src">TR-452.1 §4.2.2 and §6.3; the request example from PNSol's published HTTP analysis</p>
 </section>
 
 <!-- ============ 1.6 ============ -->
 <section>
   <p class="kicker">1 · 6</p>
-  <h2>What the safety margins add up to</h2>
+  <h2>So every team adds a margin, and the margins multiply</h2>
   <div class="grid">
     <div class="card chart">
-      <div class="ct">Capacity bought as a multiple of the need, when each layer protects itself with a factor of two</div>
+      <div class="ct">Capacity bought as a multiple of the need, when each team protects itself with a factor of two</div>
       <div id="p-margin" data-plot="margin"></div>
     </div>
     <div>
       <ul class="notes">
-        <li>Each silo cannot see the others' margins, so it adds its own. The margins <b>multiply</b>.</li>
-        <li>Six layers is not unusual between a user and a service. At <b>2⁶ the estate holds 64 times the need</b>, and still cannot say whether the application will work.</li>
-        <li>Capacity is being bought to cover what are, rightly, <b>scheduling</b> problems. That is the misallocation this deck is about.</li>
+        <li>NIC, leaf, spine, DCI, provider, far end. Six teams between a job and its data is not unusual. Each one, unable to see the others' headroom, keeps its own.</li>
+        <li>At <b>2⁶ the estate holds 64 times the need</b> and still cannot say whether the collective will finish on time.</li>
+        <li>Most of that capacity is bought to cover what are really <b>queueing and scheduling</b> problems. That is the money this deck is about.</li>
       </ul>
-      <p class="src">PNSol workshop notes p.127 · "The Ladder" deck 108–113</p>
+      <p class="src">Factor-of-two layering observed across operator engagements, PNSol</p>
     </div>
   </div>
 </section>
@@ -283,37 +283,38 @@
 <!-- ============ 1.7 ============ -->
 <section>
   <p class="kicker">1 · 7</p>
-  <h2>The large estates already say this</h2>
-  <p class="lead">The Internet Architecture Board's 2021 workshop on measuring network quality for end users wrote these down as consensus.</p>
+  <h2>We already watch the tail. The industry wrote it down.</h2>
+  <p class="lead">In 2021 the Internet Architecture Board ran a workshop on measuring network quality. The operators and vendors in the room agreed on these.</p>
   <div class="grid" style="grid-template-columns:1fr 1fr">
     <div>
       <div class="quote">"Bandwidth is necessary but not alone sufficient."<span class="who">RFC 9318, general statement 1</span></div>
       <div class="quote">"Latency mean and medians are distractions from better measurements."<span class="who">RFC 9318, problem statement 1</span></div>
     </div>
     <div>
-      <div class="quote">"A really meaningful metric for users is whether their application will work properly or fail because of a lack of a network with sufficient characteristics."<span class="who">RFC 9318, general statement 5</span></div>
+      <div class="quote">"A really meaningful metric for users is whether their application will work properly or fail."<span class="who">RFC 9318, general statement 5</span></div>
       <ul class="notes" style="margin-top:6px">
-        <li>The operating language of the big estates is already the <b>tail</b>: 99th percentiles, latency under load, responsiveness.</li>
-        <li>What that language lacks is a measure that is both a <b>network measure</b> and an <b>outcome measure</b>, and that <b>composes</b> along a path. That is the gap ΔQ fills.</li>
+        <li>This is already how the large estates work: p99 per service, latency under load, step time per job.</li>
+        <li>What that practice lacks is a way to <b>add the tail up along a path</b>, and to hand a share of it to each team and each supplier. That is the gap ΔQ fills, and it is the rest of this deck.</li>
       </ul>
     </div>
   </div>
-  <p class="src">RFC 9318, "IAB Workshop Report: Measuring Network Quality for End-Users", October 2022, §5</p>
+  <p class="src">RFC 9318, IAB Workshop Report: Measuring Network Quality for End-Users, October 2022, §5</p>
 </section>
 
 <!-- ============ 1.8 ============ -->
 <section>
   <p class="kicker">1 · 8</p>
-  <h2>Idle latency is not the latency anyone experiences</h2>
+  <h2>Idle latency is not the latency the job gets</h2>
   <div class="grid">
     <div class="card chart">
-      <div class="ct">Round-trip latency, idle and under load, by access technology and direction</div>
+      <div class="ct">Round-trip latency, idle and under load, as measured on real access paths</div>
       <div id="p-lul" data-plot="lul"></div>
     </div>
     <div>
       <ul class="notes">
-        <li>Speed tests and idle pings measure the propagation floor. Under load the same path is <b>6 to 25 times</b> slower, and that is what the application sees.</li>
-        <li>The estates that run at scale manage to the loaded tail. This deck gives that practice a measure that composes.</li>
+        <li>Ping on a quiet fabric measures the floor. Under load the same path is <b>6 to 25 times</b> slower, and that is the number the job gets.</li>
+        <li>These are consumer access paths, so the figures are large. The ratio is what matters, and it holds anywhere a queue can fill.</li>
+        <li>Our own version of this chart, from our own fabric, is the first thing to build. Chapter 3 says how.</li>
       </ul>
       <p class="src">Data presented at the IAB workshop, RFC 9318 §4.2.4</p>
     </div>
@@ -323,18 +324,18 @@
 <!-- ============ 1.9 ============ -->
 <section>
   <p class="kicker">1 · 9</p>
-  <h2>What this deck claims</h2>
+  <h2>What this deck proposes</h2>
   <div class="steps">
-    <div class="step"><div class="n">1</div><div class="t">Measure the curve</div><div class="d">Loss and delay together, between two points, each direction.</div></div>
-    <div class="step"><div class="n">2</div><div class="t">Find the bad tail</div><div class="d">Poor past the 80th percentile. Not the mean.</div></div>
+    <div class="step"><div class="n">1</div><div class="t">Measure the curve</div><div class="d">Delay and loss together, between two points, each direction. Not the mean.</div></div>
+    <div class="step"><div class="n">2</div><div class="t">Find the bad tail</div><div class="d">Where the curve goes wrong past p80, by segment, by time of day.</div></div>
     <div class="step"><div class="n">3</div><div class="t">Locate it</div><div class="d">Add an observation point, halve the path, repeat.</div></div>
-    <div class="step"><div class="n">4</div><div class="t">Open the box</div><div class="d">Which lever, then scheduling and classes. Capacity last.</div></div>
+    <div class="step"><div class="n">4</div><div class="t">Open the box</div><div class="d">Which lever it is, then scheduling and classes. Capacity last.</div></div>
   </div>
   <div class="tiles">
-    <div class="tile"><div class="lbl">one measure</div><div class="sub">Delay and loss in a single distribution, for a path.</div></div>
-    <div class="tile"><div class="lbl">it composes</div><div class="sub">The path's measure is the sum of its parts, so a requirement at the top becomes a budget at every hop and for every supplier.</div></div>
-    <div class="tile"><div class="lbl">it is cheap</div><div class="sub">A low-rate test stream, a few thousand samples, timestamps at two or more points. Standardised in 2020.</div></div>
-    <div class="tile"><div class="lbl">it names the lever</div><div class="sub">What the design did, what the link rate did, what contention did. Only the last is yours to schedule.</div></div>
+    <div class="tile"><div class="lbl">one measure</div><div class="sub">Delay and loss in one distribution per path. It is what the job feels.</div></div>
+    <div class="tile"><div class="lbl">it adds up</div><div class="sub">The path's curve is the sum of its hops. So a target for the job becomes a budget for each hop and each supplier.</div></div>
+    <div class="tile"><div class="lbl">it is cheap</div><div class="sub">A low-rate test stream and timestamps at two or more points. The silicon already has them. There is a standard for it.</div></div>
+    <div class="tile"><div class="lbl">it names the lever</div><div class="sub">Splits into what the design did, what the link rate did, what queueing did. Only the last is ours to schedule.</div></div>
   </div>
 </section>
 
@@ -916,7 +917,7 @@
         { x: t, y: v, type: 'scatter', mode: 'lines', name: 'what the packets see (100 ms)', line: { color: C.blue, width: 1.5 }, hovertemplate: '%{y:.2f} Gbit/s at %{x:.1f} s<extra></extra>' },
         { x: [0, 60], y: [mean, mean], type: 'scatter', mode: 'lines', name: 'what the counter reports (5-minute average)', line: { color: C.accent, width: 2.5 }, hovertemplate: 'average %{y:.2f} Gbit/s<extra></extra>' },
         { x: [0, 60], y: [1, 1], type: 'scatter', mode: 'lines', name: 'link rate', line: { color: C.dim, width: 1.5 }, hoverinfo: 'skip' },
-      ], base(760, 330, { xaxis: ax({ title: { text: 'seconds', font: { color: C.muted } }, range: [0, 60] }), yaxis: ax({ title: { text: 'Gbit/s', font: { color: C.muted } }, range: [0, 2.1] }), hovermode: 'x unified' }), cfg);
+      ], base(760, 330, { xaxis: ax({ title: { text: 'seconds', font: { color: C.muted } }, range: [0, 60] }), yaxis: ax({ title: { text: 'Gbit/s (×100)', font: { color: C.muted } }, range: [0, 2.1] }), hovermode: 'x unified' }), cfg);
     },
     bw(el) {
       // PNSol workshop p.62: bit rate needed to move 10 kB (10,760 octets incl. overheads) in N seconds, by loss rate
