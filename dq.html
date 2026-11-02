@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0">
+  <title>ΔQ — Quality Attenuation</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reset.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/league.css">
+  <style>
+    :root { --r-main-font-size: 32px; }
+    .reveal h1, .reveal h2, .reveal h3, .reveal h4 { text-transform: none; text-shadow: none; }
+    .reveal .box, .reveal .key, .reveal .danger, .reveal blockquote { background: rgba(0,0,0,.28); }
+    .reveal table th { background: rgba(0,0,0,.35); }
+    .reveal table th, .reveal table td { border-color: #666; }
+    .reveal { font-size: 26px; }
+    .reveal h1 { font-size: 1.6em; color: #4ec9b0; }
+    .reveal h2 { font-size: 1.3em; color: #4ec9b0; }
+    .reveal h3 { font-size: 1.1em; color: #9cdcfe; }
+    .reveal h4 { color: #dcdcaa; }
+    .reveal section { text-align: left; padding-top: 0 !important; }
+    .reveal section.center { text-align: center; }
+    .reveal ul { display: block; }
+    .reveal ul li { margin-bottom: 0.25em; line-height: 1.25; }
+    .reveal table { font-size: 0.65em; margin: 0.5em 0; border-collapse: collapse; }
+    .reveal table th, .reveal table td { padding: 3px 6px; border: 1px solid #444; vertical-align: top; }
+    .reveal table th { background: #2d2d2d; color: #4ec9b0; }
+    .reveal strong { color: #dcdcaa; }
+    .reveal em { color: #9cdcfe; font-style: normal; }
+    .reveal a { color: #569cd6; }
+    .reveal blockquote { border-left: 4px solid #4ec9b0; padding-left: 12px; font-style: normal; font-size: .9em; margin: .4em 0; width: 100%; box-shadow: none; background: #16202c; }
+    .reveal .k{color:#9cdcfe;font-weight:700}
+    .reveal .r{color:#f48771;font-weight:700}
+    .reveal .g{color:#4ec9b0;font-weight:700}
+    .reveal .key{background:#0f2030;border-left:3px solid #4ec9b0;border-radius:0 8px 8px 0;padding:10px 15px;margin:.6em 0 0;font-size:.8em;color:#bfe9df}
+    .reveal .key b{color:#4ec9b0}
+    .reveal .danger{background:#2a1620;border-left:3px solid #ff7b8a;border-radius:0 8px 8px 0;padding:10px 15px;margin:.6em 0 0;font-size:.8em;color:#ffd4da}
+    .reveal .lead{color:#9db0d0}
+    .reveal .em{color:#4ec9b0;font-weight:600}
+    .reveal .warn{color:#dcdcaa}
+    .reveal .box{background:#152136;border:1px solid #2b3a56;border-radius:12px;padding:13px 18px;margin:.4em 0}
+    .reveal .cols{display:flex;gap:2vw;flex-wrap:wrap}
+    .reveal .col{flex:1;min-width:280px}
+    .reveal .small{font-size:.8em;color:#9db0d0}
+    .reveal .src{font-size:.55em;color:#777;margin-top:.8em}
+    .reveal .kicker{color:#888;font-size:.68em;letter-spacing:1.5px;margin-bottom:.2em;text-transform:uppercase}
+    .reveal svg { display:block; margin: .3em auto; max-width: 100%; }
+    .reveal svg text { font-family: inherit; }
+    .reveal .todo{color:#888;font-size:.8em}
+    @media (max-width: 900px) {
+      .reveal { font-size: 22px; }
+      .reveal h1 { font-size: 1.4em; }
+      .reveal h2 { font-size: 1.15em; }
+      .reveal table { font-size: 0.55em; }
+    }
+  </style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ============ COVER ============ -->
+<section class="center">
+  <h1>ΔQ · Quality Attenuation</h1>
+  <h3>One measure of network performance you can budget along a path</h3>
+  <p style="margin-top:2em; color:#888;">Faz</p>
+  <p style="margin-top:2em; font-size:0.7em; color:#666;">Arrow right → next page</p>
+</section>
+
+<!-- ============ THE FOUR CHAPTERS ============ -->
+<section>
+  <h2>Four chapters</h2>
+  <table>
+    <tr><th style="width:4%">#</th><th style="width:30%">Chapter</th><th>What it answers</th></tr>
+    <tr><td>1</td><td><b>Why the way we reason today fails</b></td><td>Why bandwidth, averages and utilisation do not tell you whether an application will work</td></tr>
+    <tr><td>2</td><td><b>What ΔQ is</b></td><td>One number family for loss and delay together, which is conserved and composes along the path</td></tr>
+    <tr><td>3</td><td><b>How to set up</b></td><td>Measuring it, cheaply and to a standard; then configuring to it</td></tr>
+    <tr><td>4</td><td><b>How we use it</b></td><td>Contracts, budgets, assurance before build, and what it means for a fabric</td></tr>
+  </table>
+  <div class="key"><b>The arc:</b> measure the curve · find it is poor past the 80th percentile · open the box of solutions, in order: locate <i>where</i> → which <i>lever</i> → scheduling and classes → capacity last.</div>
+</section>
+
+<!-- ============ CHAPTER 1 TITLE ============ -->
+<section>
+  <p class="kicker">Chapter 1</p>
+  <h2>Why the way we reason today fails</h2>
+  <ul>
+    <li>An application only ever sees <span class="em">loss and delay</span>. Everything else is hidden by layering.</li>
+    <li>The numbers we manage by, <span class="warn">bandwidth, utilisation, average latency</span>, are averages. Averages hide the events that break applications.</li>
+    <li>Bandwidth is not fungible and does not compose. A budget written in bandwidth cannot be handed down a supply chain.</li>
+    <li>The large estates already measure the tail. What they lack is a measure that composes.</li>
+  </ul>
+</section>
+
+<!-- ============ 1.1 THE APPLICATION SEES ONE THING ============ -->
+<section>
+    <p class="kicker">1 · 1</p>
+    <h2>The application sees one thing: loss and delay</h2>
+    <svg viewBox="0 0 1000 300" width="1000" height="300">
+      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#9cdcfe"/></marker></defs>
+      <rect x="20" y="30" width="300" height="240" rx="12" fill="#152136" stroke="#2b3a56"/>
+      <text x="170" y="62" fill="#9db0d0" font-size="18" text-anchor="middle">What the network is made of</text>
+      <text x="40" y="100" fill="#dcdcaa" font-size="17">media · fibre, copper, radio</text>
+      <text x="40" y="130" fill="#dcdcaa" font-size="17">routing decisions · ECMP · reroutes</text>
+      <text x="40" y="160" fill="#dcdcaa" font-size="17">queues · schedulers · buffers</text>
+      <text x="40" y="190" fill="#dcdcaa" font-size="17">fragmentation · encapsulation</text>
+      <text x="40" y="220" fill="#dcdcaa" font-size="17">firewalls · NAT · failures</text>
+      <text x="40" y="250" fill="#dcdcaa" font-size="17">other people's traffic</text>
+      <path d="M330,150 L470,150" stroke="#9cdcfe" stroke-width="3" marker-end="url(#ar)"/>
+      <text x="400" y="135" fill="#9cdcfe" font-size="16" text-anchor="middle">layering hides all of it</text>
+      <rect x="480" y="95" width="200" height="110" rx="12" fill="#0f2030" stroke="#4ec9b0" stroke-width="2"/>
+      <text x="580" y="140" fill="#4ec9b0" font-size="22" text-anchor="middle" font-weight="700">loss + delay</text>
+      <text x="580" y="172" fill="#bfe9df" font-size="16" text-anchor="middle">of its own packets</text>
+      <path d="M690,150 L830,150" stroke="#9cdcfe" stroke-width="3" marker-end="url(#ar)"/>
+      <rect x="840" y="95" width="140" height="110" rx="12" fill="#152136" stroke="#2b3a56"/>
+      <text x="910" y="140" fill="#dcdcaa" font-size="19" text-anchor="middle">outcome</text>
+      <text x="910" y="170" fill="#9db0d0" font-size="15" text-anchor="middle">works / fails</text>
+    </svg>
+    <ul>
+      <li>The great achievement of layering: the application has <b>one thing</b> to worry about with respect to the network, the impairment its packet streams experience.</li>
+      <li>A connectivity failure, whatever the cause, is just <b>unbounded delay</b>.</li>
+      <li>"Insufficient bandwidth" really means: <em>at this offered load, the loss and delay exceeded what the application can take</em>.</li>
+    </ul>
+    <p class="src">TR-452.1 §4.1–4.2; PNSol workshop notes p.58</p>
+</section>
+<section>
+    <p class="kicker">1 · 2</p>
+    <h2>Loss and delay together decide the outcome</h2>
+    <svg viewBox="0 0 1000 330" width="1000" height="330">
+      <rect x="120" y="20" width="620" height="250" fill="#0e1620" stroke="#2b3a56"/>
+      <text x="430" y="300" fill="#9db0d0" font-size="16" text-anchor="middle">one-way delay →  (260 ms … 400 ms)</text>
+      <text x="60" y="150" fill="#9db0d0" font-size="16" text-anchor="middle" transform="rotate(-90 60 150)">one-way loss →  (0 … 5 %)</text>
+      <path d="M120,210 C 300,200 450,150 740,40" stroke="#4ec9b0" stroke-width="2" fill="none"/>
+      <path d="M120,240 C 330,235 500,190 740,110" stroke="#9cdcfe" stroke-width="2" fill="none"/>
+      <path d="M160,270 C 380,265 560,220 740,170" stroke="#dcdcaa" stroke-width="2" fill="none"/>
+      <path d="M300,270 C 480,268 620,245 740,220" stroke="#f48771" stroke-width="2" fill="none"/>
+      <text x="200" y="195" fill="#4ec9b0" font-size="15">3 s</text>
+      <text x="300" y="228" fill="#9cdcfe" font-size="15">4 s</text>
+      <text x="420" y="255" fill="#dcdcaa" font-size="15">5 s</text>
+      <text x="560" y="262" fill="#f48771" font-size="15">6 s</text>
+      <text x="760" y="60" fill="#9db0d0" font-size="14">contours of equal</text>
+      <text x="760" y="80" fill="#9db0d0" font-size="14">median time to complete</text>
+      <text x="760" y="100" fill="#9db0d0" font-size="14">a 10 kB HTTP transfer</text>
+      <text x="760" y="140" fill="#777" font-size="13">(schematic of the published</text>
+      <text x="760" y="158" fill="#777" font-size="13">figure, not measured here)</text>
+    </svg>
+    <ul>
+      <li>Capacity is not the limit here; the server is instantly fast. Time to complete is <b>purely</b> a function of the transport's loss and delay and the protocol's behaviour.</li>
+      <li>A lost packet shows up to the user as <b>more delay</b>, so loss and delay sit on the same contour.</li>
+      <li>At the 95th percentile the same transfer runs 5.5 s to 21 s, and which packets were lost starts to matter: the handshake packets most.</li>
+    </ul>
+    <p class="src">PNSol workshop pp.60–61; TR-452.1 Figures 4 and 5</p>
+</section>
+
+<!-- ============ 1.2 NO QUALITY IN AVERAGES ============ -->
+<section>
+    <p class="kicker">1 · 3</p>
+    <h2>There is no quality in averages</h2>
+    <svg viewBox="0 0 1000 300" width="1000" height="300">
+      <text x="250" y="25" fill="#9db0d0" font-size="16" text-anchor="middle">what the 5-minute counter reports</text>
+      <rect x="40" y="40" width="420" height="220" fill="#0e1620" stroke="#2b3a56"/>
+      <rect x="60" y="150" width="60" height="110" fill="#264f78"/>
+      <rect x="130" y="140" width="60" height="120" fill="#264f78"/>
+      <rect x="200" y="155" width="60" height="105" fill="#264f78"/>
+      <rect x="270" y="135" width="60" height="125" fill="#264f78"/>
+      <rect x="340" y="148" width="60" height="112" fill="#264f78"/>
+      <line x1="40" y1="100" x2="460" y2="100" stroke="#4ec9b0" stroke-dasharray="6 4"/>
+      <text x="455" y="95" fill="#4ec9b0" font-size="14" text-anchor="end">link rate</text>
+      <text x="250" y="285" fill="#9db0d0" font-size="15" text-anchor="middle">"about 50 % busy, no problem"</text>
+      <text x="750" y="25" fill="#9db0d0" font-size="16" text-anchor="middle">what the packets see inside one of those minutes</text>
+      <rect x="540" y="40" width="420" height="220" fill="#0e1620" stroke="#2b3a56"/>
+      <line x1="540" y1="100" x2="960" y2="100" stroke="#4ec9b0" stroke-dasharray="6 4"/>
+      <polyline points="545,250 560,240 575,252 590,120 600,60 610,100 625,245 650,248 665,236 680,250 700,70 708,55 718,110 735,246 760,250 790,240 805,250 820,80 830,62 842,120 860,248 890,250 920,238 955,250" fill="none" stroke="#f48771" stroke-width="2"/>
+      <text x="750" y="285" fill="#f48771" font-size="15" text-anchor="middle">bursts above the link rate: queues fill, packets drop</text>
+    </svg>
+    <ul>
+      <li>Counters sampled every 1 to 15 minutes smooth away sub-second bursts that run <b>four times or more</b> above the averaged peak.</li>
+      <li>Ten minutes on a gigabit link holds as many events as <b>two years of traffic on a three-lane motorway</b>. The motorway can average "quiet" over two years and still gridlock every evening.</li>
+      <li>For an average to mean anything on that link you would need it over <b>20 to 250 ms</b>. Nobody collects that.</li>
+    </ul>
+    <p class="src">TR-452.1 §4.2.2 (micro-bursts); PNSol workshop notes p.69</p>
+</section>
+<section>
+    <p class="kicker">1 · 4</p>
+    <h2>Utilisation does not predict whether voice works</h2>
+    <div class="cols">
+      <div class="col">
+        <p><b>Kent Public Service Network</b>, a well-run public-sector network, 1,300 sites. Five days of data, each link's utilisation beside a direct voice-quality breach metric (5 ms at 99.5 %).</p>
+        <ul>
+          <li>Links at <span class="g">80 % busy</span> carrying voice perfectly: evenly spaced packets fit between.</li>
+          <li>Links at <span class="r">under 1 % busy</span> degrading voice: the traffic came in bursts.</li>
+          <li>The first published comparison of utilisation with a direct quality measure. Common across engagements since.</li>
+        </ul>
+      </div>
+      <div class="col">
+        <p><b>An SLA written in averages passes while the service is dead.</b></p>
+        <ul>
+          <li>A monthly-average loss target of 0.1 % is met by a <b>40-minute outage once a month</b>.</li>
+          <li>"We won't support voice unless load is under 90 %" is a rule of thumb that is wrong in both directions.</li>
+        </ul>
+        <div class="key"><b>Their verdict:</b> "The average metrics don't give you the data you need to manage cost and performance." They ran the network hotter and deferred a £1M upgrade.</div>
+      </div>
+    </div>
+    <p class="src">PNSol "no quality in averages" deck slides 35–37; KPSN interview (Aldington, 2015); "high-fidelity measures" deck slides 8–9</p>
+</section>
+
+<!-- ============ 1.3 BANDWIDTH DOES NOT COMPOSE ============ -->
+<section>
+    <p class="kicker">1 · 5</p>
+    <h2>Bandwidth is an average, and it does not compose</h2>
+    <svg viewBox="0 0 1000 250" width="1000" height="250">
+      <g>
+        <rect x="30" y="30" width="280" height="80" rx="10" fill="#152136" stroke="#2b3a56"/>
+        <text x="170" y="62" fill="#dcdcaa" font-size="17" text-anchor="middle">1 Mbit/s on an empty link</text>
+        <text x="170" y="90" fill="#f48771" font-size="20" text-anchor="middle" font-weight="700">≠</text>
+        <text x="170" y="150" fill="#dcdcaa" font-size="17" text-anchor="middle">the last 1 Mbit/s on a loaded link</text>
+      </g>
+      <g>
+        <rect x="360" y="30" width="280" height="80" rx="10" fill="#152136" stroke="#2b3a56"/>
+        <text x="500" y="62" fill="#dcdcaa" font-size="17" text-anchor="middle">1/10 of a 100 Mbit/s port</text>
+        <text x="500" y="90" fill="#f48771" font-size="20" text-anchor="middle" font-weight="700">≠</text>
+        <text x="500" y="150" fill="#dcdcaa" font-size="17" text-anchor="middle">a 10 Mbit/s port</text>
+      </g>
+      <g>
+        <rect x="690" y="30" width="280" height="80" rx="10" fill="#152136" stroke="#2b3a56"/>
+        <text x="830" y="62" fill="#dcdcaa" font-size="17" text-anchor="middle">50 Mbit/s on VDSL</text>
+        <text x="830" y="90" fill="#f48771" font-size="20" text-anchor="middle" font-weight="700">≠</text>
+        <text x="830" y="150" fill="#dcdcaa" font-size="17" text-anchor="middle">50 Mbit/s on GPON</text>
+      </g>
+      <g>
+        <rect x="150" y="190" width="150" height="34" rx="6" fill="#264f78"/><text x="225" y="213" fill="#9cdcfe" font-size="15" text-anchor="middle">100 M</text>
+        <text x="320" y="213" fill="#9db0d0" font-size="18" text-anchor="middle">+</text>
+        <rect x="340" y="190" width="150" height="34" rx="6" fill="#264f78"/><text x="415" y="213" fill="#9cdcfe" font-size="15" text-anchor="middle">100 M</text>
+        <text x="520" y="213" fill="#f48771" font-size="20" text-anchor="middle" font-weight="700">≠</text>
+        <rect x="550" y="190" width="300" height="34" rx="6" fill="#264f78"/><text x="700" y="213" fill="#9cdcfe" font-size="15" text-anchor="middle">one 100 M link of twice the length</text>
+      </g>
+    </svg>
+    <ul>
+      <li>The same figure of merit hides different loss and delay, so it says nothing about whether the application works.</li>
+      <li>Two pieces of "pipe" in series are not one pipe. "Bandwidth" wrapped across a supply chain <b>cannot be handed down as a budget</b>, so each party adds its own safety margin.</li>
+      <li>Where it was learned: a safety-of-life programme whose network engineers reasoned hop by hop in bandwidth could not say whether the system would work. It could not.</li>
+    </ul>
+    <p class="src">TR-452.1 §4.2.2 and §6.3; PNSol workshop pp.122–123; Geddes, "Five key lessons from Future Combat Systems" (2015)</p>
+</section>
+<section>
+    <p class="kicker">1 · 6</p>
+    <h2>What the safety margins add up to</h2>
+    <svg viewBox="0 0 1000 260" width="1000" height="260">
+      <g fill="#264f78" stroke="#2b3a56">
+        <rect x="60" y="200" width="90" height="30"/>
+        <rect x="190" y="170" width="90" height="60"/>
+        <rect x="320" y="110" width="90" height="120"/>
+        <rect x="450" y="0" width="90" height="230" fill="#2f5d8a"/>
+      </g>
+      <text x="105" y="250" fill="#9db0d0" font-size="15" text-anchor="middle">need</text>
+      <text x="235" y="250" fill="#9db0d0" font-size="15" text-anchor="middle">×2 access</text>
+      <text x="365" y="250" fill="#9db0d0" font-size="15" text-anchor="middle">×2 aggregation</text>
+      <text x="495" y="250" fill="#9db0d0" font-size="15" text-anchor="middle">×2 core …</text>
+      <text x="620" y="60" fill="#dcdcaa" font-size="18">each layer protects itself with</text>
+      <text x="620" y="88" fill="#dcdcaa" font-size="18">its own factor, typically 2×</text>
+      <text x="620" y="130" fill="#f48771" font-size="22" font-weight="700">2ᴺ, with N of six or more</text>
+      <text x="620" y="160" fill="#9db0d0" font-size="16">= 64× the need, and still no</text>
+      <text x="620" y="184" fill="#9db0d0" font-size="16">statement about whether it works</text>
+    </svg>
+    <ul>
+      <li>Each silo cannot see the others' margins, so it adds its own. The margins multiply.</li>
+      <li>Capacity is being bought to cover what are, rightly, <b>scheduling</b> problems. That is the misallocation the whole deck is about.</li>
+    </ul>
+    <p class="src">PNSol workshop notes p.127; "The Ladder" deck slides 108–113</p>
+</section>
+
+<!-- ============ 1.4 THE BRIDGE ============ -->
+<section>
+    <p class="kicker">1 · 7</p>
+    <h2>The large estates already say this</h2>
+    <p class="lead">The Internet Architecture Board's 2021 workshop on measuring network quality for end users wrote down, as consensus:</p>
+    <blockquote>"Bandwidth is necessary but not alone sufficient."</blockquote>
+    <blockquote>"Latency mean and medians are distractions from better measurements."</blockquote>
+    <blockquote>"A really meaningful metric for users is whether their application will work properly or fail because of a lack of a network with sufficient characteristics."</blockquote>
+    <ul>
+      <li>The operating language of the big estates is already the <b>tail</b>: 99th percentiles, latency under load, responsiveness.</li>
+      <li>What that language lacks is a measure that is both a <b>network measure</b> and an <b>outcome measure</b>, and that <b>composes</b> along a path so it can be budgeted. That is the gap ΔQ fills.</li>
+    </ul>
+    <p class="src">RFC 9318, "IAB Workshop Report: Measuring Network Quality for End-Users" (Oct 2022), §5.1 and §5.3</p>
+</section>
+<section>
+    <p class="kicker">1 · 8</p>
+    <h2>Idle latency is not the latency anyone experiences</h2>
+    <svg viewBox="0 0 1000 300" width="1000" height="300">
+      <g font-size="15" fill="#9db0d0">
+        <text x="20" y="48">Down · FTTH</text><text x="20" y="88">Down · Cable</text><text x="20" y="128">Down · DSL</text>
+        <text x="20" y="178">Up · FTTH</text><text x="20" y="218">Up · Cable</text><text x="20" y="258">Up · DSL</text>
+      </g>
+      <g fill="#4ec9b0">
+        <rect x="160" y="34" width="10" height="18"/><rect x="160" y="74" width="13" height="18"/><rect x="160" y="114" width="10" height="18"/>
+        <rect x="160" y="164" width="12" height="18"/><rect x="160" y="204" width="27" height="18"/><rect x="160" y="244" width="27" height="18"/>
+      </g>
+      <g fill="#f48771" opacity=".85">
+        <rect x="160" y="54" width="148" height="12"/><rect x="160" y="94" width="103" height="12"/><rect x="160" y="134" width="194" height="12"/>
+        <rect x="160" y="184" width="207" height="12"/><rect x="160" y="224" width="176" height="12"/><rect x="160" y="264" width="686" height="12"/>
+      </g>
+      <g font-size="14" fill="#dcdcaa">
+        <text x="320" y="64">148 ms working vs 10 idle · 15×</text>
+        <text x="275" y="104">103 vs 13 · 8×</text>
+        <text x="365" y="144">194 vs 10 · 19×</text>
+        <text x="378" y="194">207 vs 12 · 17×</text>
+        <text x="348" y="234">176 vs 27 · 6×</text>
+        <text x="856" y="274">686 vs 27 · 25×</text>
+      </g>
+      <text x="160" y="22" fill="#4ec9b0" font-size="14">■ idle latency</text>
+      <text x="300" y="22" fill="#f48771" font-size="14">■ working latency (under load)</text>
+      <text x="500" y="295" fill="#777" font-size="13" text-anchor="middle">milliseconds, round trip; data presented at the IAB workshop, RFC 9318 §4.2.4</text>
+    </svg>
+    <ul>
+      <li>Speed tests and idle pings measure the propagation floor. Under load the same path is <b>6 to 25 times</b> slower, and that is what the application sees.</li>
+      <li>The estates that run at scale manage to the loaded tail. This deck gives that practice a measure that composes.</li>
+    </ul>
+    <p class="src">RFC 9318 §4.2.4</p>
+</section>
+
+<!-- ============ 1.5 WHAT THIS DECK CLAIMS ============ -->
+<section>
+  <p class="kicker">1 · 9</p>
+  <h2>What this deck claims</h2>
+  <svg viewBox="0 0 1000 150" width="1000" height="150">
+    <defs><marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#9cdcfe"/></marker></defs>
+    <g>
+      <rect x="10" y="40" width="200" height="70" rx="10" fill="#0f2030" stroke="#4ec9b0" stroke-width="2"/>
+      <text x="110" y="70" fill="#4ec9b0" font-size="18" text-anchor="middle" font-weight="700">measure the curve</text>
+      <text x="110" y="95" fill="#bfe9df" font-size="14" text-anchor="middle">loss + delay, between points</text>
+      <path d="M215,75 L265,75" stroke="#9cdcfe" stroke-width="3" marker-end="url(#ar2)"/>
+      <rect x="270" y="40" width="200" height="70" rx="10" fill="#0f2030" stroke="#4ec9b0" stroke-width="2"/>
+      <text x="370" y="70" fill="#4ec9b0" font-size="18" text-anchor="middle" font-weight="700">find the bad tail</text>
+      <text x="370" y="95" fill="#bfe9df" font-size="14" text-anchor="middle">poor past the 80th percentile</text>
+      <path d="M475,75 L525,75" stroke="#9cdcfe" stroke-width="3" marker-end="url(#ar2)"/>
+      <rect x="530" y="40" width="200" height="70" rx="10" fill="#0f2030" stroke="#4ec9b0" stroke-width="2"/>
+      <text x="630" y="70" fill="#4ec9b0" font-size="18" text-anchor="middle" font-weight="700">locate it</text>
+      <text x="630" y="95" fill="#bfe9df" font-size="14" text-anchor="middle">add a point, halve the path</text>
+      <path d="M735,75 L785,75" stroke="#9cdcfe" stroke-width="3" marker-end="url(#ar2)"/>
+      <rect x="790" y="40" width="200" height="70" rx="10" fill="#0f2030" stroke="#4ec9b0" stroke-width="2"/>
+      <text x="890" y="70" fill="#4ec9b0" font-size="18" text-anchor="middle" font-weight="700">open the box</text>
+      <text x="890" y="95" fill="#bfe9df" font-size="14" text-anchor="middle">lever · schedule · classes · capacity</text>
+    </g>
+  </svg>
+  <ul>
+    <li><b>One measure.</b> Delay and loss in a single distribution, for a path, in each direction.</li>
+    <li><b>It composes.</b> The path's measure is the sum of its parts, so a requirement at the top becomes a budget at every hop and for every supplier.</li>
+    <li><b>It is cheap to get.</b> A low-rate test stream, a few thousand samples, timestamps at two or more points. Standardised in 2020.</li>
+    <li><b>It tells you which lever.</b> The measure splits into what the design did, what the link rate did, and what contention did. Only the last is yours to schedule.</li>
+  </ul>
+  <div class="key"><b>Chapter 2</b> defines the measure. <b>Chapter 3</b> shows how to get it and configure to it. <b>Chapter 4</b> shows how to contract, budget and assure with it.</div>
+</section>
+
+<!-- ============ CHAPTER 2 (TO BUILD) ============ -->
+<section>
+  <p class="kicker">Chapter 2</p>
+  <h2>What ΔQ is</h2>
+  <ul class="todo">
+    <li>Quality is the absence of attenuation. Every element only ever loses and delays.</li>
+    <li>One improper distribution: delay on the curve, loss as the mass that never arrives.</li>
+    <li>Conserved: it only ever grows along a path; at a queue, scheduling can only distribute it.</li>
+    <li>Composes: the path's ΔQ is the convolution of its hops. Budgets follow.</li>
+    <li>G, S and V: the design, the link rate, the contention. Only V is yours to schedule.</li>
+    <li>Two degrees of freedom per queue: fix the load and you trade loss for delay.</li>
+    <li>A requirement is a stepped curve with a failure allowance; slack is the gap to what you deliver.</li>
+  </ul>
+  <p class="todo">to build next</p>
+</section>
+
+<!-- ============ CHAPTER 3 (TO BUILD) ============ -->
+<section>
+  <p class="kicker">Chapter 3</p>
+  <h2>How to set up</h2>
+  <ul class="todo">
+    <li>Measurement: observation points, the same packets at two or more places, each direction.</li>
+    <li>A valid test stream: five or more sizes across a 10:1 range, randomly spaced, a few thousand samples.</li>
+    <li>Plot delay against size: intercept G, slope S, scatter V. Then V by time and by segment.</li>
+    <li>The standard: TR-452.1. Carried over STAMP/TWAMP. Clocks need not be synchronised across domains.</li>
+    <li>Configuration: scheduling derived from the contracts through an element; the cherish/urgency grid; an economy class so the fabric can run hot; pre-contention at ingress.</li>
+  </ul>
+  <p class="todo">to build next</p>
+</section>
+
+<!-- ============ CHAPTER 4 (TO BUILD) ============ -->
+<section>
+  <p class="kicker">Chapter 4</p>
+  <h2>How we use it</h2>
+  <ul class="todo">
+    <li>The contract: a bound on offered load in, a bound on delivered ΔQ out, each direction, to a stated fidelity.</li>
+    <li>Budgets devolved along the path and across suppliers.</li>
+    <li>Assurance as planning: measure how far overbooking has armed the hazards before they mature.</li>
+    <li>Feasibility of a design before it is built.</li>
+    <li>What it means for a fabric: written where the fabric is.</li>
+  </ul>
+  <p class="todo">to build next</p>
+</section>
+
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    slideNumber: 'c/t',
+    controls: true,
+    progress: true,
+    transition: 'slide',
+    touch: true,
+    width: 1280,
+    height: 800,
+    margin: 0.06,
+    minScale: 0.2,
+    maxScale: 1.5,
+  });
+</script>
+</body>
+</html>
