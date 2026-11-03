@@ -213,9 +213,30 @@
   </div>
 </section>
 
-<!-- ============ 1.5 DEMO PLACEHOLDER (work-side) ============ -->
+<!-- ============ 1.5 THE BRIDGE ============ -->
 <section>
   <p class="kicker">1 · 5</p>
+  <h2>There is a floor you cannot improve. Everything above it is queueing.</h2>
+  <div class="grid">
+    <div class="card chart">
+      <div class="ct">One-way delay against packet size, one path. The line is the floor; the scatter above it is queueing.</div>
+      <div id="p-gsv1" data-plot="gsv"></div>
+      <div class="schematic">Points simulated from published access-line figures (floor 16.9 ms, 13.3 µs per octet, queueing mean 1.7 ms). The shape is what matters; the fabric's own plot is the demo.</div>
+    </div>
+    <div>
+      <ul class="notes">
+        <li><b>The floor.</b> Speed of light over the topology, plus the per-packet cost of every box, plus the time to clock the bytes onto each link. It is the same number at p50 and at p99. No tuning moves it; only a redesign or a faster link does.</li>
+        <li><b>Everything above the floor is waiting.</b> Behind other packets, in a queue, at a multiplexing point. That is the whole of the tail, and it is the only part we can change by scheduling.</li>
+        <li>So the question for any slow step is one question: <b>how much of it is floor, and how much is queueing?</b> Chapter 2 names the parts G, S and V. Chapter 3 shows how to get them from timestamps.</li>
+      </ul>
+      <p class="src">PNSol workshop pp.78–86 · TR-452.1 §5.2.1</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 1.5 DEMO PLACEHOLDER (work-side) ============ -->
+<section>
+  <p class="kicker">1 · 6</p>
   <h2>Demo: what a path on our fabric looks like today</h2>
   <p class="lead">Live, from our own measurement. The page is built where the fabric is.</p>
   <div class="tiles" style="grid-template-columns:repeat(3,1fr)">
@@ -228,7 +249,7 @@
 
 <!-- ============ 1.1 ============ -->
 <section>
-  <p class="kicker">1 · 6</p>
+  <p class="kicker">1 · 7</p>
   <h2>A job only feels two things from the network</h2>
   <p class="lead">A collective across 512 GPUs, a storage read, a gRPC call. None of them can see a switch, a queue or an ECMP choice. They see their own packets arriving late, or not at all.</p>
   <div class="flow">
@@ -252,7 +273,7 @@
 
 <!-- ============ 1.2 ============ -->
 <section>
-  <p class="kicker">1 · 7</p>
+  <p class="kicker">1 · 8</p>
   <h2>Late and lost are the same thing to the job</h2>
   <div class="grid">
     <div class="card chart">
@@ -294,7 +315,7 @@
 
 <!-- ============ 1.3 ============ -->
 <section>
-  <p class="kicker">1 · 8</p>
+  <p class="kicker">1 · 9</p>
   <h2>Link utilisation does not tell us if the job is fine</h2>
   <div class="grid">
     <div class="card chart">
@@ -315,7 +336,7 @@
 
 <!-- ============ 1.4 ============ -->
 <section>
-  <p class="kicker">1 · 9</p>
+  <p class="kicker">1 · 10</p>
   <h2>The two cases every operator has met</h2>
   <p class="lead">Measured on a 1,300-site enterprise network over five days: link utilisation beside a direct voice-quality check on the same links. Swap "voice" for "collective" and it is our fabric.</p>
   <div class="grid" style="grid-template-columns:1.25fr 1fr">
@@ -338,7 +359,7 @@
 
 <!-- ============ 1.5 ============ -->
 <section>
-  <p class="kicker">1 · 10</p>
+  <p class="kicker">1 · 11</p>
   <h2>"How much bandwidth do we need" has no answer on its own</h2>
   <div class="grid" style="grid-template-columns:1fr 1.35fr">
     <div>
@@ -362,7 +383,7 @@
 
 <!-- ============ 1.6 ============ -->
 <section>
-  <p class="kicker">1 · 11</p>
+  <p class="kicker">1 · 12</p>
   <h2>So every team adds a margin, and the margins multiply</h2>
   <div class="grid">
     <div class="card chart">
@@ -382,7 +403,7 @@
 
 <!-- ============ 1.7 ============ -->
 <section>
-  <p class="kicker">1 · 12</p>
+  <p class="kicker">1 · 13</p>
   <h2>We already watch the tail. The industry wrote it down.</h2>
   <p class="lead">In 2021 the Internet Architecture Board ran a workshop on measuring network quality. The operators and vendors in the room agreed on these.</p>
   <div class="grid" style="grid-template-columns:1fr 1fr">
@@ -403,7 +424,7 @@
 
 <!-- ============ 1.8 ============ -->
 <section>
-  <p class="kicker">1 · 13</p>
+  <p class="kicker">1 · 14</p>
   <h2>Idle latency is not the latency the job gets</h2>
   <div class="grid">
     <div class="card chart">
@@ -423,7 +444,7 @@
 
 <!-- ============ 1.14 OBJECTIONS ============ -->
 <section>
-  <p class="kicker">1 · 14</p>
+  <p class="kicker">1 · 15</p>
   <h2>Three objections, answered up front</h2>
   <div class="steps" style="grid-template-columns:repeat(3,1fr)">
     <div class="step"><div class="n">"A 2013 broadband consultancy's idea"</div><div class="t">It is a standard now</div><div class="d">Broadband Forum TR-452.1, 2020, edited with Spirent, chaired from Ericsson and ZTE. An IETF position paper in 2021 with Vodafone and Domos. The maths is the SLO curve your team already draws, with loss added.</div></div>
@@ -434,7 +455,7 @@
 
 <!-- ============ 1.9 ============ -->
 <section>
-  <p class="kicker">1 · 15</p>
+  <p class="kicker">1 · 16</p>
   <h2>What this deck proposes</h2>
   <div class="steps">
     <div class="step"><div class="n">1</div><div class="t">Measure the curve</div><div class="d">Delay and loss together, between two points, each direction. Not the mean.</div></div>
@@ -980,7 +1001,7 @@
     <div class="step"><div class="n">WAN AND DCI</div><div class="t">Between sites, and to providers</div><div class="d">G dominates and is fixed. Suppliers at the boundaries. The one domain where a budget per segment and a contract at the boundary earn their keep.</div></div>
   </div>
   <ul class="notes">
-    <li>Pages 1·1 to 1·4 and 4·2 are the WAN and frontend story. Pages 4·8 to 4·10 give each domain its own kicker, measurement and lever.</li>
+    <li>Pages 1·1 to 1·5 and 4·2 are the WAN and frontend story. Pages 4·8 to 4·10 give each domain its own kicker, measurement and lever.</li>
   </ul>
 </section>
 
