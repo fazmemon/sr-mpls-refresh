@@ -967,7 +967,7 @@
     <div class="tile"><div class="lbl">measure</div><div class="sub">One path, both directions, a varied-size stream over the active measurement protocol already deployed. The timestamps may already exist in the telemetry the silicon emits. One plot: delay against size.</div></div>
     <div class="tile"><div class="lbl">find the tail</div><div class="sub">The curve past the 80th percentile, per segment, by time of day. Compare it with the requirement curve for the traffic that matters.</div></div>
     <div class="tile"><div class="lbl">locate</div><div class="sub">Add a point, halve. Expect the cause to sit in a different domain from the symptom.</div></div>
-    <div class="tile"><div class="lbl">which lever</div><div class="sub">G: design and topology. S: link rate. V: scheduling. Most fabric tails are V, and on a lossless fabric V is where the drops went.</div></div>
+    <div class="tile"><div class="lbl">which lever</div><div class="sub">G: design and topology. S: link rate. V: scheduling. Most fabric tails are V. With PFC there are no drops: the packets that would have been dropped wait instead, so that loss shows up as extra queueing delay, which is V.</div></div>
     <div class="tile"><div class="lbl">contract and budget</div><div class="sub">Write the requirement as a curve with a failure allowance. Devolve it across the hops and the suppliers. A slice or a pipe with a strong SLA is a place to multiplex a contract into.</div></div>
     <div class="tile"><div class="lbl">run hot</div><div class="sub">An economy class for the bulk. Both directions bounded for the elastic flows. Watch the burst-loss mechanisms. Buy capacity last, and only where the structure says so.</div></div>
   </div>
