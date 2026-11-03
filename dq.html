@@ -84,7 +84,7 @@
 <div class="slides">
 
 <!-- ============ COVER ============ -->
-<section class="center">
+<section data-views="full exec eng" class="center">
   <p class="kicker">Network performance, measured before anything is changed</p>
   <h1>ΔQ · Quality Attenuation</h1>
   <h3>Measure first. Until you can measure it, you cannot say you improved it.</h3>
@@ -93,7 +93,7 @@
 </section>
 
 <!-- ============ THE FOUR CHAPTERS ============ -->
-<section>
+<section data-views="full exec eng">
   <p class="kicker">Contents</p>
   <h2>Four chapters</h2>
   <div class="steps">
@@ -106,7 +106,7 @@
 </section>
 
 <!-- ============ CHAPTER 1 TITLE ============ -->
-<section>
+<section data-views="full exec eng">
   <p class="kicker">Chapter 1</p>
   <h2>Where QoS got us, and why it does not add up</h2>
   <p class="lead">Start where everyone in the room started. Then the kicker.</p>
@@ -119,7 +119,7 @@
 </section>
 
 <!-- ============ 1.1 ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">1 · 1</p>
   <h2>Where we all started: gold, silver, bronze</h2>
   <p class="lead">Three classes. Mark the traffic, give the gold queue priority at every box, hope the rest sorts itself out.</p>
@@ -135,7 +135,7 @@
 </section>
 
 <!-- ============ 1.2 ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">1 · 2</p>
   <h2>Then DiffServ: the same idea, standardised</h2>
   <div class="grid" style="grid-template-columns:1fr 1fr">
@@ -158,7 +158,7 @@
 </section>
 
 <!-- ============ 1.3 ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">1 · 3</p>
   <h2>Then end-to-end QoS: a latency budget per application, apportioned along the path</h2>
   <p class="lead">The mature version, the one we all recognise. Take the application's requirement, split it across the hops, hold each hop to its share.</p>
@@ -180,7 +180,7 @@
 </section>
 
 <!-- ============ 1.4 ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">1 · 4</p>
   <h2>The kicker: it does not add up</h2>
   <div class="grid" style="grid-template-columns:1fr 1fr">
@@ -206,7 +206,7 @@
 </section>
 
 <!-- ============ 1.5 HOW TO READ THE CURVE ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">1 · 5</p>
   <h2>How to read the one picture this deck uses</h2>
   <div class="grid">
@@ -226,7 +226,7 @@
 </section>
 
 <!-- ============ 1.5 THE BRIDGE ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">1 · 6</p>
   <h2>There is a floor you cannot improve. Everything above it is queueing.</h2>
   <div class="grid">
@@ -247,7 +247,7 @@
 </section>
 
 <!-- ============ 1.5 DEMO PLACEHOLDER (work-side) ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">1 · 7</p>
   <h2>Demo: what a path on our fabric looks like today</h2>
   <p class="lead">Live, from our own measurement. The page is built where the fabric is.</p>
@@ -260,7 +260,7 @@
 </section>
 
 <!-- ============ 1.1 ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">1 · 8</p>
   <h2>A job only feels two things from the network</h2>
   <p class="lead">A collective across 512 GPUs, a storage read, a gRPC call. None of them can see a switch, a queue or an ECMP choice. They see their own packets arriving late, or not at all.</p>
@@ -284,7 +284,7 @@
 </section>
 
 <!-- ============ 1.2 ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">1 · 9</p>
   <h2>Late and lost are the same thing to the job</h2>
   <div class="grid">
@@ -326,7 +326,7 @@
 </section>
 
 <!-- ============ 1.3 ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">1 · 10</p>
   <h2>Link utilisation does not tell us if the job is fine</h2>
   <div class="grid">
@@ -347,7 +347,7 @@
 </section>
 
 <!-- ============ 1.4 ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">1 · 11</p>
   <h2>The two cases every operator has met</h2>
   <p class="lead">Measured on a 1,300-site enterprise network over five days: link utilisation beside a direct voice-quality check on the same links. Swap "voice" for "collective" and it is our fabric.</p>
@@ -370,7 +370,7 @@
 </section>
 
 <!-- ============ 1.5 ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">1 · 12</p>
   <h2>"How much bandwidth do we need" has no answer on its own</h2>
   <div class="grid" style="grid-template-columns:1fr 1.35fr">
@@ -394,7 +394,7 @@
 </section>
 
 <!-- ============ 1.6 ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">1 · 13</p>
   <h2>So every team adds a margin, and the margins multiply</h2>
   <div class="grid">
@@ -414,7 +414,7 @@
 </section>
 
 <!-- ============ 1.7 ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">1 · 14</p>
   <h2>We already watch the tail. The industry wrote it down.</h2>
   <p class="lead">In 2021 the Internet Architecture Board ran a workshop on measuring network quality. The operators and vendors in the room agreed on these.</p>
@@ -435,7 +435,7 @@
 </section>
 
 <!-- ============ 1.8 ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">1 · 15</p>
   <h2>Idle latency is not the latency the job gets</h2>
   <div class="grid">
@@ -455,7 +455,7 @@
 </section>
 
 <!-- ============ 1.14 OBJECTIONS ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">1 · 16</p>
   <h2>Four objections, answered up front</h2>
   <div class="steps" style="grid-template-columns:repeat(2,1fr)">
@@ -467,7 +467,7 @@
 </section>
 
 <!-- ============ 1.16 NEIGHBOURS ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">1 · 17</p>
   <h2>The other ways to add latency up, and where this one sits</h2>
   <div class="steps" style="grid-template-columns:repeat(3,1fr)">
@@ -483,7 +483,7 @@
 </section>
 
 <!-- ============ 1.9 ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">1 · 18</p>
   <h2>What this deck proposes</h2>
   <p class="lead">Not the whole theory on day one. The working version: measure the floor, watch for what rises above it, match each rise to a known fix. The curves and the budgets come as the tooling matures.</p>
@@ -502,7 +502,7 @@
 </section>
 
 <!-- ============ CHAPTER 2 TITLE ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">Chapter 2</p>
   <h2>What ΔQ is</h2>
   <p class="lead">One measure, built from what can be observed. Four properties carry the whole method.</p>
@@ -515,7 +515,7 @@
 </section>
 
 <!-- ============ 2.1 ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">2 · 1</p>
   <h2>Quality is the absence of attenuation</h2>
   <p class="lead">The ideal network delivers instantly and perfectly. Every real element falls short of that, by some delay and some chance of loss, and nothing downstream can put it back.</p>
@@ -537,7 +537,7 @@
 </section>
 
 <!-- ============ 2.2 ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">2 · 2</p>
   <h2>Delay and loss are one distribution</h2>
   <div class="grid">
@@ -559,7 +559,7 @@
 </section>
 
 <!-- ============ 2.3 ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">2 · 3</p>
   <h2>Three states of a queue, once per hop</h2>
   <p class="lead">A packet arriving at a finite queue finds it in one of three states. Everything the path does to the packet is the sum of these.</p>
@@ -577,7 +577,7 @@
 </section>
 
 <!-- ============ 2.4 ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">2 · 4</p>
   <h2>ΔQ is conserved</h2>
   <p class="lead">Delay cannot be undone and a lost packet stays lost. Along a path the attenuation only accumulates. At a scheduling point the total is fixed and can only be shared out.</p>
@@ -603,7 +603,7 @@
 </section>
 
 <!-- ============ 2.5 ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">2 · 5</p>
   <h2>It composes along the path</h2>
   <div class="grid">
@@ -626,7 +626,7 @@
 </section>
 
 <!-- ============ 2.6 ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">2 · 6</p>
   <h2>Three parts: G, S and V</h2>
   <div class="grid">
@@ -648,7 +648,7 @@
 </section>
 
 <!-- ============ 2.7 ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">2 · 7</p>
   <h2>Which part dominates has changed. We are in the V era.</h2>
   <div class="grid" style="grid-template-columns:1.35fr 1fr">
@@ -675,7 +675,7 @@
 </section>
 
 <!-- ============ 2.8 ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">2 · 8</p>
   <h2>Two degrees of freedom, so loss and delay are traded</h2>
   <div class="grid" style="grid-template-columns:1fr 1.2fr">
@@ -710,7 +710,7 @@
 </section>
 
 <!-- ============ 2.9 ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">2 · 9</p>
   <h2>A requirement is a curve, and slack is a distance</h2>
   <div class="grid">
@@ -731,7 +731,7 @@
 </section>
 
 <!-- ============ CHAPTER 3 TITLE ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">Chapter 3</p>
   <h2>How to set up</h2>
   <p class="lead">Measurement first: it is cheap, standardised, and it tells you which lever. Then configuration, which follows from the contracts.</p>
@@ -744,7 +744,7 @@
 </section>
 
 <!-- ============ 3.1 ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">3 · 1</p>
   <h2>Where to measure: at the boundaries, and halve to localise</h2>
   <div class="flow" style="grid-template-columns:repeat(6,1fr); gap:8px">
@@ -776,7 +776,7 @@
 </section>
 
 <!-- ============ 3.2 WORKED EXAMPLE ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">3 · 2</p>
   <h2>A worked example: a mobile user to an app, in segments</h2>
   <p class="lead">A real path, run this way at a hyperscaler. Each segment had a baseline. Anything above the baseline was an anomaly to chase.</p>
@@ -813,7 +813,7 @@
 </section>
 
 <!-- ============ 3.2 ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">3 · 3</p>
   <h2>What a measurement can and cannot tell you</h2>
   <div class="quad">
@@ -830,7 +830,7 @@
 </section>
 
 <!-- ============ 3.3 ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">3 · 4</p>
   <h2>A valid test stream, per the standard</h2>
   <div class="tiles" style="grid-template-columns:repeat(4,1fr)">
@@ -851,7 +851,7 @@
 </section>
 
 <!-- ============ 3.4 ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">3 · 5</p>
   <h2>From timestamps to G, S and V in six steps</h2>
   <div class="steps" style="grid-template-columns:repeat(3,1fr)">
@@ -870,7 +870,7 @@
 </section>
 
 <!-- ============ 3.5 ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">3 · 6</p>
   <h2>Configuring to the contracts</h2>
   <p class="lead">Once the QTAs through an element are known, the scheduling it needs can be computed. Contracts compose horizontally along the path and vertically at a multiplexing point, so this scales.</p>
@@ -898,7 +898,7 @@
 </section>
 
 <!-- ============ 3.6 ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">3 · 7</p>
   <h2>A worked contract: three toll-quality voice lines over one DSL line</h2>
   <div class="grid" style="grid-template-columns:1.2fr 1fr">
@@ -926,7 +926,7 @@
 </section>
 
 <!-- ============ CHAPTER 4 TITLE ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">Chapter 4</p>
   <h2>How we use it</h2>
   <p class="lead">A contract you can measure, budgets you can hand down, assurance you can do before the build, and a way to run hot without guessing.</p>
@@ -939,7 +939,7 @@
 </section>
 
 <!-- ============ 4.1 ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">4 · 1</p>
   <h2>The contract: a Quantitative Timeliness Agreement</h2>
   <div class="flow" style="grid-template-columns:1fr auto 1.2fr auto 1fr">
@@ -958,7 +958,7 @@
 </section>
 
 <!-- ============ 4.2 CLASSES ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">4 · 2</p>
   <h2>Classes, not apps. Three of them.</h2>
   <p class="lead">Nobody runs ten thousand queues. Apps go into a few classes, and the contract is per class. The material agrees: three is usually enough.</p>
@@ -976,7 +976,7 @@
 </section>
 
 <!-- ============ 4.2 ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">4 · 3</p>
   <h2>Budgets along the path and across suppliers</h2>
   <div class="flow" style="grid-template-columns:1fr auto 1fr auto 1fr auto 1fr">
@@ -997,7 +997,7 @@
 </section>
 
 <!-- ============ 4.3 ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">4 · 4</p>
   <h2>From aspiration to assurance, and assurance done beforehand</h2>
   <div class="steps">
@@ -1014,7 +1014,7 @@
 </section>
 
 <!-- ============ 4.4 ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">4 · 5</p>
   <h2>Hazards: the language for talking about risk</h2>
   <div class="flow" style="grid-template-columns:1fr auto 1fr auto 1fr auto 1fr">
@@ -1035,7 +1035,7 @@
 </section>
 
 <!-- ============ 4.5 ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">4 · 6</p>
   <h2>Running hot, on purpose</h2>
   <div class="tiles" style="grid-template-columns:repeat(3,1fr)">
@@ -1052,7 +1052,7 @@
 </section>
 
 <!-- ============ 4.6 ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">4 · 7</p>
   <h2>Feasibility before the build</h2>
   <div class="grid" style="grid-template-columns:1fr 1fr">
@@ -1077,7 +1077,7 @@
 </section>
 
 <!-- ============ 4.7 THREE DOMAINS ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">4 · 8</p>
   <h2>Three domains, three different problems</h2>
   <p class="lead">One measure, but the dominant term, the failure mode and the fix are different in each. The deck's pages map onto them.</p>
@@ -1092,7 +1092,7 @@
 </section>
 
 <!-- ============ 4.8 BACKEND ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">4 · 9</p>
   <h2>Backend: the job gets the worst of five hundred flows</h2>
   <div class="grid" style="grid-template-columns:1fr 1fr">
@@ -1117,7 +1117,7 @@
 </section>
 
 <!-- ============ 4.9 FRONTEND ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">4 · 10</p>
   <h2>Frontend: elastic and inelastic flows on the same links</h2>
   <div class="grid" style="grid-template-columns:1fr 1fr">
@@ -1142,7 +1142,7 @@
 </section>
 
 <!-- ============ 4.10 WAN ============ -->
-<section>
+<section data-views="full eng">
   <p class="kicker">4 · 11</p>
   <h2>WAN and DCI: fixed G, and suppliers at the boundary</h2>
   <div class="grid" style="grid-template-columns:1fr 1fr">
@@ -1166,7 +1166,7 @@
 </section>
 
 <!-- ============ CLOSE ============ -->
-<section class="center">
+<section data-views="full exec eng" class="center">
   <p class="kicker">In one line</p>
   <h2 style="font-size:1.7em; max-width:22em; margin:0 auto .4em">Measure the curve, find the tail, locate it, open the box.</h2>
   <p class="lead" style="margin:0 auto">Then measure again. The deviation from the curve is how you know anything improved.</p>
@@ -1252,6 +1252,8 @@
     });
   }
 
+  // one file, three cuts: ?view=exec | eng | full (default)
+  (function(){ const v=new URLSearchParams(location.search).get('view')||'full'; document.querySelectorAll('.slides > section').forEach(sec=>{ const vs=(sec.dataset.views||'full').split(' '); if(!vs.includes(v)) sec.remove(); }); })();
   Reveal.initialize({
     hash: true, slideNumber: 'c/t', controls: true, progress: true, transition: 'slide', touch: true,
     width: 1280, height: 800, margin: 0.05, minScale: 0.2, maxScale: 1.5,
