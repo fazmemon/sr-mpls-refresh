@@ -187,7 +187,7 @@
     <div class="card">
       <div class="ct" style="margin:0 0 8px">Three ways the sum fails</div>
       <ul class="notes" style="margin:0">
-        <li><b>Percentiles do not add.</b> p99 at the leaf plus p99 at the spine is not p99 of the path. Neither is mean plus mean the mean the job feels when the queues fill together.</li>
+        <li><b>The number we add is not a number that adds.</b> A budget today takes each hop's p99, 10 µs here, 10 there, 30 at the far end, and sums them: "the path's p99 is 50". A p99 is one point on a curve, and points on two curves do not add. The curves combine, and the path's p99 falls out afterwards, somewhere else.</li>
         <li><b>Loss is not in the budget.</b> A hop that holds its 10 µs by dropping has met its number and broken the job. The retransmit is the delay nobody budgeted.</li>
         <li><b>The budget was set on averages.</b> Each share was sized from a utilisation figure or an idle ping. The moments that matter were never in the data.</li>
         <li><b>Adding tails assumes the hops are independent.</b> In a fabric they are not: a collective fills the leaf queue and the spine queue in the same microsecond, so the per-hop sum under-protects. Where hops really are independent the sum over-protects, which is where the 64× comes from. Either way it is not the path's tail.</li>
@@ -528,7 +528,7 @@
     <div>
       <ul class="notes">
         <li>A distribution built from a sample of packets, or the odds for the next one. Both views are the same object.</li>
-        <li>It is an <b>improper</b> random variable: its total probability is less than one. The missing mass is the probability of <b>never arriving</b>, which is how loss is carried without a second metric.</li>
+        <li>For any time t, the curve gives the chance the packet has arrived by then. An ordinary curve climbs to 1, because eventually everything arrives. This one never does: it flattens at 0.985, and the missing 0.015 is the chance the packet <b>never arrives</b>. So loss is not a second metric beside delay. It is the gap at the top of the delay curve. A distribution with missing mass is called <b>improper</b>; that is all the odd name means.</li>
         <li>It is the <b>odds</b> that matter, not the fate of any one packet. Queues are memoryless: a flow is owed nothing for the last drop.</li>
         <li>Everything in the definition is <b>observable</b>, which is what lets it be measured, contracted and standardised.</li>
       </ul>
@@ -593,7 +593,8 @@
     </div>
     <div>
       <ul class="notes">
-        <li>For independent hops the path's ΔQ is the <b>convolution</b> of the hops' ΔQs. Written ΔQ<sub>A→Z</sub> = ΔQ<sub>A→B</sub> ⊕ ΔQ<sub>B→C</sub> ⊕ … The loss multiplies through the same operation.</li>
+        <li><b>Convolution is what happens to the curve when you add two random delays.</b> One hop delays a packet by about 6 µs, give or take; the next by about 9, give or take. The total is the first plus the second, but each is a spread, so the total is a spread too: every possible first delay combined with every possible second, weighted by how likely each pair is. That combining is the convolution, and its result is the path's curve. Written ΔQ<sub>A→Z</sub> = ΔQ<sub>A→B</sub> ⊕ ΔQ<sub>B→C</sub> ⊕ …; the loss multiplies through the same step.</li>
+        <li>Three things it says that adding points cannot: the path's typical delay is near the sum of the typical delays; the path's spread is wider than either hop's but narrower than adding the worst cases, because two rare bad draws rarely land on the same packet; so the path's p99 is <b>less than the sum of the two p99s</b>, and that gap is the over-build on page 1·10.</li>
         <li>Composition is <b>stronger than abstraction</b>: it lets a requirement at the top be split into budgets at every hop and for every supplier, and it works the other way, from measured hops to a predicted path.</li>
         <li>This is the property bandwidth lacks, and the reason a bandwidth SLA breaks down across a supply chain.</li>
         <li><b>The prediction assumes the hops do not affect each other.</b> In a fabric they do: one collective fills the leaf queue and the spine queue at the same moment, and the real path is slower than the prediction. So measure both. The hops, to know which one to fix. The path end to end, to know whether the hops are telling the truth. If the path comes out worse than the prediction, the gap is the queues filling together.</li>
