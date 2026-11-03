@@ -899,9 +899,27 @@
   <p class="src">PNSol workshop pp.97–103 · Geddes, "Five key lessons from Future Combat Systems" (2015)</p>
 </section>
 
-<!-- ============ 4.2 ============ -->
+<!-- ============ 4.2 CLASSES ============ -->
 <section>
   <p class="kicker">4 · 2</p>
+  <h2>Classes, not apps. Three of them.</h2>
+  <p class="lead">Nobody runs ten thousand queues. Apps go into a few classes, and the contract is per class. The material agrees: three is usually enough.</p>
+  <div class="steps" style="grid-template-columns:repeat(3,1fr)">
+    <div class="step"><div class="n">Superior</div><div class="t">Real time</div><div class="d">Cherished and urgent. The tightest curve among its members is the class curve. Bounded offered load.</div></div>
+    <div class="step"><div class="n">Standard</div><div class="t">Makes money</div><div class="d">A curve the business can live with. Most apps live here.</div></div>
+    <div class="step"><div class="n">Economy</div><div class="t">Does not make money</div><div class="d">A deliberately weak curve. Absorbs what the others shed, so the fabric can run hot. Time-shiftable work.</div></div>
+  </div>
+  <ul class="notes">
+    <li><b>An app fits a class</b> if its curve sits inside the class curve. If not, it is the wrong class; you see it from the curve, not a guess. A new class is rare.</li>
+    <li><b>The load aggregates and gets cheaper.</b> The class offers the sum of its members, and a thousand flows need less headroom each than ten do for the same blocking ratio. Condition: the queue serves members without bias, which a normal scheduler does. Then assuring the class assures every app in it.</li>
+    <li><b>It scales like the three-queue model it is.</b> Configuration per hop is per class. Measurement is per class per path. What is new is the delivered curve per class, the bound on what each class may offer, and the economy class run hot on purpose.</li>
+  </ul>
+  <p class="src">PNSol workshop pp.93, 112–115, 125 · Davies, Ofcom 2009, slides 26–27, 36–37</p>
+</section>
+
+<!-- ============ 4.2 ============ -->
+<section>
+  <p class="kicker">4 · 3</p>
   <h2>Budgets along the path and across suppliers</h2>
   <div class="flow" style="grid-template-columns:1fr auto 1fr auto 1fr auto 1fr">
     <div class="tile" style="text-align:center"><div class="lbl">campus / access</div><div class="val" style="font-size:1em">⌈ΔQ⌉₁</div><div class="sub">one owner, one budget</div></div>
@@ -922,7 +940,7 @@
 
 <!-- ============ 4.3 ============ -->
 <section>
-  <p class="kicker">4 · 3</p>
+  <p class="kicker">4 · 4</p>
   <h2>From aspiration to assurance, and assurance done beforehand</h2>
   <div class="steps">
     <div class="step"><div class="n">ASPIRATION</div><div class="t">What users want</div><div class="d">Measurable, may be too high or infeasible at the price. Negotiable. Not contractable as it stands.</div></div>
@@ -939,7 +957,7 @@
 
 <!-- ============ 4.4 ============ -->
 <section>
-  <p class="kicker">4 · 4</p>
+  <p class="kicker">4 · 5</p>
   <h2>Hazards: the language for talking about risk</h2>
   <div class="flow" style="grid-template-columns:1fr auto 1fr auto 1fr auto 1fr">
     <div class="tile" style="text-align:center"><div class="lbl">latent</div><div class="val" style="font-size:1em">could happen</div><div class="sub">not in current conditions</div></div>
@@ -960,7 +978,7 @@
 
 <!-- ============ 4.5 ============ -->
 <section>
-  <p class="kicker">4 · 5</p>
+  <p class="kicker">4 · 6</p>
   <h2>Running hot, on purpose</h2>
   <div class="tiles" style="grid-template-columns:repeat(3,1fr)">
     <div class="tile"><div class="lbl">merging demands at 100 % load</div><div class="val">30 buffers → 100 units of delay</div><div class="sub">two classes, strict priority, 90 % in the top class: the mean delay is unchanged (conservation) but the lower class sees over three times the buffer depth, with far worse variance</div></div>
@@ -977,7 +995,7 @@
 
 <!-- ============ 4.6 ============ -->
 <section>
-  <p class="kicker">4 · 6</p>
+  <p class="kicker">4 · 7</p>
   <h2>Feasibility before the build</h2>
   <div class="grid" style="grid-template-columns:1fr 1fr">
     <div class="card">
@@ -1002,7 +1020,7 @@
 
 <!-- ============ 4.7 THREE DOMAINS ============ -->
 <section>
-  <p class="kicker">4 · 7</p>
+  <p class="kicker">4 · 8</p>
   <h2>Three domains, three different problems</h2>
   <p class="lead">One measure, but the dominant term, the failure mode and the fix are different in each. The deck's pages map onto them.</p>
   <div class="steps" style="grid-template-columns:repeat(3,1fr)">
@@ -1011,13 +1029,13 @@
     <div class="step"><div class="n">WAN AND DCI</div><div class="t">Between sites, and to providers</div><div class="d">G dominates and is fixed. Suppliers at the boundaries. The one domain where a budget per segment and a contract at the boundary earn their keep.</div></div>
   </div>
   <ul class="notes">
-    <li>Pages 1·1 to 1·5 and 4·2 are the WAN and frontend story. Pages 4·8 to 4·10 give each domain its own kicker, measurement and lever.</li>
+    <li>Pages 1·1 to 1·5 and 4·3 are the WAN and frontend story. Pages 4·9 to 4·11 give each domain its own kicker, measurement and lever.</li>
   </ul>
 </section>
 
 <!-- ============ 4.8 BACKEND ============ -->
 <section>
-  <p class="kicker">4 · 8</p>
+  <p class="kicker">4 · 9</p>
   <h2>Backend: the job gets the worst of five hundred flows</h2>
   <div class="grid" style="grid-template-columns:1fr 1fr">
     <div class="card">
@@ -1042,7 +1060,7 @@
 
 <!-- ============ 4.9 FRONTEND ============ -->
 <section>
-  <p class="kicker">4 · 9</p>
+  <p class="kicker">4 · 10</p>
   <h2>Frontend: elastic and inelastic flows on the same links</h2>
   <div class="grid" style="grid-template-columns:1fr 1fr">
     <div class="card">
@@ -1067,7 +1085,7 @@
 
 <!-- ============ 4.10 WAN ============ -->
 <section>
-  <p class="kicker">4 · 10</p>
+  <p class="kicker">4 · 11</p>
   <h2>WAN and DCI: fixed G, and suppliers at the boundary</h2>
   <div class="grid" style="grid-template-columns:1fr 1fr">
     <div class="card">
