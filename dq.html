@@ -755,9 +755,45 @@
   <p class="src">PNSol workshop pp.67, 137 · TR-452.1 §5.1, requirements R-1 to R-7 · IETF 2021 §5</p>
 </section>
 
-<!-- ============ 3.2 ============ -->
+<!-- ============ 3.2 WORKED EXAMPLE ============ -->
 <section>
   <p class="kicker">3 · 2</p>
+  <h2>A worked example: a mobile user to an app, in segments</h2>
+  <p class="lead">A real path, run this way at a hyperscaler. Each segment had a baseline. Anything above the baseline was an anomaly to chase.</p>
+  <div class="flow" style="grid-template-columns:repeat(8,1fr); gap:6px">
+    <div class="tile" style="text-align:center; padding:8px 0 0"><div class="lbl">radio</div><div class="sub">user to node B</div></div>
+    <div class="tile" style="text-align:center; padding:8px 0 0"><div class="lbl">backhaul</div><div class="sub">to the gateway</div></div>
+    <div class="tile" style="text-align:center; padding:8px 0 0"><div class="lbl">PE in</div><div class="sub">into the packet core</div></div>
+    <div class="tile" style="text-align:center; padding:8px 0 0"><div class="lbl">core</div><div class="sub">the operator's core</div></div>
+    <div class="tile" style="text-align:center; padding:8px 0 0"><div class="lbl">PE out</div><div class="sub">to the backbone</div></div>
+    <div class="tile" style="text-align:center; padding:8px 0 0"><div class="lbl">backbone</div><div class="sub">to the data centre</div></div>
+    <div class="tile" style="text-align:center; padding:8px 0 0"><div class="lbl">DC</div><div class="sub">into the fabric</div></div>
+    <div class="tile hl" style="text-align:center; padding:8px 0 0"><div class="lbl">app</div><div class="sub">the API</div></div>
+  </div>
+  <div class="grid" style="margin-top:18px; grid-template-columns:1fr 1fr">
+    <div class="card">
+      <div class="ct" style="margin:0 0 8px">What worked</div>
+      <ul class="notes" style="margin:0">
+        <li>A baseline per segment, the floor and its normal spread. The dashboards showed the segments, not the hops.</li>
+        <li>A rise above the baseline pointed at a segment. 400 ms appearing in the radio segment meant one thing: the air interface, so a radio QoS class was deployed for that traffic, and the rise went away.</li>
+        <li>That is the whole method: floor, deviation, the box. It carried the programme.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="ct" style="margin:0 0 8px">What it could not do</div>
+      <ul class="notes" style="margin:0">
+        <li>Localise below a segment. With observation at segment boundaries only, the finest answer was "somewhere in the core". From there it was digging.</li>
+        <li>That is the rule on the page before: each observation point halves the search. Where there is no point, there is no halving.</li>
+        <li>The fabric is the one place we own every hop. Observation points are cheap there, and the silicon already timestamps. So here the method can go all the way down.</li>
+      </ul>
+    </div>
+  </div>
+  <p class="src">Faz, from the programme; the same shape as the book's probing scenario, PNSol workshop p.137</p>
+</section>
+
+<!-- ============ 3.2 ============ -->
+<section>
+  <p class="kicker">3 · 3</p>
   <h2>What a measurement can and cannot tell you</h2>
   <div class="quad">
     <div class="q"><div class="lbl">one point · average</div><div class="big">Utilisation, offered load</div><div class="why">What every counter gives today. Limited predictive power; large deviation theory says it is a poor predictor of hazards.</div></div>
@@ -774,7 +810,7 @@
 
 <!-- ============ 3.3 ============ -->
 <section>
-  <p class="kicker">3 · 3</p>
+  <p class="kicker">3 · 4</p>
   <h2>A valid test stream, per the standard</h2>
   <div class="tiles" style="grid-template-columns:repeat(4,1fr)">
     <div class="tile"><div class="lbl">packet sizes</div><div class="val">5 or more</div><div class="sub">largest at least 10× the smallest, roughly equal counts per size</div></div>
@@ -795,7 +831,7 @@
 
 <!-- ============ 3.4 ============ -->
 <section>
-  <p class="kicker">3 · 4</p>
+  <p class="kicker">3 · 5</p>
   <h2>From timestamps to G, S and V in six steps</h2>
   <div class="steps" style="grid-template-columns:repeat(3,1fr)">
     <div class="step"><div class="n">1</div><div class="t">Match the packets</div><div class="d">The same packet at each observation point, each direction. Infer loss from the ones that never match.</div></div>
@@ -814,7 +850,7 @@
 
 <!-- ============ 3.5 ============ -->
 <section>
-  <p class="kicker">3 · 5</p>
+  <p class="kicker">3 · 6</p>
   <h2>Configuring to the contracts</h2>
   <p class="lead">Once the QTAs through an element are known, the scheduling it needs can be computed. Contracts compose horizontally along the path and vertically at a multiplexing point, so this scales.</p>
   <div class="grid" style="grid-template-columns:1fr 1fr">
@@ -842,7 +878,7 @@
 
 <!-- ============ 3.6 ============ -->
 <section>
-  <p class="kicker">3 · 6</p>
+  <p class="kicker">3 · 7</p>
   <h2>A worked contract: three toll-quality voice lines over one DSL line</h2>
   <div class="grid" style="grid-template-columns:1.2fr 1fr">
     <div class="card">
