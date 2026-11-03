@@ -596,7 +596,7 @@
         <li>For independent hops the path's ΔQ is the <b>convolution</b> of the hops' ΔQs. Written ΔQ<sub>A→Z</sub> = ΔQ<sub>A→B</sub> ⊕ ΔQ<sub>B→C</sub> ⊕ … The loss multiplies through the same operation.</li>
         <li>Composition is <b>stronger than abstraction</b>: it lets a requirement at the top be split into budgets at every hop and for every supplier, and it works the other way, from measured hops to a predicted path.</li>
         <li>This is the property bandwidth lacks, and the reason a bandwidth SLA breaks down across a supply chain.</li>
-        <li><b>Convolution assumes independent hops.</b> So measure the path as well as the hops. The gap between the composed prediction and the measured path is the correlation, and it is itself a diagnostic: it says the queues are filling together.</li>
+        <li><b>The prediction assumes the hops do not affect each other.</b> In a fabric they do: one collective fills the leaf queue and the spine queue at the same moment, and the real path is slower than the prediction. So measure both. The hops, to know which one to fix. The path end to end, to know whether the hops are telling the truth. If the path comes out worse than the prediction, the gap is the queues filling together.</li>
       </ul>
       <p class="src">TR-452.1 §7.2.1, equation (3) · IETF 2021 §3.3 · PNSol workshop pp.7, 54, 93</p>
     </div>
