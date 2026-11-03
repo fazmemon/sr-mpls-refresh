@@ -774,7 +774,7 @@
     <div class="card">
       <div class="ct" style="margin:0 0 8px">What worked</div>
       <ul class="notes" style="margin:0">
-        <li>A baseline per segment, the floor and its normal spread. The dashboards showed the segments, not the hops.</li>
+        <li>A baseline per segment as a curve, not a number, with change detection on its shape. End-host telemetry gave the application side, so a segment's curve was tied to what users actually experienced.</li>
         <li>A rise above the baseline pointed at a segment. 400 ms appearing in the radio segment meant one thing: the air interface, so a radio QoS class was deployed for that traffic, and the rise went away.</li>
         <li>That is the whole method: floor, deviation, the box. It carried the programme.</li>
       </ul>
@@ -784,6 +784,7 @@
       <ul class="notes" style="margin:0">
         <li>Localise below a segment. With observation at segment boundaries only, the finest answer was "somewhere in the core". From there it was digging.</li>
         <li>That is the rule on the page before: each observation point halves the search. Where there is no point, there is no halving.</li>
+        <li>What was missing, in three words: <b>composition</b>, so a segment's budget could be derived from the end-host requirement instead of discovered; <b>loss</b> carried in the same curve rather than beside it; and the <b>floor-and-slope split</b>, so the fix is keyed on the lever, not the segment. Three additions to a method that already worked.</li>
         <li>The fabric is the one place we own every hop. Observation points are cheap there, and the silicon already timestamps. So here the method can go all the way down.</li>
       </ul>
     </div>
