@@ -187,7 +187,7 @@
     <div class="card">
       <div class="ct" style="margin:0 0 8px">Three ways the sum fails</div>
       <ul class="notes" style="margin:0">
-        <li><b>The number we add is not a number that adds.</b> A budget today takes each hop's p99, 10 µs here, 10 there, 30 at the far end, and sums them: "the path's p99 is 50". A p99 is one point on a curve, and points on two curves do not add. The curves combine, and the path's p99 falls out afterwards, somewhere else.</li>
+        <li><b>The number we add is not a number that adds.</b> A budget today takes each hop's slowest-1-in-100 figure, its p99, 10 µs here, 10 there, 30 at the far end, and sums them: "the path's p99 is 50". A p99 is one point on a curve, and points on two curves do not add. The curves combine, and the path's p99 falls out afterwards, somewhere else.</li>
         <li><b>Loss is not in the budget.</b> A hop that holds its 10 µs by dropping has met its number and broken the job. The retransmit is the delay nobody budgeted.</li>
         <li><b>The budget was set on averages.</b> Each share was sized from a utilisation figure or an idle ping. The moments that matter were never in the data.</li>
         <li><b>Adding tails assumes the hops are independent.</b> In a fabric they are not: a collective fills the leaf queue and the spine queue in the same microsecond, so the per-hop sum under-protects. Where hops really are independent the sum over-protects, which is where the 64× comes from. Either way it is not the path's tail.</li>
@@ -205,9 +205,29 @@
   </div>
 </section>
 
-<!-- ============ 1.5 THE BRIDGE ============ -->
+<!-- ============ 1.5 HOW TO READ THE CURVE ============ -->
 <section>
   <p class="kicker">1 · 5</p>
+  <h2>How to read the one picture this deck uses</h2>
+  <div class="grid">
+    <div class="card chart">
+      <div class="ct">Every packet on a path, sorted by how long it took. Across: time. Up: the share of packets that had arrived by then.</div>
+      <div id="p-howto" data-plot="howto"></div>
+    </div>
+    <div>
+      <ul class="notes">
+        <li><b>Half way up</b> is the typical packet: half were faster, half slower. That is the number a dashboard shows.</li>
+        <li><b>Near the top</b> is the slowest 1 in 100. That is the packet the job waits for. "p99" means this point and nothing else.</li>
+        <li><b>The gap at the very top</b> is the share that never arrived. Loss, on the same picture.</li>
+        <li><b>Better is left and up.</b> A curve that sits to the left and above another one delivered more packets sooner. That is the whole test, on every page that follows.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 1.5 THE BRIDGE ============ -->
+<section>
+  <p class="kicker">1 · 6</p>
   <h2>There is a floor you cannot improve. Everything above it is queueing.</h2>
   <div class="grid">
     <div class="card chart">
@@ -228,7 +248,7 @@
 
 <!-- ============ 1.5 DEMO PLACEHOLDER (work-side) ============ -->
 <section>
-  <p class="kicker">1 · 6</p>
+  <p class="kicker">1 · 7</p>
   <h2>Demo: what a path on our fabric looks like today</h2>
   <p class="lead">Live, from our own measurement. The page is built where the fabric is.</p>
   <div class="tiles" style="grid-template-columns:repeat(3,1fr)">
@@ -241,7 +261,7 @@
 
 <!-- ============ 1.1 ============ -->
 <section>
-  <p class="kicker">1 · 7</p>
+  <p class="kicker">1 · 8</p>
   <h2>A job only feels two things from the network</h2>
   <p class="lead">A collective across 512 GPUs, a storage read, a gRPC call. None of them can see a switch, a queue or an ECMP choice. They see their own packets arriving late, or not at all.</p>
   <div class="flow">
@@ -265,7 +285,7 @@
 
 <!-- ============ 1.2 ============ -->
 <section>
-  <p class="kicker">1 · 8</p>
+  <p class="kicker">1 · 9</p>
   <h2>Late and lost are the same thing to the job</h2>
   <div class="grid">
     <div class="card chart">
@@ -307,7 +327,7 @@
 
 <!-- ============ 1.3 ============ -->
 <section>
-  <p class="kicker">1 · 9</p>
+  <p class="kicker">1 · 10</p>
   <h2>Link utilisation does not tell us if the job is fine</h2>
   <div class="grid">
     <div class="card chart">
@@ -328,7 +348,7 @@
 
 <!-- ============ 1.4 ============ -->
 <section>
-  <p class="kicker">1 · 10</p>
+  <p class="kicker">1 · 11</p>
   <h2>The two cases every operator has met</h2>
   <p class="lead">Measured on a 1,300-site enterprise network over five days: link utilisation beside a direct voice-quality check on the same links. Swap "voice" for "collective" and it is our fabric.</p>
   <div class="grid" style="grid-template-columns:1.25fr 1fr">
@@ -351,7 +371,7 @@
 
 <!-- ============ 1.5 ============ -->
 <section>
-  <p class="kicker">1 · 11</p>
+  <p class="kicker">1 · 12</p>
   <h2>"How much bandwidth do we need" has no answer on its own</h2>
   <div class="grid" style="grid-template-columns:1fr 1.35fr">
     <div>
@@ -375,7 +395,7 @@
 
 <!-- ============ 1.6 ============ -->
 <section>
-  <p class="kicker">1 · 12</p>
+  <p class="kicker">1 · 13</p>
   <h2>So every team adds a margin, and the margins multiply</h2>
   <div class="grid">
     <div class="card chart">
@@ -395,7 +415,7 @@
 
 <!-- ============ 1.7 ============ -->
 <section>
-  <p class="kicker">1 · 13</p>
+  <p class="kicker">1 · 14</p>
   <h2>We already watch the tail. The industry wrote it down.</h2>
   <p class="lead">In 2021 the Internet Architecture Board ran a workshop on measuring network quality. The operators and vendors in the room agreed on these.</p>
   <div class="grid" style="grid-template-columns:1fr 1fr">
@@ -416,7 +436,7 @@
 
 <!-- ============ 1.8 ============ -->
 <section>
-  <p class="kicker">1 · 14</p>
+  <p class="kicker">1 · 15</p>
   <h2>Idle latency is not the latency the job gets</h2>
   <div class="grid">
     <div class="card chart">
@@ -436,7 +456,7 @@
 
 <!-- ============ 1.14 OBJECTIONS ============ -->
 <section>
-  <p class="kicker">1 · 15</p>
+  <p class="kicker">1 · 16</p>
   <h2>Four objections, answered up front</h2>
   <div class="steps" style="grid-template-columns:repeat(2,1fr)">
     <div class="step"><div class="n">"A 2013 broadband consultancy's idea"</div><div class="t">Serious people are taking it seriously</div><div class="d">Two Broadband Forum standards, 2020 and 2022, edited with Spirent, chaired from Ericsson and ZTE. Vodafone and Domos co-authored the 2021 paper to the IAB workshop. Two PhD theses, Kent and CERN; peer-reviewed papers in 2020 and 2022. The maths is the SLO curve your team already draws, with loss added. So should we.</div></div>
@@ -448,7 +468,7 @@
 
 <!-- ============ 1.16 NEIGHBOURS ============ -->
 <section>
-  <p class="kicker">1 · 16</p>
+  <p class="kicker">1 · 17</p>
   <h2>The other ways to add latency up, and where this one sits</h2>
   <div class="steps" style="grid-template-columns:repeat(3,1fr)">
     <div class="step"><div class="n">Network calculus</div><div class="t">Worst-case bounds, composed by min-plus</div><div class="d">Arrival and service curves. Hard guarantees for time-sensitive and deterministic networking and avionics. Over-provisions by design, needs shaped sources, treats loss as failure. A stochastic variant exists, mostly in papers.</div></div>
@@ -464,7 +484,7 @@
 
 <!-- ============ 1.9 ============ -->
 <section>
-  <p class="kicker">1 · 17</p>
+  <p class="kicker">1 · 18</p>
   <h2>What this deck proposes</h2>
   <p class="lead">Not the whole theory on day one. The working version: measure the floor, watch for what rises above it, match each rise to a known fix. The curves and the budgets come as the tooling matures.</p>
   <div class="steps">
@@ -595,7 +615,7 @@
     <div>
       <ul class="notes">
         <li><b>Convolution is what happens to the curve when you add two random delays.</b> One hop delays a packet by about 6 µs, give or take; the next by about 9, give or take. The total is the first plus the second, but each is a spread, so the total is a spread too: every possible first delay combined with every possible second, weighted by how likely each pair is. That combining is the convolution, and its result is the path's curve. Written ΔQ<sub>A→Z</sub> = ΔQ<sub>A→B</sub> ⊕ ΔQ<sub>B→C</sub> ⊕ …; the loss multiplies through the same step.</li>
-        <li>Three things it says that adding points cannot: the path's typical delay is near the sum of the typical delays; the path's spread is wider than either hop's but narrower than adding the worst cases, because two rare bad draws rarely land on the same packet; so the path's p99 is <b>less than the sum of the two p99s</b>, and that gap is the over-build on page 1·10.</li>
+        <li>Three things it says that adding points cannot: the path's typical delay is near the sum of the typical delays; the path's spread is wider than either hop's but narrower than adding the worst cases, because two rare bad draws rarely land on the same packet; so the path's p99 is <b>less than the sum of the two p99s</b>, and that gap is the over-build on page 1·11.</li>
         <li>Composition is <b>stronger than abstraction</b>: it lets a requirement at the top be split into budgets at every hop and for every supplier, and it works the other way, from measured hops to a predicted path.</li>
         <li>This is the property bandwidth lacks, and the reason a bandwidth SLA breaks down across a supply chain.</li>
         <li><b>The prediction assumes the hops do not affect each other.</b> In a fabric they do: one collective fills the leaf queue and the spine queue at the same moment, and the real path is slower than the prediction. So measure both. The hops, to know which one to fix. The path end to end, to know whether the hops are telling the truth. If the path comes out worse than the prediction, the gap is the queues filling together.</li>
@@ -1067,7 +1087,7 @@
     <div class="step"><div class="n">WAN AND DCI</div><div class="t">Between sites, and to providers</div><div class="d">G dominates and is fixed. Suppliers at the boundaries. The one domain where a budget per segment and a contract at the boundary earn their keep.</div></div>
   </div>
   <ul class="notes">
-    <li>Pages 1·1 to 1·5 and 4·3 are the WAN and frontend story. Pages 4·9 to 4·11 give each domain its own kicker, measurement and lever.</li>
+    <li>Pages 1·1 to 1·6 and 4·3 are the WAN and frontend story. Pages 4·9 to 4·11 give each domain its own kicker, measurement and lever.</li>
   </ul>
 </section>
 
@@ -1243,6 +1263,22 @@
   // chapter 2 charts
   const lnCDF = (t, mu, sig) => { const z = (Math.log(t) - mu) / (sig * Math.SQRT2); return 0.5 * (1 + erf(z)); };
   function erf(x) { const s = Math.sign(x); x = Math.abs(x); const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911; const t = 1/(1+p*x); const y = 1-(((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x); return s*y; }
+  Object.assign(plots, {
+    howto(el) {
+      const t = [], y = [];
+      for (let i = 1; i <= 240; i++) { const x = i * 0.5; t.push(x); y.push(0.99 * lnCDF(x, Math.log(18), 0.5)); }
+      Plotly.newPlot(el, [
+        { x: t, y: y, type: 'scatter', mode: 'lines', name: 'this path', line: { color: C.blue, width: 3 }, hovertemplate: '%{y:.0%} of packets arrived within %{x:.0f} ms<extra></extra>' },
+        { x: [0, 120], y: [1, 1], type: 'scatter', mode: 'lines', name: 'everything', line: { color: C.dim, width: 1 }, hoverinfo: 'skip' },
+      ], base(760, 340, { showlegend: false, xaxis: ax({ title: { text: 'milliseconds', font: { color: C.muted } }, range: [0, 120] }), yaxis: ax({ title: { text: 'share of packets arrived', font: { color: C.muted } }, range: [0, 1.06], tickformat: '.0%' }),
+        annotations: [
+          { x: 18, y: 0.495, text: 'the typical packet: half way up', ax: 110, ay: 40, arrowcolor: C.ink2, font: { color: C.ink2, size: 13 } },
+          { x: 57, y: 0.98, text: 'the slowest 1 in 100 ("p99")', ax: 60, ay: 60, arrowcolor: C.ink2, font: { color: C.ink2, size: 13 } },
+          { x: 100, y: 0.995, text: 'never arrived: loss', showarrow: false, yshift: 14, font: { color: C.accent, size: 13 } },
+          { x: 8, y: 0.85, text: 'better is this way ↖', showarrow: false, xanchor: 'left', font: { color: C.green, size: 14 } },
+        ] }), cfg);
+    },
+  });
   Object.assign(plots, {
     irv(el) {
       // illustrative improper CDF: lognormal delay, total mass 0.985 (1.5 % never arrive)
