@@ -446,9 +446,25 @@
   </div>
 </section>
 
-<!-- ============ 1.9 ============ -->
+<!-- ============ 1.16 NEIGHBOURS ============ -->
 <section>
   <p class="kicker">1 · 16</p>
+  <h2>The other ways to add latency up, and where this one sits</h2>
+  <div class="steps" style="grid-template-columns:repeat(3,1fr)">
+    <div class="step"><div class="n">Network calculus</div><div class="t">Worst-case bounds, composed by min-plus</div><div class="d">Arrival and service curves. Hard guarantees for time-sensitive and deterministic networking and avionics. Over-provisions by design, needs shaped sources, treats loss as failure. A stochastic variant exists, mostly in papers.</div></div>
+    <div class="step"><div class="n">Tail at Scale</div><div class="t">The fan-out rule, no calculus</div><div class="d">A thousand servers with a rare slow tail each, and most requests see one. The hyperscaler's own version of "the job gets the worst of N". Their fix is hedging and measuring every pair, not composing.</div></div>
+    <div class="step"><div class="n">Measure everything</div><div class="t">A probe mesh between every pair, compose nothing</div><div class="d">Works at the largest scale and cost. Cannot hand a budget to a supplier, and cannot predict a path that does not exist yet.</div></div>
+  </div>
+  <ul class="notes">
+    <li><b>Where ΔQ sits:</b> between the first and the third. A measured distribution, loss included, that composes by ordinary convolution, from a cheap probe, with a standard behind it. Its weakness is adoption and tooling, which is why the first demo is ours to build.</li>
+    <li>Adding percentiles, and simulating for six months, are the other two, and the earlier pages say why neither answers the question.</li>
+  </ul>
+  <p class="src">Dean and Barroso, "The Tail at Scale", 2013; network calculus after Cruz and Le Boudec; the seat's own knowledge, not from the corpus</p>
+</section>
+
+<!-- ============ 1.9 ============ -->
+<section>
+  <p class="kicker">1 · 17</p>
   <h2>What this deck proposes</h2>
   <div class="steps">
     <div class="step"><div class="n">1</div><div class="t">Measure the curve</div><div class="d">Delay and loss together, between two points, each direction. Not the mean.</div></div>
