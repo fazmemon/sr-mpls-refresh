@@ -421,9 +421,20 @@
   </div>
 </section>
 
-<!-- ============ 1.9 ============ -->
+<!-- ============ 1.14 OBJECTIONS ============ -->
 <section>
   <p class="kicker">1 · 14</p>
+  <h2>Three objections, answered up front</h2>
+  <div class="steps" style="grid-template-columns:repeat(3,1fr)">
+    <div class="step"><div class="n">"A 2013 broadband consultancy's idea"</div><div class="t">It is a standard now</div><div class="d">Broadband Forum TR-452.1, 2020, edited with Spirent, chaired from Ericsson and ZTE. An IETF position paper in 2021 with Vodafone and Domos. The maths is the SLO curve your team already draws, with loss added.</div></div>
+    <div class="step"><div class="n">"We already have p99 per link"</div><div class="t">It does not compose, and it has no loss in it</div><div class="d">A tail per link cannot be turned into the tail for the path or for the job. And a link that holds its p99 by dropping has met its number and broken the job.</div></div>
+    <div class="step"><div class="n">"Where is the tooling"</div><div class="t">The timestamps are already in the silicon</div><div class="d">Active measurement protocols are deployed. The analysis is six steps on a spreadsheet's worth of data. The first plot is a week's work, not a product.</div></div>
+  </div>
+</section>
+
+<!-- ============ 1.9 ============ -->
+<section>
+  <p class="kicker">1 · 15</p>
   <h2>What this deck proposes</h2>
   <div class="steps">
     <div class="step"><div class="n">1</div><div class="t">Measure the curve</div><div class="d">Delay and loss together, between two points, each direction. Not the mean.</div></div>
@@ -958,20 +969,93 @@
   <p class="src">Geddes, FCS series (2015) · Haeri, Thompson, Davies et al., "Mind Your Outcomes", Computers 2022 · PNSol workshop p.89</p>
 </section>
 
-<!-- ============ 4.7 ============ -->
+<!-- ============ 4.7 THREE DOMAINS ============ -->
 <section>
   <p class="kicker">4 · 7</p>
-  <h2>What it means for a fabric</h2>
-  <p class="lead">The generic version. The estate-specific pages are written where the estate is.</p>
-  <div class="tiles" style="grid-template-columns:repeat(3,1fr)">
-    <div class="tile"><div class="lbl">measure</div><div class="sub">One path, both directions, a varied-size stream over the active measurement protocol already deployed. The timestamps may already exist in the telemetry the silicon emits. One plot: delay against size.</div></div>
-    <div class="tile"><div class="lbl">find the tail</div><div class="sub">The curve past the 80th percentile, per segment, by time of day. Compare it with the requirement curve for the traffic that matters.</div></div>
-    <div class="tile"><div class="lbl">locate</div><div class="sub">Add a point, halve. Expect the cause to sit in a different domain from the symptom.</div></div>
-    <div class="tile"><div class="lbl">which lever</div><div class="sub">G: design and topology. S: link rate. V: scheduling. Most fabric tails are V. With PFC there are no drops: the packets that would have been dropped wait instead, so that loss shows up as extra queueing delay, which is V.</div></div>
-    <div class="tile"><div class="lbl">contract and budget</div><div class="sub">Write the requirement as a curve with a failure allowance. Devolve it across the hops and the suppliers. A slice or a pipe with a strong SLA is a place to multiplex a contract into.</div></div>
-    <div class="tile"><div class="lbl">run hot</div><div class="sub">An economy class for the bulk. Both directions bounded for the elastic flows. Watch the burst-loss mechanisms. Buy capacity last, and only where the structure says so.</div></div>
+  <h2>Three domains, three different problems</h2>
+  <p class="lead">One measure, but the dominant term, the failure mode and the fix are different in each. The deck's pages map onto them.</p>
+  <div class="steps" style="grid-template-columns:repeat(3,1fr)">
+    <div class="step"><div class="n">BACKEND</div><div class="t">GPU fabric</div><div class="d">RoCE, PFC, ECN. Two or three hops, same silicon everywhere. G and S tiny and uniform. Everything the job feels is V, and it is correlated. The job gets the <b>worst</b> of hundreds of flows.</div></div>
+    <div class="step"><div class="n">FRONTEND</div><div class="t">Storage, management, API</div><div class="d">TCP. Elastic and inelastic flows side by side. The book's flow pages apply directly: both directions matter, RPC inside long sessions is inelastic, bursts turn random loss into burst loss.</div></div>
+    <div class="step"><div class="n">WAN AND DCI</div><div class="t">Between sites, and to providers</div><div class="d">G dominates and is fixed. Suppliers at the boundaries. The one domain where a budget per segment and a contract at the boundary earn their keep.</div></div>
   </div>
-  <p class="src">This deck, chapters 1–4</p>
+  <ul class="notes">
+    <li>Pages 1·1 to 1·4 and 4·2 are the WAN and frontend story. Pages 4·8 to 4·10 give each domain its own kicker, measurement and lever.</li>
+  </ul>
+</section>
+
+<!-- ============ 4.8 BACKEND ============ -->
+<section>
+  <p class="kicker">4 · 8</p>
+  <h2>Backend: the job gets the worst of five hundred flows</h2>
+  <div class="grid" style="grid-template-columns:1fr 1fr">
+    <div class="card">
+      <div class="ct" style="margin:0 0 8px">The kicker here is a maximum, not a sum</div>
+      <ul class="notes" style="margin:0">
+        <li>A collective finishes when its <b>slowest flow</b> finishes. In the outcome calculus that is an <b>all-to-finish</b> combination: done when all are done. Its curve is built from the flows' curves, and it is dominated by their tails.</li>
+        <li>A p50 on one link says nothing about the worst of 512 flows crossing it in the same microsecond. The counter reports the middle of one link; the job gets the tail of the population.</li>
+        <li>The flows are <b>not independent</b>: they are launched together and fill the same queues together. So the per-flow tail understates the job's tail, and the sum of per-hop tails is wrong in both directions.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="ct" style="margin:0 0 8px">What to measure, and the lever</div>
+      <ul class="notes" style="margin:0">
+        <li>Per step: the distribution of completion across all flows in the collective, and per segment the V component by time. The silicon timestamps exist; this is the demo.</li>
+        <li>With PFC there are no drops, so the loss term shows up as queueing and pause time. Measure that cost on the curve; it is the price of "lossless".</li>
+        <li>The lever is scheduling and congestion control, not capacity: ECN thresholds, buffer carving, queue assignment per traffic class, the order in which flows are allowed to fail. Capacity last.</li>
+      </ul>
+    </div>
+  </div>
+  <p class="src">Haeri, Thompson, Davies et al., "Mind Your Outcomes", Computers 2022, §3.2 (all-to-finish) · PNSol workshop pp.110, 112–113</p>
+</section>
+
+<!-- ============ 4.9 FRONTEND ============ -->
+<section>
+  <p class="kicker">4 · 9</p>
+  <h2>Frontend: elastic and inelastic flows on the same links</h2>
+  <div class="grid" style="grid-template-columns:1fr 1fr">
+    <div class="card">
+      <div class="ct" style="margin:0 0 8px">Where the book applies directly</div>
+      <ul class="notes" style="margin:0">
+        <li><b>RPC and control traffic inside long-lived TCP sessions are inelastic.</b> TCP is being used for assured delivery there, not for rate adaptation. They need a bound, not a share.</li>
+        <li>Bulk transfers are elastic and need bounds in <b>both directions</b>: the acknowledgement path is where throughput dies.</li>
+        <li>Burst arrivals see far higher loss than spaced ones. NIC offload and large send batches turn random loss into <b>burst loss</b>; the retransmit timeout is the delay the job feels.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="ct" style="margin:0 0 8px">What to measure, and the lever</div>
+      <ul class="notes" style="margin:0">
+        <li>Per class, per direction, the curve between the host and the service boundary. Varied sizes come for free here: control packets and full frames share the path.</li>
+        <li>Give the inelastic flows a cherished, urgent class and bound it. Give bulk an economy class with a deliberately weak contract so it can run hot without triggering upgrades.</li>
+        <li>Pre-contend at the ingress where the known contention points are, rather than discover them in the core.</li>
+      </ul>
+    </div>
+  </div>
+  <p class="src">PNSol workshop pp.106–110, 113, 118 · Geddes, "How Wales got the first Internet fast lane" (2015)</p>
+</section>
+
+<!-- ============ 4.10 WAN ============ -->
+<section>
+  <p class="kicker">4 · 10</p>
+  <h2>WAN and DCI: fixed G, and suppliers at the boundary</h2>
+  <div class="grid" style="grid-template-columns:1fr 1fr">
+    <div class="card">
+      <div class="ct" style="margin:0 0 8px">The problem here is the sum</div>
+      <ul class="notes" style="margin:0">
+        <li>Distance sets G and nothing you buy changes it. S is set by the circuit. What moves is V inside each provider's network, which you cannot see.</li>
+        <li>This is the domain of page 1·4: a budget split along a path, each party adding its own margin, and a tail that does not add. The fix is a curve per segment that composes.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="ct" style="margin:0 0 8px">What to measure, and the lever</div>
+      <ul class="notes" style="margin:0">
+        <li>Observation points at each boundary you own, each direction. The provider's share is the difference between your two points. No clock sync across domains is needed.</li>
+        <li>Write the provider's obligation as a curve with a fidelity, not a bandwidth and a mean latency. That is the one place a contract in this deck's sense pays for itself.</li>
+        <li>Divide and conquer when the tail moves: the boundary that moved is the one to call.</li>
+      </ul>
+    </div>
+  </div>
+  <p class="src">PNSol workshop pp.67, 93, 98–99 · TR-452.1 §5.4–5.5 · IETF 2021 §5</p>
 </section>
 
 <!-- ============ CLOSE ============ -->
